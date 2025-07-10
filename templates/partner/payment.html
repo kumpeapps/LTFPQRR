@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Partner Payment - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="text-center mb-5">
+                <h2>Complete Your Partner Subscription</h2>
+                <p class="lead">Start creating QR tags for your business</p>
+            </div>
+            
+            <!-- Order Summary -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Subscription Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Plan:</strong> {{ subscription_type.title() }} Partner</p>
+                            <p><strong>Benefits:</strong></p>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Unlimited QR tag creation</li>
+                                <li><i class="fas fa-check text-success"></i> Partner dashboard access</li>
+                                <li><i class="fas fa-check text-success"></i> {{ 'Advanced' if subscription_type == 'yearly' else 'Basic' }} analytics</li>
+                                <li><i class="fas fa-check text-success"></i> {{ 'Priority' if subscription_type == 'yearly' else 'Email' }} support</li>
+                                {% if subscription_type == 'yearly' %}
+                                <li><i class="fas fa-check text-success"></i> Custom branding options</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <h4>${{ "%.2f"|format(amount) }}</h4>
+                            <small class="text-muted">per {{ subscription_type }}</small>
+                            {% if subscription_type == 'yearly' %}
+                                <div class="badge bg-success mt-2">Save $59.89!</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Payment Methods -->
+            <div class="card">
+                <div class="card-header">
+                    <h5>Choose Payment Method</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Stripe Payment -->
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fab fa-cc-stripe fa-3x text-primary mb-3"></i>
+                                    <h6>Credit Card</h6>
+                                    <p class="text-muted">Secure payment with Stripe</p>
+                                    <button class="btn btn-primary w-100" onclick="processPartnerPayment('stripe')">
+                                        Pay with Card
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- PayPal Payment -->
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fab fa-paypal fa-3x text-warning mb-3"></i>
+                                    <h6>PayPal</h6>
+                                    <p class="text-muted">Pay with PayPal balance or card</p>
+                                    <button class="btn btn-warning w-100" onclick="processPartnerPayment('paypal')">
+                                        Pay with PayPal
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Security Notice -->
+            <div class="alert alert-info mt-4">
+                <i class="fas fa-shield-alt"></i>
+                <strong>Secure Payment:</strong> All payments are processed securely through industry-standard encryption. We never store your payment information.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function processPartnerPayment(method) {
+    // For demo purposes - in a real implementation, you would integrate payment processing
+    if (confirm(`Process payment of ${{ "%.2f"|format(amount) }} via ${method}?`)) {
+        // Simulate successful payment
+        alert('Payment processing functionality would be implemented here');
+        // Redirect to success
+        window.location.href = '{{ url_for("partner_payment_success") }}';
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Partner Subscription - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="text-center mb-5">
+                <h2>Become a LTFPQRR Partner</h2>
+                <p class="lead">Join our network of pet professionals and businesses</p>
+            </div>
+            
+            <!-- Subscription Plans -->
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header text-center bg-primary text-white">
+                            <h4>Monthly Partner</h4>
+                            <h2>$29.99<small>/month</small></h2>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Create unlimited QR tags</li>
+                                <li><i class="fas fa-check text-success"></i> Partner dashboard access</li>
+                                <li><i class="fas fa-check text-success"></i> Basic analytics</li>
+                                <li><i class="fas fa-check text-success"></i> Email support</li>
+                                <li><i class="fas fa-check text-success"></i> Cancel anytime</li>
+                            </ul>
+                        </div>
+                        <div class="card-footer">
+                            <form method="POST" action="{{ url_for('partner_subscription_payment') }}">
+                                <input type="hidden" name="subscription_type" value="monthly">
+                                <button type="submit" class="btn btn-primary w-100">Choose Monthly</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 border-success">
+                        <div class="card-header text-center bg-success text-white">
+                            <h4>Yearly Partner</h4>
+                            <h2>$299.99<small>/year</small></h2>
+                            <small class="badge bg-warning text-dark">Save $59.89!</small>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Everything in Monthly</li>
+                                <li><i class="fas fa-check text-success"></i> Advanced analytics</li>
+                                <li><i class="fas fa-check text-success"></i> Priority support</li>
+                                <li><i class="fas fa-check text-success"></i> Bulk tag creation</li>
+                                <li><i class="fas fa-check text-success"></i> Custom branding options</li>
+                            </ul>
+                        </div>
+                        <div class="card-footer">
+                            <form method="POST" action="{{ url_for('partner_subscription_payment') }}">
+                                <input type="hidden" name="subscription_type" value="yearly">
+                                <button type="submit" class="btn btn-success w-100">Choose Yearly</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Benefits Section -->
+            <div class="card mt-5">
+                <div class="card-header">
+                    <h5>Partner Benefits</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-paw text-primary"></i> For Veterinarians</h6>
+                            <ul class="list-unstyled">
+                                <li>• Provide QR tags to clients</li>
+                                <li>• Emergency contact information</li>
+                                <li>• Medical history access</li>
+                                <li>• Practice branding opportunities</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-cut text-primary"></i> For Pet Groomers</h6>
+                            <ul class="list-unstyled">
+                                <li>• Attach tags after grooming</li>
+                                <li>• Include grooming reminders</li>
+                                <li>• Business contact information</li>
+                                <li>• Customer retention tool</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-store text-primary"></i> For Pet Stores</h6>
+                            <ul class="list-unstyled">
+                                <li>• Sell QR tags to customers</li>
+                                <li>• Additional revenue stream</li>
+                                <li>• Customer service enhancement</li>
+                                <li>• Community safety contribution</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-shield-alt text-primary"></i> For Shelters & Rescues</h6>
+                            <ul class="list-unstyled">
+                                <li>• Provide tags to adopters</li>
+                                <li>• Track successful reunions</li>
+                                <li>• Include adoption information</li>
+                                <li>• Support community safety</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- FAQ Section -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5>Frequently Asked Questions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="faqAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                    How do I create QR tags as a partner?
+                                </button>
+                            </h2>
+                            <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Once you have an active partner subscription, you can access your partner dashboard to create unlimited QR tags. Each tag has a unique ID that can be claimed by pet owners.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                    Can I cancel my subscription?
+                                </button>
+                            </h2>
+                            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Yes, you can cancel your subscription at any time. Your access will continue until the end of your current billing period.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                    What happens to tags I've created if I cancel?
+                                </button>
+                            </h2>
+                            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Tags you've created will remain active and functional for pet owners who have claimed them. However, you won't be able to create new tags without an active subscription.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

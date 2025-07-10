@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}Customer Dashboard - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar">
+            <div class="py-3">
+                <h5>Customer Dashboard</h5>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('customer_dashboard') }}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('claim_tag') }}">
+                            <i class="fas fa-tags"></i> Claim Tag
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('create_pet') }}">
+                            <i class="fas fa-plus"></i> Add Pet
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('notification_settings') }}">
+                            <i class="fas fa-bell"></i> Notifications
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10">
+            <div class="py-3">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Customer Dashboard</h2>
+                    <div>
+                        <a href="{{ url_for('claim_tag') }}" class="btn btn-primary me-2">
+                            <i class="fas fa-tags"></i> Claim Tag
+                        </a>
+                        <a href="{{ url_for('create_pet') }}" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Add Pet
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Statistics -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card stats-card">
+                            <h3>{{ tags|length }}</h3>
+                            <p>My Tags</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stats-card">
+                            <h3>{{ pets|length }}</h3>
+                            <p>My Pets</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stats-card">
+                            <h3>{{ tags|selectattr('pet_id', 'none')|list|length }}</h3>
+                            <p>Unassigned Tags</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stats-card">
+                            <h3>{{ tags|selectattr('pet_id', 'ne', None)|list|length }}</h3>
+                            <p>Active Tags</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- My Pets -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">My Pets</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if pets %}
+                            <div class="row">
+                                {% for pet in pets %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                {% if pet.photo %}
+                                                    <img src="{{ url_for('static', filename='uploads/' + pet.photo) }}" 
+                                                         alt="{{ pet.name }}" class="pet-photo me-3">
+                                                {% else %}
+                                                    <div class="pet-photo me-3 bg-light d-flex align-items-center justify-content-center">
+                                                        <i class="fas fa-paw fa-2x text-muted"></i>
+                                                    </div>
+                                                {% endif %}
+                                                <div>
+                                                    <h6 class="mb-1">{{ pet.name }}</h6>
+                                                    <small class="text-muted">{{ pet.breed or 'Unknown breed' }}</small>
+                                                </div>
+                                            </div>
+                                            <div class="mb-2">
+                                                <strong>Color:</strong> {{ pet.color or 'Not specified' }}
+                                            </div>
+                                            {% if pet.tag %}
+                                                <div class="mb-3">
+                                                    <strong>Tag ID:</strong> 
+                                                    <div class="tag-display mb-2">{{ pet.tag.tag_id }}</div>
+                                                    <div class="text-center">
+                                                        <img src="{{ url_for('tag_qr_code', tag_id=pet.tag.tag_id) }}" 
+                                                             alt="QR Code for {{ pet.tag.tag_id }}" 
+                                                             class="img-fluid" style="max-width: 100px;">
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+                                            <div class="btn-group w-100">
+                                                <a href="{{ url_for('edit_pet', pet_id=pet.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </a>
+                                                {% if pet.tag %}
+                                                    <a href="/found/{{ pet.tag.tag_id }}" 
+                                                       class="btn btn-sm btn-outline-success" target="_blank">
+                                                        <i class="fas fa-eye"></i> View Public
+                                                    </a>
+                                                    <a href="{{ url_for('tag_qr_code', tag_id=pet.tag.tag_id) }}" 
+                                                       class="btn btn-sm btn-outline-info" target="_blank" title="Download QR Code">
+                                                        <i class="fas fa-qrcode"></i>
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-paw fa-3x text-muted mb-3"></i>
+                                <h5>No pets registered yet</h5>
+                                <p class="text-muted">Add your first pet to get started!</p>
+                                <a href="{{ url_for('create_pet') }}" class="btn btn-success">
+                                    <i class="fas fa-plus"></i> Add Pet
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- My Tags -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">My Tags</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if tags %}
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Tag ID</th>
+                                            <th>Status</th>
+                                            <th>Pet</th>
+                                            <th>Subscription</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for tag in tags %}
+                                        <tr>
+                                            <td>
+                                                <span class="tag-display">{{ tag.tag_id }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge 
+                                                    {% if tag.pet_id %}bg-success
+                                                    {% else %}bg-warning
+                                                    {% endif %}">
+                                                    {% if tag.pet_id %}Active{% else %}Unassigned{% endif %}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if tag.pet %}
+                                                    {{ tag.pet.name }}
+                                                {% else %}
+                                                    <em>No pet assigned</em>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% for subscription in tag.subscriptions %}
+                                                    {% if subscription.is_active() %}
+                                                        <span class="badge bg-primary">
+                                                            {{ subscription.subscription_type.title() }}
+                                                        </span>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    <a href="/found/{{ tag.tag_id }}" 
+                                                       class="btn btn-sm btn-outline-primary" target="_blank">
+                                                        <i class="fas fa-eye"></i> View
+                                                    </a>
+                                                    <a href="{{ url_for('transfer_tag', tag_id=tag.id) }}" 
+                                                       class="btn btn-sm btn-outline-secondary">
+                                                        <i class="fas fa-exchange-alt"></i> Transfer
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+                                <h5>No tags claimed yet</h5>
+                                <p class="text-muted">Claim your first tag to protect your pet!</p>
+                                <a href="{{ url_for('claim_tag') }}" class="btn btn-primary">
+                                    <i class="fas fa-tags"></i> Claim Tag
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

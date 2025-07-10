@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar">
+            <div class="py-3">
+                <h5>Admin Dashboard</h5>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('admin_dashboard') }}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_users') }}">
+                            <i class="fas fa-users"></i> Users
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_subscriptions') }}">
+                            <i class="fas fa-credit-card"></i> Subscriptions
+                        </a>
+                    </li>
+                    {% if current_user.has_role('super-admin') %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('admin_settings') }}">
+                                <i class="fas fa-cog"></i> Settings
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('payment_gateways') }}">
+                                <i class="fas fa-credit-card"></i> Payment Gateways
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10">
+            <div class="py-3">
+                <h2>Admin Dashboard</h2>
+                
+                <!-- Statistics Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card stats-card">
+                            <h3>{{ stats.total_users }}</h3>
+                            <p>Total Users</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stats-card">
+                            <h3>{{ stats.total_tags }}</h3>
+                            <p>Total Tags</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stats-card">
+                            <h3>{{ stats.active_subscriptions }}</h3>
+                            <p>Active Subscriptions</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stats-card">
+                            <h3>{{ stats.total_pets }}</h3>
+                            <p>Total Pets</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <a href="{{ url_for('admin_users') }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-users"></i> Manage Users
+                                    </a>
+                                    <a href="{{ url_for('admin_subscriptions') }}" class="btn btn-outline-success">
+                                        <i class="fas fa-credit-card"></i> View Subscriptions
+                                    </a>
+                                    {% if current_user.has_role('super-admin') %}
+                                        <a href="{{ url_for('add_subscription') }}" class="btn btn-outline-warning">
+                                            <i class="fas fa-plus"></i> Add Subscription
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-chart-line"></i> System Health</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <span class="badge bg-success">Database: Online</span>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="badge bg-success">Email: Configured</span>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="badge bg-success">Storage: Available</span>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="badge bg-info">Uptime: 99.9%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-clock"></i> Recent Activity</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            Recent activity monitoring would be implemented here with real-time data.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

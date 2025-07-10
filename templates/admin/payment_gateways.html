@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Gateways - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar">
+            <div class="py-3">
+                <h5>Admin Dashboard</h5>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_users') }}">
+                            <i class="fas fa-users"></i> Users
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_subscriptions') }}">
+                            <i class="fas fa-credit-card"></i> Subscriptions
+                        </a>
+                    </li>
+                    {% if current_user.has_role('super-admin') %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('admin_settings') }}">
+                                <i class="fas fa-cog"></i> Settings
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="{{ url_for('payment_gateways') }}">
+                                <i class="fas fa-credit-card"></i> Payment Gateways
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10">
+            <div class="py-3">
+                <h2>Payment Gateways</h2>
+                
+                <div class="row">
+                    {% for gateway in gateways %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">{{ gateway.name.title() }}</h5>
+                                <span class="badge bg-{{ 'success' if gateway.enabled else 'danger' }}">
+                                    {{ 'Enabled' if gateway.enabled else 'Disabled' }}
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted">Environment: <strong>{{ gateway.environment.title() }}</strong></p>
+                                {% if gateway.api_key %}
+                                    <p class="text-success"><i class="fas fa-check"></i> API Key Configured</p>
+                                {% else %}
+                                    <p class="text-danger"><i class="fas fa-times"></i> API Key Not Configured</p>
+                                {% endif %}
+                                
+                                {% if gateway.secret_key %}
+                                    <p class="text-success"><i class="fas fa-check"></i> Secret Key Configured</p>
+                                {% else %}
+                                    <p class="text-danger"><i class="fas fa-times"></i> Secret Key Not Configured</p>
+                                {% endif %}
+                                
+                                <p class="text-muted">Last Updated: {{ gateway.updated_at.strftime('%Y-%m-%d %H:%M') if gateway.updated_at else 'Never' }}</p>
+                                
+                                <a href="{{ url_for('edit_payment_gateway', gateway_id=gateway.id) }}" class="btn btn-primary">
+                                    <i class="fas fa-edit"></i> Configure
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

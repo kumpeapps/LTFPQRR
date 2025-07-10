@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Claim Tag - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-tags"></i> Claim Tag</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Enter the tag ID from your QR code tag and choose a subscription plan to activate protection for your pet.
+                    </div>
+                    
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.tag_id.label(class="form-label") }}
+                            {{ form.tag_id(class="form-control form-control-lg", placeholder="Enter tag ID (e.g., ABC123XY)") }}
+                            {% if form.tag_id.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.tag_id.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            {{ form.subscription_type.label(class="form-label") }}
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="card">
+                                        <div class="card-body text-center">
+                                            <h6>Monthly</h6>
+                                            <h4 class="text-primary">$9.99</h4>
+                                            <p class="small text-muted">per month</p>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="subscription_type" value="monthly" id="monthly">
+                                                <label class="form-check-label" for="monthly">
+                                                    Choose Monthly
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card border-primary">
+                                        <div class="card-body text-center">
+                                            <div class="badge bg-primary mb-2">Popular</div>
+                                            <h6>Yearly</h6>
+                                            <h4 class="text-primary">$99.99</h4>
+                                            <p class="small text-muted">per year</p>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="subscription_type" value="yearly" id="yearly" checked>
+                                                <label class="form-check-label" for="yearly">
+                                                    Choose Yearly
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card">
+                                        <div class="card-body text-center">
+                                            <h6>Lifetime</h6>
+                                            <h4 class="text-primary">$199.99</h4>
+                                            <p class="small text-muted">one time</p>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="subscription_type" value="lifetime" id="lifetime">
+                                                <label class="form-check-label" for="lifetime">
+                                                    Choose Lifetime
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% if form.subscription_type.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.subscription_type.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Note:</strong> Lifetime subscriptions prevent changing pet name and details to ensure tag consistency. You can cancel the lifetime subscription to remove this restriction.
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-arrow-right"></i> Proceed to Payment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,353 @@
+/* Custom CSS for LTFPQRR */
+
+/* Logo and branding */
+.navbar-brand img {
+    transition: transform 0.3s ease;
+}
+
+.navbar-brand:hover img {
+    transform: scale(1.1);
+}
+
+/* Enhanced hero section */
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20"><defs><pattern id="grain" width="100" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="20" fill="url(%23grain)"/></svg>') repeat;
+    pointer-events: none;
+}
+
+/* QR Code animations */
+.qr-animation {
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+    100% { transform: translateY(0px); }
+}
+
+/* Feature cards enhancements */
+.feature-card {
+    transition: all 0.3s ease;
+    border: none;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+}
+
+.feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.feature-card:hover::before {
+    left: 100%;
+}
+
+.feature-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+/* Search section */
+.search-section {
+    background: linear-gradient(45deg, #f8f9fa 0%, #e9ecef 100%);
+    position: relative;
+}
+
+.search-card {
+    border: none;
+    border-radius: 25px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    overflow: hidden;
+    background: white;
+}
+
+/* Button enhancements */
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 50px;
+    padding: 12px 30px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+}
+
+.btn-outline-light {
+    border: 2px solid white;
+    border-radius: 50px;
+    padding: 12px 30px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-light:hover {
+    background: white;
+    color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(255,255,255,0.3);
+}
+
+/* Stats section */
+.stats-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    position: relative;
+}
+
+.stats-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none"><path d="M1200 120L0 16.48V0h1200v120z" fill="white"/></svg>') no-repeat;
+    background-size: cover;
+    background-position: bottom;
+}
+
+.stats-card {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 40px 20px;
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: scale(1.05);
+}
+
+.stats-number {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    background: linear-gradient(45deg, #fff 0%, #f8f9fa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Process section */
+.process-step {
+    text-align: center;
+    padding: 30px 20px;
+    position: relative;
+}
+
+.process-step::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: -15px;
+    width: 30px;
+    height: 2px;
+    background: #667eea;
+    transform: translateY(-50%);
+    z-index: 1;
+}
+
+.process-step:last-child::after {
+    display: none;
+}
+
+.process-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    color: white;
+    font-size: 2rem;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    transition: transform 0.3s ease;
+}
+
+.process-step:hover .process-icon {
+    transform: scale(1.1) rotateY(180deg);
+}
+
+/* Footer enhancements */
+.footer {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    color: white;
+    position: relative;
+}
+
+.footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #667eea, transparent);
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 60px 0;
+    }
+    
+    .stats-number {
+        font-size: 2rem;
+    }
+    
+    .process-step::after {
+        display: none;
+    }
+    
+    .navbar-brand {
+        font-size: 1.2rem;
+    }
+}
+
+/* Loading animations */
+.fade-in {
+    opacity: 0;
+    transform: translateY(30px);
+    animation: fadeInUp 0.8s ease forwards;
+}
+
+.fade-in:nth-child(2) { animation-delay: 0.1s; }
+.fade-in:nth-child(3) { animation-delay: 0.2s; }
+.fade-in:nth-child(4) { animation-delay: 0.3s; }
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Dashboard enhancements */
+.dashboard-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    overflow: hidden;
+    position: relative;
+}
+
+.dashboard-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+}
+
+/* Tag display improvements */
+.tag-display {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 2px solid #dee2e6;
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.tag-display::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+}
+
+.tag-id {
+    font-family: 'Courier New', monospace;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #495057;
+    letter-spacing: 2px;
+}
+
+/* Pet photo enhancements */
+.pet-photo {
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    transition: transform 0.3s ease;
+}
+
+.pet-photo:hover {
+    transform: scale(1.05);
+}
+
+/* Form enhancements */
+.form-control {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Alert enhancements */
+.alert {
+    border: none;
+    border-radius: 15px;
+    position: relative;
+    overflow: hidden;
+}
+
+.alert::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 4px;
+    background: currentColor;
+}

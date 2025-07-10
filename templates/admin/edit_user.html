@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Edit User - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar">
+            <div class="py-3">
+                <h5>Admin Dashboard</h5>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('admin_users') }}">
+                            <i class="fas fa-users"></i> Users
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_subscriptions') }}">
+                            <i class="fas fa-credit-card"></i> Subscriptions
+                        </a>
+                    </li>
+                    {% if current_user.has_role('super-admin') %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('admin_settings') }}">
+                                <i class="fas fa-cog"></i> Settings
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('payment_gateways') }}">
+                                <i class="fas fa-credit-card"></i> Payment Gateways
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10">
+            <div class="py-3">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Edit User: {{ user.username }}</h2>
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Users
+                    </a>
+                </div>
+                
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">User Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">First Name</label>
+                                            <input type="text" name="first_name" value="{{ user.first_name }}" class="form-control" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Last Name</label>
+                                            <input type="text" name="last_name" value="{{ user.last_name }}" class="form-control" required>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Email</label>
+                                        <input type="email" name="email" value="{{ user.email }}" class="form-control" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Phone</label>
+                                        <input type="text" name="phone" value="{{ user.phone or '' }}" class="form-control">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Address</label>
+                                        <textarea name="address" class="form-control" rows="3">{{ user.address or '' }}</textarea>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Account Type</label>
+                                            <input type="text" value="{{ user.account_type.title() }}" class="form-control" readonly>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Member Since</label>
+                                            <input type="text" value="{{ user.created_at.strftime('%Y-%m-%d') }}" class="form-control" readonly>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Roles</label>
+                                        <div>
+                                            {% for role in user.roles %}
+                                                <span class="badge bg-secondary me-1">{{ role.name }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save"></i> Save Changes
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

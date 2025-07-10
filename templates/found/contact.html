@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Contact Owner - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-envelope"></i> Contact Pet Owner</h3>
+                    <p class="mb-0">Send a message to {{ pet.name }}'s owner</p>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Your message will be sent directly to the pet owner's email address. They will be able to respond to you directly.
+                    </div>
+                    
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.finder_name.label(class="form-label") }}
+                                    {{ form.finder_name(class="form-control") }}
+                                    {% if form.finder_name.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.finder_name.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.finder_email.label(class="form-label") }}
+                                    {{ form.finder_email(class="form-control") }}
+                                    {% if form.finder_email.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.finder_email.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.message.label(class="form-label") }}
+                            {{ form.message(class="form-control", rows="5", placeholder="Hi! I found your pet " + pet.name + ". Please let me know how we can arrange for you to pick them up. They seem to be in good health and are safe with me.") }}
+                            {% if form.message.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.message.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-paper-plane"></i> Send Message
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Pet Info Card -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-paw"></i> Pet Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            {% if pet.photo %}
+                                <img src="{{ url_for('static', filename='uploads/' + pet.photo) }}" 
+                                     alt="{{ pet.name }}" class="img-fluid rounded">
+                            {% else %}
+                                <div class="bg-light rounded p-4 text-center">
+                                    <i class="fas fa-paw fa-3x text-muted"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-8">
+                            <h5>{{ pet.name }}</h5>
+                            <p><strong>Breed:</strong> {{ pet.breed or 'Not specified' }}</p>
+                            <p><strong>Color:</strong> {{ pet.color or 'Not specified' }}</p>
+                            <p><strong>Tag ID:</strong> <span class="tag-display">{{ tag.tag_id }}</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

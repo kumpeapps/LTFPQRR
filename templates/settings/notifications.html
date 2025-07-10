@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Settings - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h2>Notification Settings</h2>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Email Notifications</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Choose which email notifications you'd like to receive.</p>
+                    
+                    {% if preferences %}
+                        {% for preference in preferences %}
+                        <div class="row align-items-center mb-3">
+                            <div class="col-md-8">
+                                <h6>{{ preference.notification_type.replace('_', ' ').title() }}</h6>
+                                <small class="text-muted">
+                                    {% if preference.notification_type == 'tag_search' %}
+                                        Get notified when someone searches for your pet's tag
+                                    {% elif preference.notification_type == 'payment_reminder' %}
+                                        Receive reminders before subscription renewal
+                                    {% elif preference.notification_type == 'security_alerts' %}
+                                        Important security and account notifications
+                                    {% else %}
+                                        {{ preference.notification_type.replace('_', ' ').title() }} notifications
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" 
+                                           {% if preference.enabled %}checked{% endif %}
+                                           onchange="toggleNotification('{{ preference.notification_type }}')">
+                                    <label class="form-check-label">
+                                        {{ 'Enabled' if preference.enabled else 'Disabled' }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No notification preferences set yet.</p>
+                            <p>Default notifications are enabled for important events.</p>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Default Notification Types -->
+                    <div class="mt-4">
+                        <h6>Available Notifications</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6><i class="fas fa-search text-primary"></i> Tag Searches</h6>
+                                        <p class="text-muted small">Get notified when someone finds your pet and searches their tag.</p>
+                                        <a href="{{ url_for('toggle_notification', notification_type='tag_search') }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            {% set pref = preferences | selectattr('notification_type', 'equalto', 'tag_search') | first %}
+                                            {{ 'Disable' if pref and pref.enabled else 'Enable' }}
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6><i class="fas fa-credit-card text-warning"></i> Payment Reminders</h6>
+                                        <p class="text-muted small">Receive reminders before your subscription renewal.</p>
+                                        <a href="{{ url_for('toggle_notification', notification_type='payment_reminder') }}" 
+                                           class="btn btn-sm btn-outline-warning">
+                                            {% set pref = preferences | selectattr('notification_type', 'equalto', 'payment_reminder') | first %}
+                                            {{ 'Disable' if pref and pref.enabled else 'Enable' }}
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="alert alert-info mt-4">
+                <i class="fas fa-info-circle"></i>
+                <strong>Note:</strong> Some notifications like security alerts cannot be disabled for account safety.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleNotification(type) {
+    // For demo purposes - would make AJAX call to toggle notification
+    window.location.href = '/settings/notifications/toggle/' + type;
+}
+</script>
+{% endblock %}

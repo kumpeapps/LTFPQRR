@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Users Management - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar">
+            <div class="py-3">
+                <h5>Admin Dashboard</h5>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('admin_users') }}">
+                            <i class="fas fa-users"></i> Users
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_subscriptions') }}">
+                            <i class="fas fa-credit-card"></i> Subscriptions
+                        </a>
+                    </li>
+                    {% if current_user.has_role('super-admin') %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('admin_settings') }}">
+                                <i class="fas fa-cog"></i> Settings
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('payment_gateways') }}">
+                                <i class="fas fa-credit-card"></i> Payment Gateways
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10">
+            <div class="py-3">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Users Management</h2>
+                </div>
+                
+                <!-- Users Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">All Users</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Username</th>
+                                        <th>Email</th>
+                                        <th>Name</th>
+                                        <th>Account Type</th>
+                                        <th>Roles</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in users %}
+                                    <tr>
+                                        <td>{{ user.id }}</td>
+                                        <td>{{ user.username }}</td>
+                                        <td>{{ user.email }}</td>
+                                        <td>{{ user.get_full_name() }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ 'primary' if user.account_type == 'customer' else 'success' }}">
+                                                {{ user.account_type.title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% for role in user.roles %}
+                                                <span class="badge bg-secondary me-1">{{ role.name }}</span>
+                                            {% endfor %}
+                                        </td>
+                                        <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-outline-primary">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                {% if current_user.has_role('super-admin') and user.id != current_user.id %}
+                                                <button class="btn btn-outline-danger" onclick="confirmDelete({{ user.id }}, '{{ user.username }}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted">No users found.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete user <strong id="deleteUsername"></strong>?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(userId, username) {
+    document.getElementById('deleteUsername').textContent = username;
+    document.getElementById('deleteForm').action = '/admin/users/delete/' + userId;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}

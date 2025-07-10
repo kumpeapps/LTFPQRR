@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Subscriptions Management - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar">
+            <div class="py-3">
+                <h5>Admin Dashboard</h5>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_users') }}">
+                            <i class="fas fa-users"></i> Users
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('admin_subscriptions') }}">
+                            <i class="fas fa-credit-card"></i> Subscriptions
+                        </a>
+                    </li>
+                    {% if current_user.has_role('super-admin') %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('admin_settings') }}">
+                                <i class="fas fa-cog"></i> Settings
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('payment_gateways') }}">
+                                <i class="fas fa-credit-card"></i> Payment Gateways
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10">
+            <div class="py-3">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Subscriptions Management</h2>
+                    {% if current_user.has_role('super-admin') %}
+                    <a href="{{ url_for('add_subscription') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Subscription
+                    </a>
+                    {% endif %}
+                </div>
+                
+                <!-- Subscriptions Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">All Subscriptions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>User</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Amount</th>
+                                        <th>Start Date</th>
+                                        <th>End Date</th>
+                                        <th>Payment Method</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for subscription in subscriptions %}
+                                    <tr>
+                                        <td>{{ subscription.id }}</td>
+                                        <td>{{ subscription.user.username }}</td>
+                                        <td>
+                                            <span class="badge bg-info">{{ subscription.subscription_type.title() }}</span>
+                                        </td>
+                                        <td>
+                                            {% if subscription.status == 'active' %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% elif subscription.status == 'cancelled' %}
+                                                <span class="badge bg-warning">Cancelled</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Expired</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>${{ "%.2f"|format(subscription.amount or 0) }}</td>
+                                        <td>{{ subscription.start_date.strftime('%Y-%m-%d') if subscription.start_date else '' }}</td>
+                                        <td>{{ subscription.end_date.strftime('%Y-%m-%d') if subscription.end_date else 'Lifetime' }}</td>
+                                        <td>{{ subscription.payment_method.title() if subscription.payment_method else 'Manual' }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                {% if current_user.has_role('super-admin') %}
+                                                <a href="{{ url_for('edit_subscription', subscription_id=subscription.id) }}" class="btn btn-outline-primary">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                {% if subscription.status == 'active' %}
+                                                <form method="POST" action="{{ url_for('cancel_subscription_admin', subscription_id=subscription.id) }}" class="d-inline">
+                                                    <button type="submit" class="btn btn-outline-warning" onclick="return confirm('Cancel this subscription?')">
+                                                        <i class="fas fa-ban"></i>
+                                                    </button>
+                                                </form>
+                                                {% endif %}
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="9" class="text-center text-muted">No subscriptions found.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

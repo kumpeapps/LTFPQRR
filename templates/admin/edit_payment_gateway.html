@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Payment Gateway - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar">
+            <div class="py-3">
+                <h5>Admin Dashboard</h5>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_users') }}">
+                            <i class="fas fa-users"></i> Users
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_subscriptions') }}">
+                            <i class="fas fa-credit-card"></i> Subscriptions
+                        </a>
+                    </li>
+                    {% if current_user.has_role('super-admin') %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('admin_settings') }}">
+                                <i class="fas fa-cog"></i> Settings
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="{{ url_for('payment_gateways') }}">
+                                <i class="fas fa-credit-card"></i> Payment Gateways
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10">
+            <div class="py-3">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Configure {{ gateway.name.title() }} Payment Gateway</h2>
+                    <a href="{{ url_for('payment_gateways') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Payment Gateways
+                    </a>
+                </div>
+                
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Gateway Configuration</h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST">
+                                    {{ form.hidden_tag() }}
+                                    
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            {{ form.enabled(class="form-check-input") }}
+                                            {{ form.enabled.label(class="form-check-label") }}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        {{ form.environment.label(class="form-label") }}
+                                        {{ form.environment(class="form-select") }}
+                                        {% if form.environment.errors %}
+                                            <div class="text-danger">
+                                                {% for error in form.environment.errors %}
+                                                    <small>{{ error }}</small>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        {{ form.api_key.label(class="form-label") }}
+                                        {{ form.api_key(class="form-control", placeholder="Enter API Key...") }}
+                                        {% if form.api_key.errors %}
+                                            <div class="text-danger">
+                                                {% for error in form.api_key.errors %}
+                                                    <small>{{ error }}</small>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        {% if gateway.name == 'stripe' %}
+                                            <small class="form-text text-muted">Your Stripe Publishable Key (pk_...)</small>
+                                        {% elif gateway.name == 'paypal' %}
+                                            <small class="form-text text-muted">Your PayPal Client ID</small>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        {{ form.secret_key.label(class="form-label") }}
+                                        {{ form.secret_key(class="form-control", placeholder="Enter Secret Key...") }}
+                                        {% if form.secret_key.errors %}
+                                            <div class="text-danger">
+                                                {% for error in form.secret_key.errors %}
+                                                    <small>{{ error }}</small>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        {% if gateway.name == 'stripe' %}
+                                            <small class="form-text text-muted">Your Stripe Secret Key (sk_...)</small>
+                                        {% elif gateway.name == 'paypal' %}
+                                            <small class="form-text text-muted">Your PayPal Client Secret</small>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        {{ form.webhook_secret.label(class="form-label") }}
+                                        {{ form.webhook_secret(class="form-control", placeholder="Enter Webhook Secret...") }}
+                                        {% if form.webhook_secret.errors %}
+                                            <div class="text-danger">
+                                                {% for error in form.webhook_secret.errors %}
+                                                    <small>{{ error }}</small>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        <small class="form-text text-muted">Optional: For webhook verification</small>
+                                    </div>
+                                    
+                                    <div class="alert alert-info">
+                                        <h6>Security Notice:</h6>
+                                        <p class="mb-0">All sensitive data is encrypted before storage. Keys will only be updated if you provide new values.</p>
+                                    </div>
+                                    
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save"></i> Save Configuration
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

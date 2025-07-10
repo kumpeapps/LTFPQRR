@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Register - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card mt-5">
+                <div class="card-header text-center">
+                    <h3><i class="fas fa-user-plus"></i> Register</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.username.label(class="form-label") }}
+                                    {{ form.username(class="form-control") }}
+                                    {% if form.username.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.username.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.email.label(class="form-label") }}
+                                    {{ form.email(class="form-control") }}
+                                    {% if form.email.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.email.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.password.label(class="form-label") }}
+                                    {{ form.password(class="form-control") }}
+                                    {% if form.password.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.password.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.confirm_password.label(class="form-label") }}
+                                    {{ form.confirm_password(class="form-control") }}
+                                    {% if form.confirm_password.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.confirm_password.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.first_name.label(class="form-label") }}
+                                    {{ form.first_name(class="form-control") }}
+                                    {% if form.first_name.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.first_name.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.last_name.label(class="form-label") }}
+                                    {{ form.last_name(class="form-control") }}
+                                    {% if form.last_name.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.last_name.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.phone.label(class="form-label") }}
+                                    {{ form.phone(class="form-control") }}
+                                    {% if form.phone.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.phone.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.account_type.label(class="form-label") }}
+                                    {{ form.account_type(class="form-control") }}
+                                    {% if form.account_type.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.account_type.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.address.label(class="form-label") }}
+                            {{ form.address(class="form-control", rows="3") }}
+                            {% if form.address.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.address.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-user-plus"></i> Register
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-center">
+                    <p class="mb-0">Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const accountTypeSelect = document.querySelector('#account_type');
+    const accountTypeHelp = document.createElement('small');
+    accountTypeHelp.className = 'form-text text-muted';
+    accountTypeSelect.parentNode.appendChild(accountTypeHelp);
+    
+    function updateAccountTypeHelp() {
+        const selectedType = accountTypeSelect.value;
+        if (selectedType === 'customer') {
+            accountTypeHelp.textContent = 'Choose Customer to claim and manage pet tags for your own pets.';
+        } else if (selectedType === 'partner') {
+            accountTypeHelp.textContent = 'Choose Partner if you\'re a business that wants to create and distribute tags to customers.';
+        }
+    }
+    
+    accountTypeSelect.addEventListener('change', updateAccountTypeHelp);
+    updateAccountTypeHelp(); // Initial call
+});
+</script>
+{% endblock %}

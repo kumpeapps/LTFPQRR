@@ -1,0 +1,419 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">    </div>
+</section>
+
+<!-- How It Works Process -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5">Simple 3-Step Process</h2>
+            <p class="lead">Get your pet protected in minutes</p>
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="process-step fade-in">
+                    <div class="process-icon">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <h5>1. Register</h5>
+                    <p class="text-muted">Create your account and add your pet's information to our secure database.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="process-step fade-in">
+                    <div class="process-icon">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <h5>2. Get Your Tag</h5>
+                    <p class="text-muted">Receive your unique QR code tag and attach it to your pet's collar.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="process-step fade-in">
+                    <div class="process-icon">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <h5>3. Peace of Mind</h5>
+                    <p class="text-muted">Your pet is now protected! Anyone who finds them can easily contact you.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5">Happy Pet Parents</h2>
+            <p class="lead">Real stories from our community</p>
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="card feature-card h-100">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <p class="card-text">"Max got out during a thunderstorm and was found 3 miles away. Thanks to LTFPQRR, we were reunited within hours!"</p>
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-user text-white"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">Sarah Johnson</h6>
+                                <small class="text-muted">Golden Retriever Owner</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card feature-card h-100">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <p class="card-text">"Luna escaped from our yard and someone found her at the park. The QR code worked perfectly - we had her back in 2 hours!"</p>
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-user text-white"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">Mike Chen</h6>
+                                <small class="text-muted">Cat Owner</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card feature-card h-100">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <p class="card-text">"As a veterinarian, I recommend LTFPQRR to all my clients. It's the best pet recovery system I've seen."</p>
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-user-md text-white"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">Dr. Emily Rodriguez</h6>
+                                <small class="text-muted">Veterinarian</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Pricing Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5">Choose Your Plan</h2>
+            <p class="lead">Affordable protection for every pet</p>
+        </div>div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 mb-4">Never Lose Your Pet Again</h1>
+                <p class="lead mb-4">LTFPQRR uses QR code technology to help reunite lost pets with their families quickly and safely.</p>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg w-100">
+                            <i class="fas fa-user-plus"></i> Get Started
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <a href="#features" class="btn btn-outline-light btn-lg w-100">
+                            <i class="fas fa-info-circle"></i> Learn More
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <img src="{{ url_for('static', filename='assets/logo/logo.png') }}" alt="LTFPQRR Logo" class="img-fluid" style="max-height: 300px;">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Search Section -->
+<section class="search-section py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="search-card card">
+                    <div class="card-body text-center p-5">
+                        <h3 class="mb-3">Found a Pet? 🐾</h3>
+                        <p class="text-muted mb-4">Enter the tag ID from the pet's QR code to view their information and contact the owner.</p>
+                        <form method="GET" action="" class="row g-3">
+                            <div class="col-md-8">
+                                <input type="text" class="form-control form-control-lg" name="tag_id" placeholder="Enter Tag ID (e.g., ABC123XY)" required>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary btn-lg w-100">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Statistics Section -->
+<section class="stats-section py-5">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-4 mb-4">
+                <div class="stats-card fade-in">
+                    <div class="stats-number">5,000+</div>
+                    <h5>Pets Protected</h5>
+                    <p>Pets safely registered in our system</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="stats-card fade-in">
+                    <div class="stats-number">98%</div>
+                    <h5>Success Rate</h5>
+                    <p>Of lost pets reunited with families</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="stats-card fade-in">
+                    <div class="stats-number">24/7</div>
+                    <h5>Instant Access</h5>
+                    <p>Your pet's info accessible anytime</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section id="features" class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5">How It Works</h2>
+            <p class="lead">Simple, secure, and effective pet recovery system</p>
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="card feature-card h-100">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-qrcode fa-3x text-primary"></i>
+                        </div>
+                        <h5>QR Code Tags</h5>
+                        <p class="text-muted">Durable QR code tags that can be attached to your pet's collar. Each tag has a unique ID linked to your pet's profile.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card feature-card h-100">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-mobile-alt fa-3x text-primary"></i>
+                        </div>
+                        <h5>Instant Access</h5>
+                        <p class="text-muted">Anyone who finds your pet can scan the QR code with their smartphone to instantly access your pet's information.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card feature-card h-100">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-envelope fa-3x text-primary"></i>
+                        </div>
+                        <h5>Direct Contact</h5>
+                        <p class="text-muted">Finders can contact you directly through our secure messaging system without exposing your personal information.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Pricing Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5">Choose Your Plan</h2>
+            <p class="lead">Affordable protection for your beloved pets</p>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-md-4 mb-4">
+                <div class="card feature-card h-100">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Monthly</h5>
+                        <h3 class="text-primary">$9.99<small class="text-muted">/month</small></h3>
+                        <ul class="list-unstyled">
+                            <li>✓ QR Code Tag</li>
+                            <li>✓ Pet Profile</li>
+                            <li>✓ Direct Messaging</li>
+                            <li>✓ Email Notifications</li>
+                        </ul>
+                        <a href="{{ url_for('register') }}" class="btn btn-primary">Get Started</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card feature-card h-100 border-primary">
+                    <div class="card-body text-center">
+                        <div class="badge bg-primary mb-2">Most Popular</div>
+                        <h5 class="card-title">Yearly</h5>
+                        <h3 class="text-primary">$99.99<small class="text-muted">/year</small></h3>
+                        <ul class="list-unstyled">
+                            <li>✓ QR Code Tag</li>
+                            <li>✓ Pet Profile</li>
+                            <li>✓ Direct Messaging</li>
+                            <li>✓ Email Notifications</li>
+                            <li>✓ Save 17%</li>
+                        </ul>
+                        <a href="{{ url_for('register') }}" class="btn btn-primary">Get Started</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card feature-card h-100">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Lifetime</h5>
+                        <h3 class="text-primary">$199.99<small class="text-muted"> once</small></h3>
+                        <ul class="list-unstyled">
+                            <li>✓ QR Code Tag</li>
+                            <li>✓ Pet Profile</li>
+                            <li>✓ Direct Messaging</li>
+                            <li>✓ Email Notifications</li>
+                            <li>✓ One-time payment</li>
+                        </ul>
+                        <a href="{{ url_for('register') }}" class="btn btn-primary">Get Started</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Partner Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5">Partner Program</h2>
+            <p class="lead">Join our partner network and help keep pets safe</p>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card feature-card">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-handshake fa-3x text-primary"></i>
+                        </div>
+                        <h5>Become a Partner</h5>
+                        <p class="text-muted mb-4">Pet stores, veterinarians, and other pet-related businesses can join our partner program to create and distribute QR tags to their customers.</p>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6>Monthly Partner</h6>
+                                        <h4 class="text-primary">$29.99<small class="text-muted">/month</small></h4>
+                                        <p class="small text-muted">Create unlimited tags for your customers</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6>Yearly Partner</h6>
+                                        <h4 class="text-primary">$299.99<small class="text-muted">/year</small></h4>
+                                        <p class="small text-muted">Save 17% with annual billing</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="{{ url_for('register') }}" class="btn btn-primary">Join as Partner</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Statistics Section -->
+<section class="py-5 bg-primary text-white">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-3 mb-4">
+                <div class="stats-card">
+                    <h3><i class="fas fa-qrcode"></i></h3>
+                    <p>QR Code Tags</p>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="stats-card">
+                    <h3><i class="fas fa-paw"></i></h3>
+                    <p>Registered Pets</p>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="stats-card">
+                    <h3><i class="fas fa-heart"></i></h3>
+                    <p>Happy Reunions</p>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="stats-card">
+                    <h3><i class="fas fa-users"></i></h3>
+                    <p>Active Users</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Handle tag search from homepage
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle search form submission
+    const searchForm = document.querySelector('form[method="GET"]');
+    if (searchForm) {
+        searchForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const tagId = this.tag_id.value.trim();
+            if (tagId) {
+                window.location.href = '/found/' + encodeURIComponent(tagId);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
