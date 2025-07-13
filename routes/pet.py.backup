@@ -11,48 +11,6 @@ from forms import PetForm
 
 pet = Blueprint('pet', __name__, url_prefix='/pet')
 
-def handle_file_upload(file_data):
-    """
-    Handle file upload data that might be a single file or a list of files.
-    Returns the filename if successful, None otherwise.
-    """
-    if not file_data:
-        return None
-    
-    try:
-        # Handle case where file_data is a list
-        if isinstance(file_data, list):
-            if len(file_data) == 0:
-                return None
-            file_obj = file_data[0]  # Take the first file
-        else:
-            file_obj = file_data
-        
-        # Check if file object has filename attribute
-        if not hasattr(file_obj, "filename") or not file_obj.filename:
-            current_app.logger.warning("File object missing filename attribute")
-            return None
-        
-        # Generate secure filename
-        photo_filename = secure_filename(file_obj.filename)
-        if not photo_filename:  # secure_filename returned empty string
-            current_app.logger.warning("Secure filename returned empty string")
-            return None
-            
-        photo_filename = f"{uuid.uuid4()}_{photo_filename}"
-        
-        # Save the file
-        file_obj.save(
-            os.path.join(current_app.config["UPLOAD_FOLDER"], photo_filename)
-        )
-        
-        return photo_filename
-        
-    except Exception as e:
-        current_app.logger.error(f"Error handling file upload: {str(e)}")
-        return None
-
-
 
 @pet.route("/create", methods=["GET", "POST"])
 @login_required
@@ -70,7 +28,13 @@ def create_pet():
 
     if form.validate_on_submit():
         # Handle file upload
-        photo_filename = handle_file_upload(form.photo.data)
+        photo_filename = None
+        if form.photo.data:
+            photo_filename = secure_filename(form.photo.data.filename)
+            photo_filename = f"{uuid.uuid4()}_{photo_filename}"
+            form.photo.data.save(
+                os.path.join(current_app.config["UPLOAD_FOLDER"], photo_filename)
+            )
 
         pet_obj = Pet(
             name=form.name.data,
@@ -136,9 +100,13 @@ def edit_pet(pet_id):
 
     if form.validate_on_submit():
         # Handle file upload
-        photo_filename = handle_file_upload(form.photo.data)
-        
-        if photo_filename:
+        if form.photo.data:
+            photo_filename = secure_filename(form.photo.data.filename)
+            photo_filename = f"{uuid.uuid4()}_{photo_filename}"
+            form.photo.data.save(
+                os.path.join(current_app.config["UPLOAD_FOLDER"], photo_filename)
+            )
+
             # Delete old photo if it exists
             if pet_obj.photo:
                 old_photo_path = os.path.join(current_app.config["UPLOAD_FOLDER"], pet_obj.photo)
