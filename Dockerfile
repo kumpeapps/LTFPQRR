@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     build-essential \
     zlib1g-dev \
+    nano \
     libffi-dev \
     libjpeg-dev \
     gcc \
