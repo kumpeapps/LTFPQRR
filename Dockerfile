@@ -7,6 +7,8 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     pkg-config \
     build-essential \
+    zlib1g-dev \
+    libffi-dev \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
