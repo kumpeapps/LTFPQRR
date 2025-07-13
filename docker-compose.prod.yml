@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: ltfpqrr
+      MYSQL_USER: ltfpqrr_user
+      MYSQL_PASSWORD: ltfpqrr_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  web:
+    image: harbor.vm.kumpeapps.com/kumpeapps-web/ltfpqrr-web-app:latest-beta
+    ports:
+      - "8000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      - DATABASE_URL=mysql+pymysql://ltfpqrr_user:ltfpqrr_password@db/ltfpqrr
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=Po-MvDNsMztsuc8ixBcTIarfI1tcQK_22FF9e5KCtwk=
+      - ENCRYPTION_KEY=Po-MvDNsMztsuc8ixBcTIarfI1tcQK_22FF9e5KCtwk=
+      - FLASK_ENV=production
+    volumes:
+      - static_uploads:/app/static/uploads
+    restart: unless-stopped
+
+  celery:
+    image: harbor.vm.kumpeapps.com/kumpeapps-web/ltfpqrr-web-app:latest-beta
+    command: celery -A app.celery worker --loglevel=info
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DATABASE_URL=mysql+pymysql://ltfpqrr_user:ltfpqrr_password@db/ltfpqrr
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=Po-MvDNsMztsuc8ixBcTIarfI1tcQK_22FF9e5KCtwk=
+      - ENCRYPTION_KEY=Po-MvDNsMztsuc8ixBcTIarfI1tcQK_22FF9e5KCtwk=
+    restart: unless-stopped
+
+  adminer:
+    image: adminer:latest
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    depends_on:
+      - db
+
+volumes:
+  mysql_data:
+  redis_data:
+  static_uploads:

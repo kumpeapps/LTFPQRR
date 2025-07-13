@@ -46,6 +46,14 @@ with app.app_context():
         if result.returncode != 0:
             print('Migration failed!')
             sys.exit(1)
+        
+        # Ensure roles exist even after migrations
+        roles = ['user', 'admin', 'super-admin']
+        for role_name in roles:
+            if not Role.query.filter_by(name=role_name).first():
+                role = Role(name=role_name)
+                db.session.add(role)
+        db.session.commit()
     else:
         print('Creating fresh database schema...')
         db.create_all()
@@ -56,26 +64,6 @@ with app.app_context():
             if not Role.query.filter_by(name=role_name).first():
                 role = Role(name=role_name)
                 db.session.add(role)
-        
-        # Create system settings
-        default_settings = {
-            'registration_enabled': 'true',
-            'site_name': 'LTFPQRR - Lost Then Found Pet QR Registry',
-            'contact_email': 'admin@ltfpqrr.com',
-            'paypal_enabled': 'true',
-            'stripe_enabled': 'true',
-            'square_enabled': 'true',
-            'partner_monthly_price': '29.99',
-            'partner_yearly_price': '299.99',
-            'tag_monthly_price': '9.99',
-            'tag_yearly_price': '99.99',
-            'tag_lifetime_price': '199.99'
-        }
-        
-        for key, value in default_settings.items():
-            if not SystemSetting.query.filter_by(key=key).first():
-                setting = SystemSetting(key=key, value=value)
-                db.session.add(setting)
         
         db.session.commit()
         print('Database initialized successfully!')
@@ -90,6 +78,14 @@ with app.app_context():
         except Exception as e:
             print(f'Warning: Could not stamp database: {e}')
 "
+
+# Initialize default settings and payment gateways
+echo "Initializing system settings and payment gateways..."
+python init_default_settings.py
+
+# Initialize default pricing plans
+echo "Initializing default pricing plans..."
+python create_default_pricing.py
 
 # Start the Flask application
 echo "Starting Flask application..."
