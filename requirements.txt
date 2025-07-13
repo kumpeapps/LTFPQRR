@@ -13,7 +13,7 @@ stripe==5.5.0
 paypalrestsdk==1.13.1
 python-dotenv==1.0.0
 email-validator==2.0.0
-Pillow==10.0.0
+Pillow==10.3.0
 gunicorn==21.2.0
 redis==4.6.0
 celery==5.3.1
