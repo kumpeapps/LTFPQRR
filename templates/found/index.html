@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Found a Pet? - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="text-center mb-5">
+                <h1 class="display-4 text-primary">Found a Lost Pet?</h1>
+                <p class="lead">Help reunite a lost pet with their family by scanning their QR tag or entering the tag ID below.</p>
+            </div>
+
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-5">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h3 class="text-center mb-4">
+                                <i class="fas fa-qrcode text-primary"></i> Scan QR Code
+                            </h3>
+                            <div class="text-center">
+                                <div id="qr-scanner" class="mb-3">
+                                    <div class="border border-2 border-dashed border-primary p-4 rounded" style="min-height: 200px; display: flex; align-items: center; justify-content: center;">
+                                        <div>
+                                            <i class="fas fa-camera fa-3x text-muted mb-3"></i>
+                                            <p class="text-muted">QR Scanner will appear here</p>
+                                            <button type="button" class="btn btn-primary" onclick="startQRScanner()">
+                                                <i class="fas fa-camera"></i> Start Scanner
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <small class="text-muted">Point your camera at the pet's QR tag</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h3 class="text-center mb-4">
+                                <i class="fas fa-keyboard text-primary"></i> Enter Tag ID
+                            </h3>
+                            <form onsubmit="return handleTagSearch(this)">
+                                <div class="mb-3">
+                                    <label for="tag_id" class="form-label">Tag ID</label>
+                                    <input type="text" class="form-control form-control-lg text-center" 
+                                           id="tag_id" name="tag_id" placeholder="Enter tag ID (e.g., LTP001234)" 
+                                           style="letter-spacing: 2px; font-family: monospace;" required>
+                                    <div class="form-text">Enter the tag ID found on the pet's collar or tag</div>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-search"></i> Search Pet Information
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-5">
+                <div class="col-md-4 text-center">
+                    <div class="card border-0 h-100">
+                        <div class="card-body">
+                            <i class="fas fa-search fa-3x text-primary mb-3"></i>
+                            <h5>1. Find the Tag</h5>
+                            <p class="text-muted">Look for a QR code tag on the pet's collar or accessories</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div class="card border-0 h-100">
+                        <div class="card-body">
+                            <i class="fas fa-qrcode fa-3x text-success mb-3"></i>
+                            <h5>2. Scan or Enter ID</h5>
+                            <p class="text-muted">Use your phone camera to scan the QR code or type the tag ID</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div class="card border-0 h-100">
+                        <div class="card-body">
+                            <i class="fas fa-heart fa-3x text-danger mb-3"></i>
+                            <h5>3. Reunite</h5>
+                            <p class="text-muted">Contact the owner and help reunite the pet with their family</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-info mt-4">
+                <h5><i class="fas fa-info-circle"></i> Need Help?</h5>
+                <p class="mb-0">
+                    If you're having trouble finding or scanning the QR tag, or if you need immediate assistance, 
+                    please call our emergency hotline: <strong>(555) 123-PETS</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function handleTagSearch(form) {
+    const tagId = form.tag_id.value.trim().toUpperCase();
+    if (tagId) {
+        window.location.href = '{{ url_for("tag.found_pet", tag_id="PLACEHOLDER") }}'.replace('PLACEHOLDER', tagId);
+        return false;
+    }
+    return true;
+}
+
+function startQRScanner() {
+    alert('QR Scanner functionality would be implemented here using a library like QuaggaJS or ZXing');
+    // This would integrate with a QR code scanning library
+}
+</script>
+{% endblock %}

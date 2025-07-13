@@ -1,0 +1,206 @@
+<!-- Navigation Template - Reusable navigation component -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="{{ url_for('public.index') }}">
+            <img src="{{ url_for('static', filename='assets/logo/logo_small.png') }}" alt="LTFPQRR Logo" height="32" class="me-2">
+            LTFPQRR
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <!-- Home Link -->
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'public.index' else '' }}" href="{{ url_for('public.index') }}">
+                        <i class="fas fa-home"></i> Home
+                    </a>
+                </li>
+                
+                <!-- Authenticated User Links -->
+                {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint in ['dashboard.dashboard', 'dashboard.customer_dashboard', 'partner.dashboard'] else '' }}" href="{{ url_for('dashboard.dashboard') }}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    
+                    <!-- Pet Management Links -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {{ 'active' if request.endpoint and request.endpoint.startswith('pet') else '' }}" href="#" id="petDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-paw"></i> Pets
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="petDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('pet.create_pet') }}"><i class="fas fa-plus"></i> Add Pet</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('dashboard.dashboard') }}#pets"><i class="fas fa-list"></i> My Pets</a></li>
+                        </ul>
+                    </li>
+                    
+                    <!-- Tag Management Links (for partners) -->
+                    {% if current_user.has_partner_role() %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle {{ 'active' if request.endpoint and request.endpoint.startswith('tag') else '' }}" href="#" id="tagDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-qrcode"></i> Tags
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="tagDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('tag.create_tag') }}"><i class="fas fa-plus"></i> Create Tag</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('partner.dashboard') }}#tags"><i class="fas fa-list"></i> My Tags</a></li>
+                            </ul>
+                        </li>
+                        
+                        <!-- Partner Subscription Link -->
+                        <li class="nav-item">
+                            <a class="nav-link {{ 'active' if request.endpoint == 'partner.subscription' else '' }}" href="{{ url_for('partner.subscription') }}">
+                                <i class="fas fa-credit-card"></i> Subscription
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    <!-- Admin Links -->
+                    {% if current_user.has_role('admin') %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle {{ 'active' if request.endpoint and request.endpoint.startswith('admin') else '' }}" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-cog"></i> Admin
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('admin.users') }}"><i class="fas fa-users"></i> Users</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('admin.subscriptions') }}"><i class="fas fa-credit-card"></i> Subscriptions</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('admin.tags') }}"><i class="fas fa-tags"></i> Tags</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('admin.pricing') }}"><i class="fas fa-dollar-sign"></i> Pricing Plans</a></li>
+                                
+                                <!-- Super Admin Links -->
+                                {% if current_user.has_role('super-admin') %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><h6 class="dropdown-header">Super Admin</h6></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.settings') }}"><i class="fas fa-wrench"></i> System Settings</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('admin.payment_gateways') }}"><i class="fas fa-credit-card"></i> Payment Gateways</a></li>
+                                {% endif %}
+                            </ul>
+                        </li>
+                    {% endif %}
+                {% endif %}
+                
+                <!-- Public Links -->
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'public.contact' else '' }}" href="{{ url_for('public.contact') }}">
+                        <i class="fas fa-envelope"></i> Contact
+                    </a>
+                </li>
+            </ul>
+            
+            <!-- Right Side Navigation -->
+            <ul class="navbar-nav">
+                {% if current_user.is_authenticated %}
+                    <!-- User Account Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user"></i> {{ current_user.get_full_name() }}
+                            {% if current_user.has_partner_role() %}
+                                <span class="badge bg-primary ms-1">Partner</span>
+                            {% endif %}
+                            {% if current_user.has_role('admin') %}
+                                <span class="badge bg-danger ms-1">Admin</span>
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><h6 class="dropdown-header">Account</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('profile.profile') }}"><i class="fas fa-user-cog"></i> Profile</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('profile.change_password') }}"><i class="fas fa-key"></i> Change Password</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('settings.notifications') }}"><i class="fas fa-bell"></i> Notifications</a></li>
+                            
+                            {% if current_user.has_partner_role() %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><h6 class="dropdown-header">Partner</h6></li>
+                                <li><a class="dropdown-item" href="{{ url_for('partner.dashboard') }}"><i class="fas fa-business-time"></i> Partner Dashboard</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('partner.subscription') }}"><i class="fas fa-credit-card"></i> Subscription</a></li>
+                            {% endif %}
+                            
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <!-- Guest Links -->
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'auth.login' else '' }}" href="{{ url_for('auth.login') }}">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-primary text-white ms-2 {{ 'active' if request.endpoint == 'auth.register' else '' }}" href="{{ url_for('auth.register') }}">
+                            <i class="fas fa-user-plus"></i> Register
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<style>
+/* Navigation specific styles */
+.navbar .nav-link.active {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+
+.navbar .dropdown-menu {
+    border: none;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border-radius: 10px;
+}
+
+.navbar .dropdown-item {
+    padding: 10px 20px;
+    border-radius: 5px;
+    margin: 2px 5px;
+}
+
+.navbar .dropdown-item:hover {
+    background: #f8f9fa;
+}
+
+.navbar .dropdown-header {
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge {
+    font-size: 0.6rem;
+}
+
+.btn.nav-link {
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 20px !important;
+    padding: 8px 16px !important;
+}
+
+.btn.nav-link:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+@media (max-width: 991px) {
+    .navbar .dropdown-menu {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.9);
+    }
+    
+    .navbar .dropdown-item {
+        color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .navbar .dropdown-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+    
+    .navbar .dropdown-header {
+        color: rgba(255, 255, 255, 0.6);
+    }
+}
+</style>

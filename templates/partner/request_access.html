@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Request Partner Access - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Request Partner Access</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Partner access allows you to create and manage QR code tags for your business. 
+                        Please provide information about your business and why you need partner access.
+                    </p>
+                    
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="business_name" class="form-label">Business Name (Optional)</label>
+                            <input type="text" class="form-control" id="business_name" name="business_name" 
+                                   placeholder="Enter your business name">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="business_description" class="form-label">Business Description (Optional)</label>
+                            <textarea class="form-control" id="business_description" name="business_description" 
+                                      rows="3" placeholder="Briefly describe your business"></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="justification" class="form-label">Justification <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="justification" name="justification" 
+                                      rows="4" placeholder="Please explain why you need partner access and how you plan to use it" required></textarea>
+                            <div class="form-text">
+                                Please provide a detailed explanation of your use case for partner access.
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Note:</strong> Your request will be reviewed by our administrators. 
+                            You will be notified via email once your request is processed.
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('profile.profile') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Profile
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Submit Request
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Partner Subscriptions - Admin - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        {% set sidebar_context = 'admin' %}
+        {% include 'includes/dashboard_sidebar.html' %}
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Partner Subscription Management</h2>
+                </div>
+
+                <!-- Pending Approvals -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-clock text-warning"></i> Pending Approvals
+                            <span class="badge bg-warning ms-2">{{ pending_subscriptions|length }}</span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if pending_subscriptions %}
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>User</th>
+                                            <th>Email</th>
+                                            <th>Plan</th>
+                                            <th>Max Tags</th>
+                                            <th>Amount</th>
+                                            <th>Requested</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for sub in pending_subscriptions %}
+                                        <tr>
+                                            <td>{{ sub.partner.owner.get_full_name() }}</td>
+                                            <td>{{ sub.partner.owner.email }}</td>
+                                            <td>
+                                                <span class="badge bg-info">
+                                                    {% if sub.pricing_plan %}{{ sub.pricing_plan.plan_type.title() }} - {{ sub.pricing_plan.billing_period.title() }}{% else %}Partner{% endif %}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if sub.max_tags == 0 %}
+                                                    <span class="text-success">Unlimited</span>
+                                                {% else %}
+                                                    {{ sub.max_tags }}
+                                                {% endif %}
+                                            </td>
+                                            <td>${{ "%.2f"|format(sub.amount) }}</td>
+                                            <td>{{ sub.created_at.strftime('%m/%d/%Y') }}</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <form method="POST" action="{{ url_for('admin.approve_partner_subscription', subscription_id=sub.id) }}" style="display: inline;">
+                                                        <button type="submit" class="btn btn-sm btn-success" 
+                                                                onclick="return confirm('Approve this partner subscription?')">
+                                                            <i class="fas fa-check"></i> Approve
+                                                        </button>
+                                                    </form>
+                                                    <form method="POST" action="{{ url_for('admin.reject_partner_subscription', subscription_id=sub.id) }}" style="display: inline;">
+                                                        <button type="submit" class="btn btn-sm btn-danger" 
+                                                                onclick="return confirm('Reject this partner subscription?')">
+                                                            <i class="fas fa-times"></i> Reject
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                <h5>No Pending Requests</h5>
+                                <p class="text-muted">All partner subscription requests have been processed.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Approved Subscriptions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-check-circle text-success"></i> Approved Partner Subscriptions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if approved_subscriptions %}
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>User</th>
+                                            <th>Email</th>
+                                            <th>Plan</th>
+                                            <th>Status</th>
+                                            <th>Max Tags</th>
+                                            <th>Amount</th>
+                                            <th>Start Date</th>
+                                            <th>End Date</th>
+                                            <th>Approved By</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for sub in approved_subscriptions %}
+                                        <tr>
+                                            <td>{{ sub.partner.owner.get_full_name() }}</td>
+                                            <td>{{ sub.partner.owner.email }}</td>
+                                            <td>
+                                                <span class="badge bg-primary">
+                                                    {% if sub.pricing_plan %}{{ sub.pricing_plan.plan_type.title() }} - {{ sub.pricing_plan.billing_period.title() }}{% else %}Partner{% endif %}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if sub.is_active() %}
+                                                    <span class="badge bg-success">Active</span>
+                                                {% elif sub.is_expired() %}
+                                                    <span class="badge bg-danger">Expired</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ sub.status.title() }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if sub.max_tags == 0 %}
+                                                    <span class="text-success">Unlimited</span>
+                                                {% else %}
+                                                    {{ sub.max_tags }}
+                                                {% endif %}
+                                            </td>
+                                            <td>${{ "%.2f"|format(sub.amount) }}</td>
+                                            <td>{{ sub.start_date.strftime('%m/%d/%Y') if sub.start_date else 'N/A' }}</td>
+                                            <td>{{ sub.end_date.strftime('%m/%d/%Y') if sub.end_date else 'Never' }}</td>
+                                            <td>{{ sub.approver.get_full_name() if sub.approver else 'System' }}</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    {% if sub.is_active() %}
+                                                        <a href="{{ url_for('admin.extend_partner_subscription', subscription_id=sub.id) }}" 
+                                                           class="btn btn-sm btn-outline-primary" 
+                                                           title="Extend Subscription">
+                                                            <i class="fas fa-calendar-plus"></i>
+                                                        </a>
+                                                        <form method="POST" action="{{ url_for('admin.cancel_partner_subscription', subscription_id=sub.id) }}" 
+                                                              style="display: inline-block;">
+                                                            <button type="submit" 
+                                                                    class="btn btn-sm btn-outline-warning" 
+                                                                    title="Cancel Subscription"
+                                                                    onclick="return confirm('Are you sure you want to cancel this subscription?')">
+                                                                <i class="fas fa-times"></i>
+                                                            </button>
+                                                        </form>
+                                                        <form method="POST" action="{{ url_for('admin.refund_partner_subscription', subscription_id=sub.id) }}" 
+                                                              style="display: inline-block;">
+                                                            <button type="submit" 
+                                                                    class="btn btn-sm btn-outline-danger" 
+                                                                    title="Refund & Cancel"
+                                                                    onclick="return confirm('Are you sure you want to refund this subscription? This action cannot be undone.')">
+                                                                <i class="fas fa-undo"></i>
+                                                            </button>
+                                                        </form>
+                                                    {% else %}
+                                                        <span class="text-muted">No actions available</span>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                                <h5>No Approved Subscriptions</h5>
+                                <p class="text-muted">No partner subscriptions have been approved yet.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

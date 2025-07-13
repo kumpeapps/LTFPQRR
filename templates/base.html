@@ -5,24 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}LTFPQRR - Lost Then Found Pet QR Registry{% endblock %}</title>
     
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="{% block description %}Secure QR code pet registry helping reunite lost pets with their families. Quick, reliable, and trusted by pet owners nationwide.{% endblock %}">
+    <meta name="keywords" content="pet registry, lost pets, QR codes, pet safety, pet recovery, animal rescue, pet identification">
+    <meta name="author" content="LTFPQRR">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:title" content="{% block og_title %}LTFPQRR - Lost Then Found Pet QR Registry{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Secure QR code pet registry helping reunite lost pets with their families. Quick, reliable, and trusted by pet owners nationwide.{% endblock %}">
+    <meta property="og:image" content="{{ url_for('static', filename='assets/logo/logo.png', _external=True) }}">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{ request.url }}">
+    <meta property="twitter:title" content="{% block twitter_title %}LTFPQRR - Lost Then Found Pet QR Registry{% endblock %}">
+    <meta property="twitter:description" content="{% block twitter_description %}Secure QR code pet registry helping reunite lost pets with their families. Quick, reliable, and trusted by pet owners nationwide.{% endblock %}">
+    <meta property="twitter:image" content="{{ url_for('static', filename='assets/logo/logo.png', _external=True) }}">
+    
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/banner.css') }}">
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='assets/logo/logo_small.png') }}">
     <style>
         .navbar-brand {
             font-weight: bold;
             font-size: 1.5rem;
-        }
-        .hero-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 100px 0;
-            text-align: center;
         }
         .feature-card {
             border: none;
@@ -41,23 +56,6 @@
         }
         .btn-primary:hover {
             background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-        }
-        .sidebar {
-            min-height: 100vh;
-            background: #f8f9fa;
-        }
-        .sidebar .nav-link {
-            color: #333;
-            padding: 15px 20px;
-            border-radius: 10px;
-            margin: 5px 0;
-        }
-        .sidebar .nav-link:hover {
-            background: #e9ecef;
-        }
-        .sidebar .nav-link.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
         }
         .alert {
             border-radius: 15px;
@@ -105,9 +103,6 @@
             .hero-section h1 {
                 font-size: 2rem;
             }
-            .sidebar {
-                min-height: auto;
-            }
         }
     </style>
     
@@ -115,68 +110,7 @@
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
-                <img src="{{ url_for('static', filename='assets/logo/logo_small.png') }}" alt="LTFPQRR Logo" height="32" class="me-2">
-                LTFPQRR
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('index') }}">Home</a>
-                    </li>
-                    {% if current_user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
-                        </li>
-                        {% if current_user.has_role('admin') %}
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
-                                    Admin
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('admin_users') }}">Users</a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('admin_subscriptions') }}">Subscriptions</a></li>
-                                    {% if current_user.has_role('super-admin') %}
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="{{ url_for('admin_settings') }}">Settings</a></li>
-                                        <li><a class="dropdown-item" href="{{ url_for('payment_gateways') }}">Payment Gateways</a></li>
-                                    {% endif %}
-                                </ul>
-                            </li>
-                        {% endif %}
-                    {% endif %}
-                </ul>
-                <ul class="navbar-nav">
-                    {% if current_user.is_authenticated %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-user"></i> {{ current_user.get_full_name() }}
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="fas fa-user-cog"></i> Profile</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('notification_settings') }}"><i class="fas fa-bell"></i> Notifications</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-                            </ul>
-                        </li>
-                    {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('register') }}">Register</a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </div>
-        </div>
-    </nav>
+    {% include 'includes/navigation.html' %}
 
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -208,19 +142,20 @@
                 <div class="col-md-3">
                     <h6>Quick Links</h6>
                     <ul class="list-unstyled">
-                        <li><a href="{{ url_for('index') }}" class="text-light">Home</a></li>
+                        <li><a href="{{ url_for('public.index') }}" class="text-light">Home</a></li>
                         {% if not current_user.is_authenticated %}
-                            <li><a href="{{ url_for('register') }}" class="text-light">Register</a></li>
-                            <li><a href="{{ url_for('login') }}" class="text-light">Login</a></li>
+                            <li><a href="{{ url_for('auth.register') }}" class="text-light">Register</a></li>
+                            <li><a href="{{ url_for('auth.login') }}" class="text-light">Login</a></li>
                         {% endif %}
                     </ul>
                 </div>
                 <div class="col-md-3">
                     <h6>Support</h6>
                     <ul class="list-unstyled">
-                        <li><a href="#" class="text-light">Help</a></li>
-                        <li><a href="#" class="text-light">Contact</a></li>
-                        <li><a href="#" class="text-light">Privacy Policy</a></li>
+                        <li><a href="{{ url_for('public.contact') }}" class="text-light">Contact Us</a></li>
+                        <li><a href="#" class="text-light">Help Center</a></li>
+                        <li><a href="{{ url_for('public.privacy') }}" class="text-light">Privacy Policy</a></li>
+                        <li><a href="#" class="text-light">Terms of Service</a></li>
                     </ul>
                 </div>
             </div>

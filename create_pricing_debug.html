@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Pricing Plan - LTFPQRR</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Secure QR code pet registry helping reunite lost pets with their families. Quick, reliable, and trusted by pet owners nationwide.">
+    <meta name="keywords" content="pet registry, lost pets, QR codes, pet safety, pet recovery, animal rescue, pet identification">
+    <meta name="author" content="LTFPQRR">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="http://localhost:8000/admin/pricing/create">
+    <meta property="og:title" content="LTFPQRR - Lost Then Found Pet QR Registry">
+    <meta property="og:description" content="Secure QR code pet registry helping reunite lost pets with their families. Quick, reliable, and trusted by pet owners nationwide.">
+    <meta property="og:image" content="http://localhost:8000/static/assets/logo/logo.png">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="http://localhost:8000/admin/pricing/create">
+    <meta property="twitter:title" content="LTFPQRR - Lost Then Found Pet QR Registry">
+    <meta property="twitter:description" content="Secure QR code pet registry helping reunite lost pets with their families. Quick, reliable, and trusted by pet owners nationwide.">
+    <meta property="twitter:image" content="http://localhost:8000/static/assets/logo/logo.png">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/custom.css">
+    <link rel="stylesheet" href="/static/css/banner.css">
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/static/assets/logo/logo_small.png">
+    <style>
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        .feature-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 10px 30px;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+        .alert {
+            border-radius: 15px;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .footer {
+            background: #333;
+            color: white;
+            padding: 40px 0;
+            margin-top: 50px;
+        }
+        .tag-display {
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            font-weight: bold;
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 10px;
+            border: 2px solid #dee2e6;
+        }
+        .pet-photo {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 15px;
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+        }
+        .stats-card h3 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 50px 0;
+            }
+            .hero-section h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+    
+    
+</head>
+<body>
+    <!-- Navigation -->
+    <!-- Navigation Template - Reusable navigation component -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="/">
+            <img src="/static/assets/logo/logo_small.png" alt="LTFPQRR Logo" height="32" class="me-2">
+            LTFPQRR
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <!-- Home Link -->
+                <li class="nav-item">
+                    <a class="nav-link " href="/">
+                        <i class="fas fa-home"></i> Home
+                    </a>
+                </li>
+                
+                <!-- Authenticated User Links -->
+                
+                    <li class="nav-item">
+                        <a class="nav-link " href="/dashboard/">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    
+                    <!-- Pet Management Links -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle " href="#" id="petDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-paw"></i> Pets
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="petDropdown">
+                            <li><a class="dropdown-item" href="/pet/create"><i class="fas fa-plus"></i> Add Pet</a></li>
+                            <li><a class="dropdown-item" href="/dashboard/#pets"><i class="fas fa-list"></i> My Pets</a></li>
+                        </ul>
+                    </li>
+                    
+                    <!-- Tag Management Links (for partners) -->
+                    
+                    
+                    <!-- Admin Links -->
+                    
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle active" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-cog"></i> Admin
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                                <li><a class="dropdown-item" href="/admin/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                                <li><a class="dropdown-item" href="/admin/users"><i class="fas fa-users"></i> Users</a></li>
+                                <li><a class="dropdown-item" href="/admin/subscriptions"><i class="fas fa-credit-card"></i> Subscriptions</a></li>
+                                <li><a class="dropdown-item" href="/admin/tags"><i class="fas fa-tags"></i> Tags</a></li>
+                                <li><a class="dropdown-item" href="/admin/pricing"><i class="fas fa-dollar-sign"></i> Pricing Plans</a></li>
+                                
+                                <!-- Super Admin Links -->
+                                
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><h6 class="dropdown-header">Super Admin</h6></li>
+                                    <li><a class="dropdown-item" href="/admin/settings"><i class="fas fa-wrench"></i> System Settings</a></li>
+                                    <li><a class="dropdown-item" href="/admin/payment-gateways"><i class="fas fa-credit-card"></i> Payment Gateways</a></li>
+                                
+                            </ul>
+                        </li>
+                    
+                
+                
+                <!-- Public Links -->
+                <li class="nav-item">
+                    <a class="nav-link " href="/contact">
+                        <i class="fas fa-envelope"></i> Contact
+                    </a>
+                </li>
+            </ul>
+            
+            <!-- Right Side Navigation -->
+            <ul class="navbar-nav">
+                
+                    <!-- User Account Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user"></i> test admin
+                            
+                            
+                                <span class="badge bg-danger ms-1">Admin</span>
+                            
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><h6 class="dropdown-header">Account</h6></li>
+                            <li><a class="dropdown-item" href="/profile/"><i class="fas fa-user-cog"></i> Profile</a></li>
+                            <li><a class="dropdown-item" href="/profile/change-password"><i class="fas fa-key"></i> Change Password</a></li>
+                            <li><a class="dropdown-item" href="/settings/notifications"><i class="fas fa-bell"></i> Notifications</a></li>
+                            
+                            
+                            
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="/auth/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                        </ul>
+                    </li>
+                
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<style>
+/* Navigation specific styles */
+.navbar .nav-link.active {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+
+.navbar .dropdown-menu {
+    border: none;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border-radius: 10px;
+}
+
+.navbar .dropdown-item {
+    padding: 10px 20px;
+    border-radius: 5px;
+    margin: 2px 5px;
+}
+
+.navbar .dropdown-item:hover {
+    background: #f8f9fa;
+}
+
+.navbar .dropdown-header {
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge {
+    font-size: 0.6rem;
+}
+
+.btn.nav-link {
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 20px !important;
+    padding: 8px 16px !important;
+}
+
+.btn.nav-link:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+@media (max-width: 991px) {
+    .navbar .dropdown-menu {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.9);
+    }
+    
+    .navbar .dropdown-item {
+        color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .navbar .dropdown-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+    
+    .navbar .dropdown-header {
+        color: rgba(255, 255, 255, 0.6);
+    }
+}
+</style>
+
+    <!-- Flash Messages -->
+    
+        
+    
+
+    <!-- Main Content -->
+    <main>
+        
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        
+        <!-- Dashboard Sidebar Navigation - Unified template for all dashboard contexts -->
+<div class="col-md-3 col-lg-2 sidebar">
+    <div class="py-3">
+        <!-- Dynamic sidebar title based on user role or context -->
+        
+            <h5>Admin Dashboard</h5>
+        
+        
+        <ul class="nav flex-column">
+            <!-- Admin Dashboard Navigation -->
+            
+                <li class="nav-item">
+                    <a class="nav-link " href="/admin/dashboard">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link " href="/admin/users">
+                        <i class="fas fa-users"></i> Users
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link " href="/admin/partner-subscriptions">
+                        <i class="fas fa-building"></i> Partners
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link " href="/admin/partner-subscriptions">
+                        <i class="fas fa-handshake"></i> Partner Subscriptions
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link " href="/admin/tags">
+                        <i class="fas fa-qrcode"></i> Tags
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link " href="/admin/subscriptions">
+                        <i class="fas fa-credit-card"></i> Subscriptions
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link " href="/admin/pricing">
+                        <i class="fas fa-dollar-sign"></i> Pricing Plans
+                    </a>
+                </li>
+                
+                <!-- Super Admin Only Items -->
+                
+                    <li class="nav-item mt-3">
+                        <h6 class="sidebar-heading">
+                            <span class="text-muted">Super Admin</span>
+                        </h6>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link " href="/admin/settings">
+                            <i class="fas fa-cog"></i> System Settings
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link " href="/admin/payment-gateways">
+                            <i class="fas fa-credit-card"></i> Payment Gateways
+                        </a>
+                    </li>
+                
+                
+            <!-- Partner Dashboard Navigation -->
+            
+        </ul>
+        
+        <!-- Optional Quick Actions Section -->
+        
+            <div class="mt-4">
+                <h6 class="sidebar-heading">
+                    <span class="text-muted">Quick Actions</span>
+                </h6>
+                <div class="btn-group-vertical d-grid gap-2">
+                    
+                        <a href="/admin/users" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-user-plus"></i> Add User
+                        </a>
+                    
+                </div>
+            </div>
+        
+    </div>
+</div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Create New Pricing Plan</h2>
+                    <a href="/admin/pricing" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Pricing Plans
+                    </a>
+                </div>
+
+                
+                    
+                
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Plan Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <input id="csrf_token" name="csrf_token" type="hidden" value="IjYzZmY5NTZlOGRiOWU4NzQxNGZhY2NkMGNmYWMyMTJhOGFlMGVhNWQi.aHKaqA.qBk88QnHw_CcV_4SBdl7Pd662Qc">
+                            <!-- Plan Type Selection - First Priority -->
+                            <div class="mb-4">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Step 1: Select Plan Type</h6>
+                                        <div class="mb-3">
+                                            <label for="plan_type" class="form-label">Plan Type *</label>
+                                            <select class="form-select" id="plan_type" name="plan_type" required onchange="togglePlanFields()">
+                                                <option value="">-- Select Plan Type --</option>
+                                                <option value="tag">Tag Plan - Assignable to a specific tag</option>
+                                                <option value="partner">Partner Plan - Assignable to a user/partner account</option>
+                                            </select>
+                                            <small class="form-text text-muted">
+                                                <strong>Tag Plan:</strong> For individual tag purchases (one-time or subscription per tag)<br>
+                                                <strong>Partner Plan:</strong> For partner accounts that can create multiple tags
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="name" class="form-label">Plan Name *</label>
+                                        <input type="text" class="form-control" id="name" name="name" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="sort_order" class="form-label">Sort Order</label>
+                                        <input type="number" class="form-control" id="sort_order" name="sort_order" value="0">
+                                        <small class="form-text text-muted">Lower numbers appear first</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="price" class="form-label">Price *</label>
+                                        <input type="number" step="0.01" class="form-control" id="price" name="price" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="currency" class="form-label">Currency</label>
+                                        <select class="form-select" id="currency" name="currency">
+                                            <option value="USD">USD</option>
+                                            <option value="EUR">EUR</option>
+                                            <option value="GBP">GBP</option>
+                                            <option value="CAD">CAD</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="billing_period" class="form-label">Billing Period</label>
+                                        <select class="form-select" id="billing_period" name="billing_period">
+                                            <option value="monthly">Monthly</option>
+                                            <option value="yearly">Yearly</option>
+                                            <option value="one-time">One-time</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6" id="max_tags_field" style="display: none;">
+                                    <div class="mb-3">
+                                        <label for="max_tags" class="form-label">Max Tags Per Subscription Period *</label>
+                                        <input type="number" class="form-control" id="max_tags" name="max_tags" value="0" min="0">
+                                        <small class="form-text text-muted">
+                                            For partner plans: Number of tags the partner can create per billing cycle.<br>
+                                            <strong>0 = Unlimited tags</strong>, 1+ = Specific limit that resets each subscription period.
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6" id="max_pets_field" style="display: none;">
+                                    <div class="mb-3">
+                                        <label for="max_pets" class="form-label">Max Pets Per Tag</label>
+                                        <input type="number" class="form-control" id="max_pets" name="max_pets" value="1" min="1">
+                                        <small class="form-text text-muted">
+                                            For tag plans: Number of pets that can be associated with one tag.<br>
+                                            Most tags support 1 pet, premium tags might support multiple.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="features" class="form-label">Features</label>
+                                <textarea class="form-control" id="features" name="features" rows="6" placeholder="Enter each feature on a new line:&#10;QR Tag Generation&#10;Pet Profile Management&#10;Lost Pet Alerts&#10;24/7 Support"></textarea>
+                                <small class="form-text text-muted">Enter each feature on a new line</small>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                                        <label class="form-check-label" for="is_active">
+                                            Active Plan
+                                        </label>
+                                        <small class="form-text text-muted d-block">Active plans are available for purchase</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="show_on_homepage" name="show_on_homepage">
+                                        <label class="form-check-label" for="show_on_homepage">
+                                            Show on Homepage
+                                        </label>
+                                        <small class="form-text text-muted d-block">Display this plan in the homepage pricing section</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Partner Plan Specific Options -->
+                            <div id="partner_options" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="requires_approval" name="requires_approval">
+                                            <label class="form-check-label" for="requires_approval">
+                                                Requires Admin Approval
+                                            </label>
+                                            <small class="form-text text-muted d-block">Partner accounts with this plan require admin approval before activation</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="is_featured" name="is_featured">
+                                            <label class="form-check-label" for="is_featured">
+                                                Featured Partner Plan
+                                            </label>
+                                            <small class="form-text text-muted d-block">Highlight this plan for partner signups</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <a href="/admin/pricing" class="btn btn-secondary">Cancel</a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Create Plan
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePlanFields() {
+    const planType = document.getElementById('plan_type').value;
+    const maxTagsField = document.getElementById('max_tags_field');
+    const maxPetsField = document.getElementById('max_pets_field');
+    const partnerOptions = document.getElementById('partner_options');
+    
+    // Hide all conditional fields first
+    maxTagsField.style.display = 'none';
+    maxPetsField.style.display = 'none';
+    partnerOptions.style.display = 'none';
+    
+    if (planType === 'partner') {
+        // Partner plans show max_tags and partner-specific options
+        maxTagsField.style.display = 'block';
+        partnerOptions.style.display = 'block';
+        
+        // Make max_tags required for partner plans
+        document.getElementById('max_tags').required = true;
+        document.getElementById('max_pets').required = false;
+        
+        // Set default to 0 (unlimited) for new partner plans
+        if (document.getElementById('max_tags').value === '1') {
+            document.getElementById('max_tags').value = 0;
+        }
+        
+        // Update labels and help text for partner context
+        document.querySelector('label[for="max_tags"]').innerHTML = 'Max Tags Per Subscription Period *';
+        
+    } else if (planType === 'tag') {
+        // Tag plans show max_pets 
+        maxPetsField.style.display = 'block';
+        
+        // Make max_pets relevant for tag plans
+        document.getElementById('max_tags').required = false;
+        document.getElementById('max_pets').required = false;
+        
+        // Reset max_tags to 0 (unlimited) for tag plans (they don't use this field)
+        document.getElementById('max_tags').value = 0;
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    togglePlanFields();
+});
+</script>
+
+<style>
+.sidebar {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+.sidebar .nav-link {
+    color: #495057;
+    padding: 0.75rem 1rem;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+    background-color: #e9ecef;
+    color: #007bff;
+}
+</style>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-qrcode"></i> LTFPQRR</h5>
+                    <p>Lost Then Found Pet QR Registry - Helping reunite pets with their families through technology.</p>
+                </div>
+                <div class="col-md-3">
+                    <h6>Quick Links</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="/" class="text-light">Home</a></li>
+                        
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h6>Support</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="/contact" class="text-light">Contact Us</a></li>
+                        <li><a href="#" class="text-light">Help Center</a></li>
+                        <li><a href="/privacy" class="text-light">Privacy Policy</a></li>
+                        <li><a href="#" class="text-light">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="text-center">
+                <p>&copy; 2024 LTFPQRR. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Custom JS -->
+    <script src="/static/js/main.js"></script>
+    
+    
+</body>
+</html>

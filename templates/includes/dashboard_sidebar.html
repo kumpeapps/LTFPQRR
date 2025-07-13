@@ -1,0 +1,201 @@
+<!-- Dashboard Sidebar Navigation - Unified template for all dashboard contexts -->
+<div class="col-md-3 col-lg-2 sidebar">
+    <div class="py-3">
+        <!-- Dynamic sidebar title based on user role or context -->
+        {% if sidebar_context == 'admin' %}
+            <h5>Admin Dashboard</h5>
+        {% elif sidebar_context == 'partner' %}
+            <h5>Partner Dashboard</h5>
+        {% elif sidebar_context == 'customer' %}
+            <h5>Customer Dashboard</h5>
+        {% else %}
+            <h5>Dashboard</h5>
+        {% endif %}
+        
+        <ul class="nav flex-column">
+            <!-- Admin Dashboard Navigation -->
+            {% if current_user.has_role('admin') and sidebar_context == 'admin' %}
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'admin.dashboard' else '' }}" href="{{ url_for('admin.dashboard') }}">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'admin.users' else '' }}" href="{{ url_for('admin.users') }}">
+                        <i class="fas fa-users"></i> Users
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'admin.partners' else '' }}" href="{{ url_for('admin.partners') }}">
+                        <i class="fas fa-building"></i> Partners
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'admin.partner_subscriptions' else '' }}" href="{{ url_for('admin.partner_subscriptions') }}">
+                        <i class="fas fa-handshake"></i> Partner Subscriptions
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'admin.tags' else '' }}" href="{{ url_for('admin.tags') }}">
+                        <i class="fas fa-qrcode"></i> Tags
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'admin.subscriptions' else '' }}" href="{{ url_for('admin.subscriptions') }}">
+                        <i class="fas fa-credit-card"></i> Subscriptions
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'admin.pricing' else '' }}" href="{{ url_for('admin.pricing') }}">
+                        <i class="fas fa-dollar-sign"></i> Pricing Plans
+                    </a>
+                </li>
+                
+                <!-- Super Admin Only Items -->
+                {% if current_user.has_role('super-admin') %}
+                    <li class="nav-item mt-3">
+                        <h6 class="sidebar-heading">
+                            <span class="text-muted">Super Admin</span>
+                        </h6>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'admin.settings' else '' }}" href="{{ url_for('admin.settings') }}">
+                            <i class="fas fa-cog"></i> System Settings
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'admin.payment_gateways' else '' }}" href="{{ url_for('admin.payment_gateways') }}">
+                            <i class="fas fa-credit-card"></i> Payment Gateways
+                        </a>
+                    </li>
+                {% endif %}
+                
+            <!-- Partner Dashboard Navigation -->
+            {% elif current_user.has_partner_role() and sidebar_context == 'partner' %}
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'partner.management_dashboard' else '' }}" href="{{ url_for('partner.management_dashboard') }}">
+                        <i class="fas fa-building"></i> Partner Management
+                    </a>
+                </li>
+                {% if request.args.get('partner_id') %}
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'partner.dashboard' else '' }}" href="{{ url_for('partner.dashboard', partner_id=request.args.get('partner_id')) }}">
+                        <i class="fas fa-tachometer-alt"></i> Current Partner
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'tag.create_tag' else '' }}" href="{{ url_for('tag.create_tag', partner_id=request.args.get('partner_id')) }}">
+                        <i class="fas fa-plus"></i> Create Tag
+                    </a>
+                </li>
+                {% endif %}
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'partner.create_partner' else '' }}" href="{{ url_for('partner.create_partner') }}">
+                        <i class="fas fa-plus-circle"></i> Create Partner
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'dashboard.customer_dashboard' else '' }}" href="{{ url_for('dashboard.customer_dashboard') }}">
+                        <i class="fas fa-user"></i> Customer Dashboard
+                    </a>
+                </li>
+                
+            <!-- Customer Dashboard Navigation -->
+            {% elif sidebar_context == 'customer' %}
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint in ['customer_dashboard', 'dashboard'] else '' }}" href="{{ url_for('dashboard.customer_dashboard') if current_user.is_authenticated else url_for('dashboard.dashboard') }}">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'tag.claim_tag' else '' }}" href="{{ url_for('tag.claim_tag') }}">
+                        <i class="fas fa-tags"></i> Claim Tag
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'pet.create_pet' else '' }}" href="{{ url_for('pet.create_pet') }}">
+                        <i class="fas fa-plus"></i> Add Pet
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'settings.notifications' else '' }}" href="{{ url_for('settings.notifications') }}">
+                        <i class="fas fa-bell"></i> Notifications
+                    </a>
+                </li>
+                
+            <!-- Default/Generic Dashboard Navigation -->
+            {% else %}
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'dashboard.dashboard' else '' }}" href="{{ url_for('dashboard.dashboard') }}">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                
+                {% if current_user.is_authenticated %}
+                    <!-- Common user actions -->
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'profile.profile' else '' }}" href="{{ url_for('profile.profile') }}">
+                            <i class="fas fa-user"></i> Profile
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'settings.notifications' else '' }}" href="{{ url_for('settings.notifications') }}">
+                            <i class="fas fa-bell"></i> Notifications
+                        </a>
+                    </li>
+                    
+                    <!-- Role-specific quick links -->
+                    {% if current_user.has_partner_role() %}
+                        <li class="nav-item mt-3">
+                            <h6 class="sidebar-heading">
+                                <span class="text-muted">Partner Actions</span>
+                            </h6>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('partner.dashboard') }}">
+                                <i class="fas fa-business-time"></i> Partner Dashboard
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% if current_user.has_role('admin') %}
+                        <li class="nav-item mt-3">
+                            <h6 class="sidebar-heading">
+                                <span class="text-muted">Admin Actions</span>
+                            </h6>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('admin.dashboard') }}">
+                                <i class="fas fa-shield-alt"></i> Admin Dashboard
+                            </a>
+                        </li>
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+        </ul>
+        
+        <!-- Optional Quick Actions Section -->
+        {% if sidebar_context and current_user.is_authenticated %}
+            <div class="mt-4">
+                <h6 class="sidebar-heading">
+                    <span class="text-muted">Quick Actions</span>
+                </h6>
+                <div class="btn-group-vertical d-grid gap-2">
+                    {% if sidebar_context == 'admin' %}
+                        <a href="{{ url_for('admin.users') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-user-plus"></i> Add User
+                        </a>
+                    {% elif sidebar_context == 'partner' %}
+                        <a href="{{ url_for('tag.create_tag') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-plus"></i> Create Tag
+                        </a>
+                    {% elif sidebar_context == 'customer' %}
+                        <a href="{{ url_for('pet.create_pet') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-plus"></i> Add Pet
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>

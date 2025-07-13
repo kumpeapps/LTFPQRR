@@ -1,6 +1,79 @@
 // LTFPQRR Custom JavaScript
 
+// Track if form is being submitted to avoid opacity change on form submission
+let isFormSubmitting = false;
+
+// Show loading spinner on page transitions (but not form submissions)
+window.addEventListener('beforeunload', function() {
+    if (!isFormSubmitting) {
+        document.body.style.opacity = '0.7';
+    }
+});
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Reset page state when page loads
+    resetPageState();
+    
+    // Add ARIA labels for accessibility
+    document.querySelectorAll('.btn').forEach(btn => {
+        if (!btn.getAttribute('aria-label') && btn.textContent.trim()) {
+            btn.setAttribute('aria-label', btn.textContent.trim());
+        }
+    });
+
+    // Reset page state function
+    function resetPageState() {
+        // Reset form submission flag
+        isFormSubmitting = false;
+        
+        // Reset page opacity
+        document.body.style.opacity = '1';
+        
+        // Reset all submit buttons
+        document.querySelectorAll('button[type="submit"]').forEach(btn => {
+            btn.disabled = false;
+            // Restore original button text if it was stored
+            const originalText = btn.getAttribute('data-original-text');
+            if (originalText && (btn.innerHTML.includes('Processing...') || btn.innerHTML.includes('fa-spinner'))) {
+                btn.innerHTML = originalText;
+            }
+        });
+    }
+
+    // Handle page show events (including back button navigation)
+    window.addEventListener('pageshow', function(event) {
+        // Reset state when page is shown (including from cache)
+        resetPageState();
+    });
+
+    // Error handling for images
+    document.querySelectorAll('img').forEach(img => {
+        img.addEventListener('error', function() {
+            this.style.display = 'none';
+            const fallback = document.createElement('div');
+            fallback.className = 'image-placeholder d-flex align-items-center justify-content-center bg-light text-muted';
+            fallback.style.height = this.height || '200px';
+            fallback.innerHTML = '<i class="fas fa-image fa-2x"></i>';
+            this.parentNode.insertBefore(fallback, this);
+        });
+    });
+
+    // Form validation feedback
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function() {
+            isFormSubmitting = true;
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                // Store original text before changing
+                if (!submitBtn.getAttribute('data-original-text')) {
+                    submitBtn.setAttribute('data-original-text', submitBtn.innerHTML);
+                }
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                submitBtn.disabled = true;
+            }
+        });
+    });
+
     // Smooth scrolling for anchor links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
@@ -261,7 +334,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Tag ID validation
         if (field.name === 'tag_id' && value) {
-            if (value.length < 6 || !/^[A-Z0-9]+$/.test(value)) {
+            if (value.length < 6 || !/^[A-Za-z0-9]+$/.test(value)) {
                 isValid = false;
                 message = 'Tag ID must be at least 6 characters (letters and numbers only)';
             }

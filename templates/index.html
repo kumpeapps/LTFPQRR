@@ -1,9 +1,41 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- Hero Section -->
-<section class="hero-section">
-    <div class="container">    </div>
+<!-- Hero Banner Section with Real Photo -->
+<section class="hero-banner">
+    <div class="hero-content">
+        <h1 class="hero-title">Lost Then Found Pet QR Registry</h1>
+        <p class="hero-subtitle">Never lose your beloved pet again with our innovative QR code technology</p>
+        <a href="{{ url_for('auth.register') }}" class="hero-cta">
+            <i class="fas fa-paw"></i> Get Started Today
+        </a>
+    </div>
+</section>
+
+<!-- Quick Search Section -->
+<section class="search-section py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="search-card card">
+                    <div class="card-body text-center p-5">
+                        <h3 class="mb-3">Found a Pet? 🐾</h3>
+                        <p class="text-muted mb-4">Enter the tag ID from the pet's QR code to view their information and contact the owner.</p>
+                        <form method="GET" action="" class="row g-3">
+                            <div class="col-md-8">
+                                <input type="text" class="form-control form-control-lg" name="tag_id" placeholder="Enter Tag ID (e.g., ABC123XY)" required>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary btn-lg w-100">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </section>
 
 <!-- How It Works Process -->
@@ -45,86 +77,52 @@
     </div>
 </section>
 
-<!-- Testimonials -->
-<section class="py-5">
+<!-- Pet Loss Statistics Section -->
+<section class="py-5 bg-light">
     <div class="container">
-        <div class="text-center mb-5">
-            <h2 class="display-5">Happy Pet Parents</h2>
-            <p class="lead">Real stories from our community</p>
-        </div>
-        <div class="row">
-            <div class="col-md-4 mb-4">
-                <div class="card feature-card h-100">
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <i class="fas fa-star text-warning"></i>
-                            <i class="fas fa-star text-warning"></i>
-                            <i class="fas fa-star text-warning"></i>
-                            <i class="fas fa-star text-warning"></i>
-                            <i class="fas fa-star text-warning"></i>
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <div class="mb-4">
+                    <h2 class="display-6 mb-3">The Reality of Pet Loss</h2>
+                    <p class="lead text-primary mb-3">1 in 3 pets will go missing in their lifetime</p>
+                    <p class="mb-3">According to the <a href="https://www.animalhumanesociety.org/" target="_blank" rel="noopener" class="text-decoration-none">American Humane Society</a>, approximately <strong>10 million pets</strong> go missing each year in the U.S. alone.</p>
+                    <p class="mb-4">While you may not think you could ever lose your pet, it happens more often than you'd think — even to the most responsible pet parents. The good news? By taking the right proactive steps, you can dramatically improve your chances of a happy reunion.</p>
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="fas fa-shield-alt fa-2x text-primary"></i>
                         </div>
-                        <p class="card-text">"Max got out during a thunderstorm and was found 3 miles away. Thanks to LTFPQRR, we were reunited within hours!"</p>
-                        <div class="d-flex align-items-center">
-                            <div class="me-3">
-                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                    <i class="fas fa-user text-white"></i>
-                                </div>
-                            </div>
-                            <div>
-                                <h6 class="mb-0">Sarah Johnson</h6>
-                                <small class="text-muted">Golden Retriever Owner</small>
-                            </div>
+                        <div>
+                            <h6 class="mb-1">Best Protection Strategy</h6>
+                            <small class="text-muted">Visible ID tags are the most effective way to ensure quick reunification with your pet</small>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4 mb-4">
-                <div class="card feature-card h-100">
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <i class="fas fa-star text-warning"></i>
-                            <i class="fas fa-star text-warning"></i>
-                            <i class="fas fa-star text-warning"></i>
-                            <i class="fas fa-star text-warning"></i>
-                            <i class="fas fa-star text-warning"></i>
-                        </div>
-                        <p class="card-text">"Luna escaped from our yard and someone found her at the park. The QR code worked perfectly - we had her back in 2 hours!"</p>
-                        <div class="d-flex align-items-center">
-                            <div class="me-3">
-                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                    <i class="fas fa-user text-white"></i>
-                                </div>
+            <div class="col-lg-6">
+                <div class="row text-center">
+                    <div class="col-md-6 mb-4">
+                        <div class="card border-0 bg-white shadow-sm h-100">
+                            <div class="card-body">
+                                <div class="display-4 text-primary mb-2">33%</div>
+                                <h6>Pets Go Missing</h6>
+                                <p class="small text-muted mb-0">1 in 3 pets will go missing during their lifetime</p>
                             </div>
-                            <div>
-                                <h6 class="mb-0">Mike Chen</h6>
-                                <small class="text-muted">Cat Owner</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="card border-0 bg-white shadow-sm h-100">
+                            <div class="card-body">
+                                <div class="display-4 text-primary mb-2">10M</div>
+                                <h6>Annual Missing Pets</h6>
+                                <p class="small text-muted mb-0">Missing pets each year in the U.S.</p>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-md-4 mb-4">
-                <div class="card feature-card h-100">
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <i class="fas fa-star text-warning"></i>
-                            <i class="fas fa-star text-warning"></i>
-                            <i class="fas fa-star text-warning"></i>
-                            <i class="fas fa-star text-warning"></i>
-                            <i class="fas fa-star text-warning"></i>
-                        </div>
-                        <p class="card-text">"As a veterinarian, I recommend LTFPQRR to all my clients. It's the best pet recovery system I've seen."</p>
-                        <div class="d-flex align-items-center">
-                            <div class="me-3">
-                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                    <i class="fas fa-user-md text-white"></i>
-                                </div>
-                            </div>
-                            <div>
-                                <h6 class="mb-0">Dr. Emily Rodriguez</h6>
-                                <small class="text-muted">Veterinarian</small>
-                            </div>
-                        </div>
+                <div class="text-center">
+                    <div class="alert alert-info border-0 bg-primary text-white">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        <strong>Expert Recommendation:</strong> QR code tags provide instant access to your pet's information, making them more effective than traditional ID tags.
                     </div>
                 </div>
             </div>
@@ -138,18 +136,101 @@
         <div class="text-center mb-5">
             <h2 class="display-5">Choose Your Plan</h2>
             <p class="lead">Affordable protection for every pet</p>
-        </div>div class="row align-items-center">
+        </div>
+        
+        {% if pricing_plans %}
+        <div class="row justify-content-center">
+            {% set tag_plans = pricing_plans|selectattr("plan_type", "equalto", "tag")|list %}
+            {% for plan in tag_plans %}
+            <div class="col-md-4 mb-4">
+                <div class="card feature-card h-100 {% if loop.index0 == 1 %}border-primary{% endif %}">
+                    {% if loop.index0 == 1 %}
+                    <div class="card-header text-center bg-primary text-white">
+                        <small>Most Popular</small>
+                    </div>
+                    {% endif %}
+                    <div class="card-body text-center">
+                        <h5 class="card-title">{{ plan.name }}</h5>
+                        <h3 class="text-primary">
+                            {% if plan.price is not none %}
+                            ${{ "%.2f"|format(plan.price) }}
+                            {% else %}
+                            Contact Us
+                            {% endif %}
+                            <small class="text-muted">
+                                {% if plan.billing_period == 'monthly' %}/month
+                                {% elif plan.billing_period == 'yearly' %}/year
+                                {% elif plan.billing_period == 'one-time' %} once
+                                {% else %}/{{ plan.billing_period }}
+                                {% endif %}
+                            </small>
+                        </h3>
+                        {% if plan.description %}
+                        <p class="text-muted small">{{ plan.description }}</p>
+                        {% endif %}
+                        
+                        {% if plan.get_features_list() %}
+                        <ul class="list-unstyled">
+                            {% for feature in plan.get_features_list() %}
+                            <li>✓ {{ feature }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                        
+                        <div class="mt-auto">
+                            {% if plan.max_pets and plan.max_pets > 0 %}
+                            <small class="text-muted d-block">Up to {{ plan.max_pets }} pets per tag</small>
+                            {% elif plan.max_pets == 0 %}
+                            <small class="text-muted d-block">Unlimited pets per tag</small>
+                            {% endif %}
+                        </div>
+                        
+                        <a href="{{ url_for('auth.register') }}?plan={{ plan.id }}" class="btn btn-primary mt-3">
+                            Get Started
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Fallback pricing if no plans are configured -->
+        <div class="row justify-content-center">
+            <div class="col-md-4 mb-4">
+                <div class="card feature-card h-100">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Basic Plan</h5>
+                        <h3 class="text-primary">$9.99<small class="text-muted">/month</small></h3>
+                        <ul class="list-unstyled">
+                            <li>✓ QR Code Tag</li>
+                            <li>✓ Pet Profile</li>
+                            <li>✓ Direct Messaging</li>
+                            <li>✓ Email Notifications</li>
+                        </ul>
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Get Started</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Stats and Features Preview -->
+<section class="py-5">
+    <div class="container">
+        <div class="row align-items-center">
             <div class="col-lg-6">
-                <h1 class="display-4 mb-4">Never Lose Your Pet Again</h1>
-                <p class="lead mb-4">LTFPQRR uses QR code technology to help reunite lost pets with their families quickly and safely.</p>
+                <h2 class="display-5 mb-4">How LTFPQRR Works</h2>
+                <p class="lead mb-4">Our QR code technology helps reunite lost pets with their families quickly and safely.</p>
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg w-100">
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg w-100">
                             <i class="fas fa-user-plus"></i> Get Started
                         </a>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <a href="#features" class="btn btn-outline-light btn-lg w-100">
+                        <a href="#features" class="btn btn-outline-primary btn-lg w-100">
                             <i class="fas fa-info-circle"></i> Learn More
                         </a>
                     </div>
@@ -162,57 +243,34 @@
     </div>
 </section>
 
-<!-- Search Section -->
-<section class="search-section py-5">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="search-card card">
-                    <div class="card-body text-center p-5">
-                        <h3 class="mb-3">Found a Pet? 🐾</h3>
-                        <p class="text-muted mb-4">Enter the tag ID from the pet's QR code to view their information and contact the owner.</p>
-                        <form method="GET" action="" class="row g-3">
-                            <div class="col-md-8">
-                                <input type="text" class="form-control form-control-lg" name="tag_id" placeholder="Enter Tag ID (e.g., ABC123XY)" required>
-                            </div>
-                            <div class="col-md-4">
-                                <button type="submit" class="btn btn-primary btn-lg w-100">
-                                    <i class="fas fa-search"></i> Search
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
 <!-- Statistics Section -->
 <section class="stats-section py-5">
     <div class="container">
         <div class="row text-center">
-            <div class="col-md-4 mb-4">
+            {% if total_pets and total_pets >= 50 %}
+            <div class="col-md-6 mb-4">
                 <div class="stats-card fade-in">
-                    <div class="stats-number">5,000+</div>
+                    <div class="stats-number">{{ "{:,}".format(total_pets) }}+</div>
                     <h5>Pets Protected</h5>
                     <p>Pets safely registered in our system</p>
                 </div>
             </div>
-            <div class="col-md-4 mb-4">
-                <div class="stats-card fade-in">
-                    <div class="stats-number">98%</div>
-                    <h5>Success Rate</h5>
-                    <p>Of lost pets reunited with families</p>
-                </div>
-            </div>
-            <div class="col-md-4 mb-4">
+            <div class="col-md-6 mb-4">
                 <div class="stats-card fade-in">
                     <div class="stats-number">24/7</div>
                     <h5>Instant Access</h5>
                     <p>Your pet's info accessible anytime</p>
                 </div>
             </div>
+            {% else %}
+            <div class="col-md-12 mb-4">
+                <div class="stats-card fade-in">
+                    <div class="stats-number">24/7</div>
+                    <h5>Instant Access</h5>
+                    <p>Your pet's info accessible anytime</p>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </section>
@@ -262,66 +320,6 @@
     </div>
 </section>
 
-<!-- Pricing Section -->
-<section class="py-5 bg-light">
-    <div class="container">
-        <div class="text-center mb-5">
-            <h2 class="display-5">Choose Your Plan</h2>
-            <p class="lead">Affordable protection for your beloved pets</p>
-        </div>
-        <div class="row justify-content-center">
-            <div class="col-md-4 mb-4">
-                <div class="card feature-card h-100">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Monthly</h5>
-                        <h3 class="text-primary">$9.99<small class="text-muted">/month</small></h3>
-                        <ul class="list-unstyled">
-                            <li>✓ QR Code Tag</li>
-                            <li>✓ Pet Profile</li>
-                            <li>✓ Direct Messaging</li>
-                            <li>✓ Email Notifications</li>
-                        </ul>
-                        <a href="{{ url_for('register') }}" class="btn btn-primary">Get Started</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4 mb-4">
-                <div class="card feature-card h-100 border-primary">
-                    <div class="card-body text-center">
-                        <div class="badge bg-primary mb-2">Most Popular</div>
-                        <h5 class="card-title">Yearly</h5>
-                        <h3 class="text-primary">$99.99<small class="text-muted">/year</small></h3>
-                        <ul class="list-unstyled">
-                            <li>✓ QR Code Tag</li>
-                            <li>✓ Pet Profile</li>
-                            <li>✓ Direct Messaging</li>
-                            <li>✓ Email Notifications</li>
-                            <li>✓ Save 17%</li>
-                        </ul>
-                        <a href="{{ url_for('register') }}" class="btn btn-primary">Get Started</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4 mb-4">
-                <div class="card feature-card h-100">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Lifetime</h5>
-                        <h3 class="text-primary">$199.99<small class="text-muted"> once</small></h3>
-                        <ul class="list-unstyled">
-                            <li>✓ QR Code Tag</li>
-                            <li>✓ Pet Profile</li>
-                            <li>✓ Direct Messaging</li>
-                            <li>✓ Email Notifications</li>
-                            <li>✓ One-time payment</li>
-                        </ul>
-                        <a href="{{ url_for('register') }}" class="btn btn-primary">Get Started</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
 <!-- Partner Section -->
 <section class="py-5">
     <div class="container">
@@ -338,6 +336,45 @@
                         </div>
                         <h5>Become a Partner</h5>
                         <p class="text-muted mb-4">Pet stores, veterinarians, and other pet-related businesses can join our partner program to create and distribute QR tags to their customers.</p>
+                        
+                        {% if pricing_plans %}
+                        {% set partner_plans = pricing_plans|selectattr("plan_type", "equalto", "partner")|list %}
+                        {% if partner_plans %}
+                        <div class="row">
+                            {% for plan in partner_plans %}
+                            <div class="col-md-{{ 12 // partner_plans|length if partner_plans|length <= 4 else 3 }} mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6>{{ plan.name }}</h6>
+                                        <h4 class="text-primary">
+                                            {% if plan.price is not none %}
+                                            ${{ "%.2f"|format(plan.price) }}
+                                            {% else %}
+                                            Contact Us
+                                            {% endif %}
+                                            <small class="text-muted">
+                                                {% if plan.billing_period == 'monthly' %}/month
+                                                {% elif plan.billing_period == 'yearly' %}/year
+                                                {% elif plan.billing_period == 'one-time' %} once
+                                                {% else %}/{{ plan.billing_period }}
+                                                {% endif %}
+                                            </small>
+                                        </h4>
+                                        {% if plan.description %}
+                                        <p class="small text-muted">{{ plan.description }}</p>
+                                        {% endif %}
+                                        {% if plan.max_tags is not none and plan.max_tags == 0 %}
+                                        <p class="small text-muted">Create unlimited tags for your customers</p>
+                                        {% elif plan.max_tags and plan.max_tags > 0 %}
+                                        <p class="small text-muted">Create up to {{ plan.max_tags }} tags</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <!-- Fallback if no partner plans configured -->
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <div class="card">
@@ -358,7 +395,32 @@
                                 </div>
                             </div>
                         </div>
-                        <a href="{{ url_for('register') }}" class="btn btn-primary">Join as Partner</a>
+                        {% endif %}
+                        {% else %}
+                        <!-- Fallback if no pricing plans at all -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6>Monthly Partner</h6>
+                                        <h4 class="text-primary">$29.99<small class="text-muted">/month</small></h4>
+                                        <p class="small text-muted">Create unlimited tags for your customers</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6>Yearly Partner</h6>
+                                        <h4 class="text-primary">$299.99<small class="text-muted">/year</small></h4>
+                                        <p class="small text-muted">Save 17% with annual billing</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Join as Partner</a>
                     </div>
                 </div>
             </div>

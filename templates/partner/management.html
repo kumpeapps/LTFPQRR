@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Partner Management - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        {% set sidebar_context = 'partner' %}
+        {% include 'includes/dashboard_sidebar.html' %}
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Partner Management</h2>
+                    <div>
+                        <a href="{{ url_for('dashboard.customer_dashboard') }}" class="btn btn-outline-secondary me-2">
+                            <i class="fas fa-user"></i> Customer Dashboard
+                        </a>
+                        <a href="{{ url_for('partner.create_partner') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create New Partner
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Welcome Message -->
+                {% if not owned_partners and not accessible_partners %}
+                <div class="alert alert-info">
+                    <h4><i class="fas fa-info-circle"></i> Welcome to Partner Management!</h4>
+                    <p class="mb-2">As a partner user, you can:</p>
+                    <ul class="mb-3">
+                        <li>Create and manage multiple partner companies</li>
+                        <li>Access both customer and partner dashboards</li>
+                        <li>Manage subscriptions and tags for each partner</li>
+                    </ul>
+                    <p class="mb-0">Get started by creating your first partner company.</p>
+                </div>
+                {% endif %}
+
+                <!-- Owned Partners -->
+                {% if owned_partners %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-building"></i> Your Partner Companies</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for partner in owned_partners %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card border-primary">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ partner.company_name }}</h6>
+                                        <p class="card-text text-muted small">
+                                            <i class="fas fa-envelope"></i> {{ partner.email }}<br>
+                                            {% if partner.phone %}
+                                            <i class="fas fa-phone"></i> {{ partner.phone }}<br>
+                                            {% endif %}
+                                            <span class="badge badge-primary">Owner</span>
+                                        </p>
+                                        <div class="d-flex justify-content-between">
+                                            <a href="{{ url_for('partner.dashboard', partner_id=partner.id) }}" class="btn btn-primary btn-sm">
+                                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                                            </a>
+                                            <a href="{{ url_for('partner.detail', partner_id=partner.id) }}" class="btn btn-outline-secondary btn-sm">
+                                                <i class="fas fa-cog"></i> Manage
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Accessible Partners -->
+                {% if accessible_partners %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-users"></i> Partner Companies You Have Access To</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for partner in accessible_partners %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card border-secondary">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ partner.company_name }}</h6>
+                                        <p class="card-text text-muted small">
+                                            <i class="fas fa-envelope"></i> {{ partner.email }}<br>
+                                            {% if partner.phone %}
+                                            <i class="fas fa-phone"></i> {{ partner.phone }}<br>
+                                            {% endif %}
+                                            <span class="badge badge-secondary">{{ partner.get_user_role(current_user) }}</span>
+                                        </p>
+                                        <div class="d-flex justify-content-between">
+                                            <a href="{{ url_for('partner.dashboard', partner_id=partner.id) }}" class="btn btn-secondary btn-sm">
+                                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                                            </a>
+                                            <a href="{{ url_for('partner.detail', partner_id=partner.id) }}" class="btn btn-outline-secondary btn-sm">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Quick Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="text-center">
+                                    <a href="{{ url_for('partner.create_partner') }}" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-plus-circle fa-2x d-block mb-2"></i>
+                                        Create Partner
+                                    </a>
+                                    <p class="text-muted small mt-2">Start a new partner company</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="text-center">
+                                    <a href="{{ url_for('dashboard.customer_dashboard') }}" class="btn btn-outline-secondary btn-lg">
+                                        <i class="fas fa-user-circle fa-2x d-block mb-2"></i>
+                                        Customer Dashboard
+                                    </a>
+                                    <p class="text-muted small mt-2">Manage your personal tags and pets</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="text-center">
+                                    <a href="{{ url_for('profile.profile') }}" class="btn btn-outline-secondary btn-lg">
+                                        <i class="fas fa-cog fa-2x d-block mb-2"></i>
+                                        Profile Settings
+                                    </a>
+                                    <p class="text-muted small mt-2">Update your account information</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

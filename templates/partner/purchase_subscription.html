@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}Partner Subscription - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container">
+    {% if partner %}
+    <!-- Specific Partner Subscription Management -->
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>{{ partner.company_name }} Subscription</h2>
+                    <p class="text-muted mb-0">Manage subscription for this partner</p>
+                </div>
+                <a href="{{ url_for('partner.dashboard', partner_id=partner.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+            
+            {% if subscription %}
+            <!-- Active Subscription -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-check-circle"></i> Active Subscription</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Plan:</strong> {{ subscription.subscription_type.title() }}</p>
+                            <p><strong>Amount:</strong> ${{ "%.2f"|format(subscription.amount) }}</p>
+                            <p><strong>Status:</strong> <span class="badge bg-success">{{ subscription.status.title() }}</span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Start Date:</strong> {{ subscription.start_date.strftime('%B %d, %Y') }}</p>
+                            {% if subscription.end_date %}
+                            <p><strong>End Date:</strong> {{ subscription.end_date.strftime('%B %d, %Y') }}</p>
+                            {% endif %}
+                            <p><strong>Auto Renew:</strong> {{ 'Yes' if subscription.auto_renew else 'No' }}</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="d-flex gap-2">
+                        {% if subscription.can_be_cancelled() %}
+                        <button class="btn btn-warning">
+                            <i class="fas fa-pause"></i> Cancel Subscription
+                        </button>
+                        {% endif %}
+                        <button class="btn btn-outline-secondary">
+                            <i class="fas fa-edit"></i> Modify Plan
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- No Active Subscription -->
+            <div class="alert alert-warning">
+                <h5><i class="fas fa-exclamation-triangle"></i> No Active Subscription</h5>
+                <p class="mb-0">{{ partner.company_name }} needs a subscription to create and manage tags. Choose a plan below to get started.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Subscription Plans -->
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            {% if not partner %}
+            <div class="text-center mb-5">
+                <h2>Become a LTFPQRR Partner</h2>
+                <p class="lead">Join our network of pet professionals and businesses</p>
+            </div>
+            {% else %}
+            <div class="text-center mb-4">
+                <h3>Choose a Plan for {{ partner.company_name }}</h3>
+            </div>
+            {% endif %}
+            
+            <div class="row">
+                {% for plan in partner_plans %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100{% if plan.billing_period == 'yearly' %} border-success{% endif %}">
+                        <div class="card-header text-center {% if plan.billing_period == 'yearly' %}bg-success text-white{% else %}bg-primary text-white{% endif %}">
+                            <h4>{{ plan.name }}</h4>
+                            <h2>${{ "%.2f"|format(plan.price) }}<small>/{{ plan.billing_period }}</small></h2>
+                            {% if plan.billing_period == 'yearly' %}
+                            <small class="badge bg-warning text-dark">Best Value!</small>
+                            {% endif %}
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled">
+                                {% if plan.features %}
+                                    {% set features = plan.get_features_list() %}
+                                    {% for feature in features %}
+                                    <li><i class="fas fa-check text-success"></i> {{ feature }}</li>
+                                    {% endfor %}
+                                {% else %}
+                                    <li><i class="fas fa-check text-success"></i> Partner dashboard access</li>
+                                    <li><i class="fas fa-check text-success"></i> {{ plan.max_tags or 'Unlimited' }} QR tags</li>
+                                    <li><i class="fas fa-check text-success"></i> Basic analytics</li>
+                                    <li><i class="fas fa-check text-success"></i> Email support</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                        <div class="card-footer">
+                            {% if partner %}
+                            <form method="POST" action="{{ url_for('payment.partner_subscription_payment', partner_id=partner.id) }}">
+                                <input type="hidden" name="subscription_type" value="{{ plan.billing_period }}">
+                                <input type="hidden" name="pricing_plan_id" value="{{ plan.id }}">
+                                <button type="submit" class="btn {% if plan.billing_period == 'yearly' %}btn-success{% else %}btn-primary{% endif %} w-100">
+                                    Choose {{ plan.name }}
+                                </button>
+                            </form>
+                            {% else %}
+                            <form method="POST" action="{{ url_for('payment.partner_subscription_payment') }}">
+                                <input type="hidden" name="subscription_type" value="{{ plan.billing_period }}">
+                                <input type="hidden" name="pricing_plan_id" value="{{ plan.id }}">
+                                <button type="submit" class="btn {% if plan.billing_period == 'yearly' %}btn-success{% else %}btn-primary{% endif %} w-100">
+                                    Choose {{ plan.name }}
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                {% if not partner_plans %}
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                            <h5>No Partner Plans Available</h5>
+                            <p class="text-muted">There are currently no partner subscription plans available. Please contact support for assistance.</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            
+            <!-- Benefits Section -->
+            <div class="card mt-5">
+                <div class="card-header">
+                    <h5>Partner Benefits</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-paw text-primary"></i> For Veterinarians</h6>
+                            <ul class="list-unstyled">
+                                <li>• Provide QR tags to clients</li>
+                                <li>• Emergency contact information</li>
+                                <li>• Medical history access</li>
+                                <li>• Practice branding opportunities</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-cut text-primary"></i> For Pet Groomers</h6>
+                            <ul class="list-unstyled">
+                                <li>• Attach tags after grooming</li>
+                                <li>• Include grooming reminders</li>
+                                <li>• Business contact information</li>
+                                <li>• Customer retention tool</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-store text-primary"></i> For Pet Stores</h6>
+                            <ul class="list-unstyled">
+                                <li>• Sell QR tags to customers</li>
+                                <li>• Additional revenue stream</li>
+                                <li>• Customer service enhancement</li>
+                                <li>• Community safety contribution</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-shield-alt text-primary"></i> For Shelters & Rescues</h6>
+                            <ul class="list-unstyled">
+                                <li>• Provide tags to adopters</li>
+                                <li>• Track successful reunions</li>
+                                <li>• Include adoption information</li>
+                                <li>• Support community safety</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- FAQ Section -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5>Frequently Asked Questions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="faqAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                    How do I create QR tags as a partner?
+                                </button>
+                            </h2>
+                            <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Once you have an active partner subscription, you can access your partner dashboard to create unlimited QR tags. Each tag has a unique ID that can be claimed by pet owners.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                    Can I cancel my subscription?
+                                </button>
+                            </h2>
+                            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Yes, you can cancel your subscription at any time. Your access will continue until the end of your current billing period.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                    What happens to tags I've created if I cancel?
+                                </button>
+                            </h2>
+                            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Tags you've created will remain active and functional for pet owners who have claimed them. However, you won't be able to create new tags without an active subscription.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

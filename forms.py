@@ -30,7 +30,6 @@ class RegistrationForm(FlaskForm):
     last_name = StringField('Last Name', validators=[DataRequired(), Length(max=50)])
     phone = StringField('Phone Number', validators=[Optional(), Length(max=20)])
     address = TextAreaField('Address', validators=[Optional()])
-    account_type = SelectField('Account Type', choices=[('customer', 'Customer'), ('partner', 'Partner')], validators=[DataRequired()])
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -63,7 +62,8 @@ class ClaimTagForm(FlaskForm):
                                   validators=[DataRequired()])
     
     def validate_tag_id(self, field):
-        tag = Tag.query.filter_by(tag_id=field.data).first()
+        from sqlalchemy import func
+        tag = Tag.query.filter(func.upper(Tag.tag_id) == func.upper(field.data)).first()
         if not tag:
             raise ValidationError('Tag not found.')
         if tag.status != 'available':
@@ -76,7 +76,7 @@ class TransferTagForm(FlaskForm):
         user = User.query.filter_by(username=field.data).first()
         if not user:
             raise ValidationError('User not found.')
-        if user.account_type != 'customer':
+        if not user.has_role('user'):
             raise ValidationError('Tags can only be transferred to customer accounts.')
 
 class ContactOwnerForm(FlaskForm):
@@ -120,9 +120,18 @@ class PaymentGatewayForm(FlaskForm):
                               ('paypal', 'PayPal')], 
                       validators=[DataRequired()])
     enabled = BooleanField('Enabled')
-    api_key = StringField('API Key', validators=[Optional()])
-    secret_key = StringField('Secret Key', validators=[Optional()])
-    webhook_secret = StringField('Webhook Secret', validators=[Optional()])
+    
+    # Stripe fields
+    publishable_key = StringField('Publishable Key (Stripe)', validators=[Optional()])
+    secret_key = StringField('Secret Key (Stripe/PayPal Client Secret)', validators=[Optional()])
+    webhook_secret = StringField('Webhook Secret (Stripe)', validators=[Optional()])
+    
+    # PayPal fields
+    client_id = StringField('Client ID (PayPal)', validators=[Optional()])
+    
+    # Legacy field (keeping for backward compatibility)
+    api_key = StringField('API Key (Legacy)', validators=[Optional()])
+    
     environment = SelectField('Environment', 
                              choices=[('sandbox', 'Sandbox'), 
                                      ('production', 'Production')], 
@@ -159,3 +168,55 @@ class PartnerSubscriptionForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         super(PartnerSubscriptionForm, self).__init__(*args, **kwargs)
         self.payment_method.choices = get_payment_gateway_choices()
+
+class PricingPlanForm(FlaskForm):
+    name = StringField('Plan Name', validators=[DataRequired(), Length(max=100)])
+    description = TextAreaField('Description', validators=[Optional()])
+    plan_type = SelectField('Plan Type', 
+                           choices=[('tag', 'Tag Plan'), ('partner', 'Partner Plan')], 
+                           validators=[DataRequired()])
+    price = DecimalField('Price', validators=[DataRequired(), NumberRange(min=0)])
+    currency = SelectField('Currency', 
+                          choices=[('USD', 'USD'), ('EUR', 'EUR'), ('GBP', 'GBP')], 
+                          default='USD',
+                          validators=[DataRequired()])
+    billing_period = SelectField('Billing Period', 
+                                choices=[('monthly', 'Monthly'), ('yearly', 'Yearly'), ('one-time', 'One-time')], 
+                                default='monthly',
+                                validators=[DataRequired()])
+    features = TextAreaField('Features (one per line)', validators=[Optional()])
+    max_tags = IntegerField('Max Tags', validators=[NumberRange(min=0)], default=1)
+    max_pets = IntegerField('Max Pets', validators=[NumberRange(min=1)], default=1)
+    requires_approval = BooleanField('Requires Admin Approval')
+    is_active = BooleanField('Active', default=True)
+    is_featured = BooleanField('Featured Plan')
+    show_on_homepage = BooleanField('Show on Homepage')
+    sort_order = IntegerField('Sort Order', validators=[NumberRange(min=0)], default=0)
+
+    def validate_max_tags(self, field):
+        """Custom validation for max_tags based on plan type"""
+        if self.plan_type.data == 'partner':
+            if field.data is None or field.data < 0:
+                raise ValidationError('Partner plans must specify the maximum number of tags allowed per subscription period (0 = unlimited, 1+ = specific limit).')
+        
+    def validate_max_pets(self, field):
+        """Custom validation for max_pets based on plan type"""
+        if self.plan_type.data == 'tag':
+            if not field.data or field.data < 1:
+                raise ValidationError('Tag plans must specify the maximum number of pets per tag (minimum 1).')
+
+class EditSubscriptionForm(FlaskForm):
+    """Form for editing subscriptions in admin panel"""
+    status = SelectField('Status', 
+                        choices=[('active', 'Active'), ('cancelled', 'Cancelled'), ('expired', 'Expired'), ('pending', 'Pending')],
+                        validators=[DataRequired()])
+    auto_renew = BooleanField('Auto Renew')
+    admin_approved = BooleanField('Admin Approved')
+    max_tags = IntegerField('Max Tags', validators=[NumberRange(min=0)], default=0)
+    start_date = DateField('Start Date', validators=[DataRequired()])
+    end_date = DateField('End Date', validators=[Optional()])
+    amount = DecimalField('Amount', validators=[Optional(), NumberRange(min=0)], places=2)
+    payment_method = SelectField('Payment Method',
+                                choices=[('stripe', 'Stripe'), ('paypal', 'PayPal'), ('manual', 'Manual')],
+                                validators=[Optional()])
+    notes = TextAreaField('Admin Notes', validators=[Optional()])

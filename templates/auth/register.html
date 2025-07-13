@@ -115,19 +115,6 @@
                                     {% endif %}
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    {{ form.account_type.label(class="form-label") }}
-                                    {{ form.account_type(class="form-control") }}
-                                    {% if form.account_type.errors %}
-                                        <div class="text-danger">
-                                            {% for error in form.account_type.errors %}
-                                                <small>{{ error }}</small>
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -150,33 +137,10 @@
                     </form>
                 </div>
                 <div class="card-footer text-center">
-                    <p class="mb-0">Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+                    <p class="mb-0">Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a></p>
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const accountTypeSelect = document.querySelector('#account_type');
-    const accountTypeHelp = document.createElement('small');
-    accountTypeHelp.className = 'form-text text-muted';
-    accountTypeSelect.parentNode.appendChild(accountTypeHelp);
-    
-    function updateAccountTypeHelp() {
-        const selectedType = accountTypeSelect.value;
-        if (selectedType === 'customer') {
-            accountTypeHelp.textContent = 'Choose Customer to claim and manage pet tags for your own pets.';
-        } else if (selectedType === 'partner') {
-            accountTypeHelp.textContent = 'Choose Partner if you\'re a business that wants to create and distribute tags to customers.';
-        }
-    }
-    
-    accountTypeSelect.addEventListener('change', updateAccountTypeHelp);
-    updateAccountTypeHelp(); // Initial call
-});
-</script>
 {% endblock %}

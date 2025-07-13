@@ -39,10 +39,13 @@ with app.app_context():
     if 'alembic_version' in inspector.get_table_names():
         print('Running migrations...')
         import subprocess
-        result = subprocess.run(['python', 'migrate.py', 'upgrade'], capture_output=True, text=True)
+        result = subprocess.run(['alembic', 'upgrade', 'head'], capture_output=True, text=True)
         print(result.stdout)
         if result.stderr:
             print('Migration errors:', result.stderr)
+        if result.returncode != 0:
+            print('Migration failed!')
+            sys.exit(1)
     else:
         print('Creating fresh database schema...')
         db.create_all()
@@ -80,8 +83,10 @@ with app.app_context():
         # Stamp with latest migration
         try:
             import subprocess
-            result = subprocess.run(['python', 'migrate.py', 'stamp', 'head'], capture_output=True, text=True)
+            result = subprocess.run(['alembic', 'stamp', 'head'], capture_output=True, text=True)
             print('Database stamped with latest migration')
+            if result.returncode != 0:
+                print('Warning: Could not stamp database:', result.stderr)
         except Exception as e:
             print(f'Warning: Could not stamp database: {e}')
 "

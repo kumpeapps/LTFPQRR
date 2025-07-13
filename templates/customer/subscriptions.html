@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}My Subscriptions - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">        <!-- Sidebar -->
+        {% set sidebar_context = 'customer' %}
+        {% include 'includes/dashboard_sidebar.html' %}
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>My Subscriptions</h2>
+                </div>
+
+                {% if subscriptions %}
+                    {% for subscription in subscriptions %}
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                {{ subscription.subscription_type.title() }} Subscription
+                                {% if subscription.pricing_plan %}
+                                    - {{ subscription.pricing_plan.name }}
+                                {% endif %}
+                            </h5>
+                            <span class="badge {% if subscription.is_active() %}bg-success{% elif subscription.status == 'cancelled' %}bg-danger{% elif subscription.status == 'expired' %}bg-secondary{% else %}bg-warning{% endif %}">
+                                {% if subscription.cancellation_requested and subscription.is_active() %}
+                                    Cancellation Requested
+                                {% else %}
+                                    {{ subscription.status.title() }}
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Amount:</strong> ${{ "%.2f"|format(subscription.amount) }}</p>
+                                    <p><strong>Start Date:</strong> {{ subscription.start_date.strftime('%B %d, %Y') }}</p>
+                                    {% if subscription.end_date %}
+                                        <p><strong>{% if subscription.cancellation_requested %}Cancels on:{% else %}Renewal Date:{% endif %}</strong> {{ subscription.end_date.strftime('%B %d, %Y') }}</p>
+                                    {% else %}
+                                        <p><strong>Type:</strong> Lifetime</p>
+                                    {% endif %}
+                                    <p><strong>Auto Renew:</strong> 
+                                        {% if subscription.auto_renew and not subscription.cancellation_requested %}
+                                            <span class="text-success">Yes</span>
+                                        {% else %}
+                                            <span class="text-muted">No</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    {% if subscription.subscription_type == 'partner' %}
+                                        <p><strong>Max Tags:</strong> 
+                                            {% if subscription.max_tags == 0 %}
+                                                Unlimited
+                                            {% else %}
+                                                {{ subscription.max_tags }}
+                                            {% endif %}
+                                        </p>
+                                        <p><strong>Admin Approved:</strong> 
+                                            {% if subscription.admin_approved %}
+                                                <span class="text-success">Yes</span>
+                                            {% else %}
+                                                <span class="text-warning">Pending</span>
+                                            {% endif %}
+                                        </p>
+                                    {% endif %}
+                                    {% if subscription.tag %}
+                                        <p><strong>Tag ID:</strong> {{ subscription.tag.tag_id }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            {% if subscription.cancellation_requested and subscription.is_active() %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Your subscription will be cancelled at the end of the current billing period. You can reactivate it anytime before then.
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <form method="POST" action="{{ url_for('reactivate_subscription', subscription_id=subscription.id) }}">
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="fas fa-undo"></i> Reactivate Subscription
+                                        </button>
+                                    </form>
+                                </div>
+                            {% elif subscription.can_be_cancelled() %}
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-outline-danger" onclick="confirmCancel({{ subscription.id }}, '{{ subscription.subscription_type }}')">
+                                        <i class="fas fa-times"></i> Cancel Subscription
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-credit-card fa-3x text-muted mb-3"></i>
+                        <h5>No Subscriptions Found</h5>
+                        <p class="text-muted">You don't have any active subscriptions yet.</p>
+                        <a href="{{ url_for('public.index') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Get Started
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancellation Confirmation Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cancel Subscription</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel your <strong id="cancelSubType"></strong> subscription?</p>
+                <p class="text-warning">Your subscription will remain active until the end of the current billing period.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Keep Subscription</button>
+                <form id="cancelForm" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-danger">Cancel Subscription</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmCancel(subscriptionId, subType) {
+    document.getElementById('cancelSubType').textContent = subType;
+    document.getElementById('cancelForm').action = '/customer/subscriptions/cancel/' + subscriptionId;
+    new bootstrap.Modal(document.getElementById('cancelModal')).show();
+}
+</script>
+{% endblock %}

@@ -62,7 +62,7 @@
                                     <div class="card-body">
                                         <h6><i class="fas fa-search text-primary"></i> Tag Searches</h6>
                                         <p class="text-muted small">Get notified when someone finds your pet and searches their tag.</p>
-                                        <a href="{{ url_for('toggle_notification', notification_type='tag_search') }}" 
+                                        <a href="{{ url_for('settings.toggle_notification', notification_type='tag_search') }}" 
                                            class="btn btn-sm btn-outline-primary">
                                             {% set pref = preferences | selectattr('notification_type', 'equalto', 'tag_search') | first %}
                                             {{ 'Disable' if pref and pref.enabled else 'Enable' }}
@@ -75,7 +75,7 @@
                                     <div class="card-body">
                                         <h6><i class="fas fa-credit-card text-warning"></i> Payment Reminders</h6>
                                         <p class="text-muted small">Receive reminders before your subscription renewal.</p>
-                                        <a href="{{ url_for('toggle_notification', notification_type='payment_reminder') }}" 
+                                        <a href="{{ url_for('settings.toggle_notification', notification_type='payment_reminder') }}" 
                                            class="btn btn-sm btn-outline-warning">
                                             {% set pref = preferences | selectattr('notification_type', 'equalto', 'payment_reminder') | first %}
                                             {{ 'Disable' if pref and pref.enabled else 'Enable' }}

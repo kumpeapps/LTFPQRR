@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """
 Database migration management script for LTFPQRR
+Uses pure Alembic for all database migrations
 """
 
 import os
 import sys
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate, init, migrate, upgrade, downgrade, stamp
 from alembic import command
 from alembic.config import Config
 import argparse
@@ -15,75 +13,62 @@ import argparse
 # Add the project root to the path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-def create_app():
-    app = Flask(__name__)
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///ltfpqrr.db')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    
-    db = SQLAlchemy(app)
-    migrate = Migrate(app, db)
-    
-    # Import models to register them
-    from models.models import *
-    
-    return app, db, migrate
+def get_alembic_config():
+    """Get Alembic configuration"""
+    config = Config('alembic.ini')
+    return config
 
 def main():
-    parser = argparse.ArgumentParser(description='Database migration management')
-    parser.add_argument('command', choices=['init', 'autogenerate', 'upgrade', 'downgrade', 'stamp', 'current', 'history'],
-                       help='Migration command to run')
-    parser.add_argument('--message', '-m', help='Migration message (for autogenerate)')
-    parser.add_argument('--revision', '-r', help='Revision to upgrade/downgrade to')
+    parser = argparse.ArgumentParser(description='Database migration management using Alembic')
+    parser.add_argument('command', choices=['revision', 'upgrade', 'downgrade', 'stamp', 'current', 'history'],
+                       help='Alembic command to run')
+    parser.add_argument('--message', '-m', help='Migration message (for revision)')
+    parser.add_argument('--autogenerate', action='store_true', help='Autogenerate migration (for revision)')
+    parser.add_argument('--revision', '-r', help='Revision to upgrade/downgrade to', default='head')
     
     args = parser.parse_args()
     
-    app, db, migrate_instance = create_app()
+    alembic_cfg = get_alembic_config()
     
-    with app.app_context():
-        if args.command == 'init':
-            print("Initializing migration repository...")
-            init()
-            print("Migration repository initialized!")
-            
-        elif args.command == 'autogenerate':
+    try:
+        if args.command == 'revision':
             if not args.message:
-                print("Error: --message is required for autogenerate")
+                print("Error: --message is required for revision")
                 sys.exit(1)
             print(f"Generating migration: {args.message}")
-            migrate(message=args.message)
+            if args.autogenerate:
+                command.revision(alembic_cfg, message=args.message, autogenerate=True)
+            else:
+                command.revision(alembic_cfg, message=args.message)
             print("Migration generated!")
             
         elif args.command == 'upgrade':
-            revision = args.revision or 'head'
-            print(f"Upgrading to revision: {revision}")
-            upgrade(revision=revision)
+            print(f"Upgrading to revision: {args.revision}")
+            command.upgrade(alembic_cfg, args.revision)
             print("Upgrade completed!")
             
         elif args.command == 'downgrade':
-            revision = args.revision or '-1'
+            revision = args.revision if args.revision != 'head' else '-1'
             print(f"Downgrading to revision: {revision}")
-            downgrade(revision=revision)
+            command.downgrade(alembic_cfg, revision)
             print("Downgrade completed!")
             
         elif args.command == 'stamp':
-            revision = args.revision or 'head'
-            print(f"Stamping database with revision: {revision}")
-            stamp(revision=revision)
+            print(f"Stamping database with revision: {args.revision}")
+            command.stamp(alembic_cfg, args.revision)
             print("Database stamped!")
             
         elif args.command == 'current':
-            from alembic import command
-            from alembic.config import Config
-            
-            alembic_cfg = Config('alembic.ini')
+            print("Current database revision:")
             command.current(alembic_cfg, verbose=True)
             
         elif args.command == 'history':
-            from alembic import command
-            from alembic.config import Config
-            
-            alembic_cfg = Config('alembic.ini')
+            print("Migration history:")
             command.history(alembic_cfg, verbose=True)
+            
+    except Exception as e:
+        print(f"Error: {e}")
+        sys.exit(1)
 
 if __name__ == '__main__':
     main()

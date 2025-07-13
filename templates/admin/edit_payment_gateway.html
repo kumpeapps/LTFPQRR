@@ -6,47 +6,15 @@
 <div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
-        <div class="col-md-3 col-lg-2 sidebar">
-            <div class="py-3">
-                <h5>Admin Dashboard</h5>
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
-                            <i class="fas fa-tachometer-alt"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin_users') }}">
-                            <i class="fas fa-users"></i> Users
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin_subscriptions') }}">
-                            <i class="fas fa-credit-card"></i> Subscriptions
-                        </a>
-                    </li>
-                    {% if current_user.has_role('super-admin') %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('admin_settings') }}">
-                                <i class="fas fa-cog"></i> Settings
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link active" href="{{ url_for('payment_gateways') }}">
-                                <i class="fas fa-credit-card"></i> Payment Gateways
-                            </a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </div>
-        </div>
+        {% set sidebar_context = 'admin' %}
+        {% include 'includes/dashboard_sidebar.html' %}
 
         <!-- Main Content -->
-        <div class="col-md-9 col-lg-10">
-            <div class="py-3">
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>Configure {{ gateway.name.title() }} Payment Gateway</h2>
-                    <a href="{{ url_for('payment_gateways') }}" class="btn btn-secondary">
+                    <a href="{{ url_for('admin.payment_gateways') }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> Back to Payment Gateways
                     </a>
                 </div>
@@ -78,58 +46,124 @@
                                                 {% endfor %}
                                             </div>
                                         {% endif %}
+                                        <small class="form-text text-muted">Choose 'sandbox' for testing, 'production' for live payments</small>
                                     </div>
                                     
-                                    <div class="mb-3">
-                                        {{ form.api_key.label(class="form-label") }}
-                                        {{ form.api_key(class="form-control", placeholder="Enter API Key...") }}
-                                        {% if form.api_key.errors %}
-                                            <div class="text-danger">
-                                                {% for error in form.api_key.errors %}
-                                                    <small>{{ error }}</small>
-                                                {% endfor %}
+                                    {% if gateway.name == 'stripe' %}
+                                    <!-- Stripe Configuration -->
+                                    <div class="card mb-3">
+                                        <div class="card-header">
+                                            <h6 class="mb-0"><i class="fab fa-stripe"></i> Stripe Configuration</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                {{ form.publishable_key.label(class="form-label") }}
+                                                {{ form.publishable_key(class="form-control", placeholder="pk_test_... or pk_live_...") }}
+                                                {% if form.publishable_key.errors %}
+                                                    <div class="text-danger">
+                                                        {% for error in form.publishable_key.errors %}
+                                                            <small>{{ error }}</small>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                                <small class="form-text text-muted">Your Stripe Publishable Key (safe to use in frontend code)</small>
                                             </div>
-                                        {% endif %}
-                                        {% if gateway.name == 'stripe' %}
-                                            <small class="form-text text-muted">Your Stripe Publishable Key (pk_...)</small>
-                                        {% elif gateway.name == 'paypal' %}
-                                            <small class="form-text text-muted">Your PayPal Client ID</small>
-                                        {% endif %}
+                                            
+                                            <div class="mb-3">
+                                                {{ form.secret_key.label(class="form-label") }}
+                                                {{ form.secret_key(class="form-control", placeholder="sk_test_... or sk_live_...") }}
+                                                {% if form.secret_key.errors %}
+                                                    <div class="text-danger">
+                                                        {% for error in form.secret_key.errors %}
+                                                            <small>{{ error }}</small>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                                <small class="form-text text-muted">Your Stripe Secret Key (keep this private!)</small>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                {{ form.webhook_secret.label(class="form-label") }}
+                                                {{ form.webhook_secret(class="form-control", placeholder="whsec_...") }}
+                                                {% if form.webhook_secret.errors %}
+                                                    <div class="text-danger">
+                                                        {% for error in form.webhook_secret.errors %}
+                                                            <small>{{ error }}</small>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                                <small class="form-text text-muted">Optional: Webhook signing secret for payment confirmations</small>
+                                            </div>
+                                        </div>
                                     </div>
-                                    
-                                    <div class="mb-3">
-                                        {{ form.secret_key.label(class="form-label") }}
-                                        {{ form.secret_key(class="form-control", placeholder="Enter Secret Key...") }}
-                                        {% if form.secret_key.errors %}
-                                            <div class="text-danger">
-                                                {% for error in form.secret_key.errors %}
-                                                    <small>{{ error }}</small>
-                                                {% endfor %}
+                                    {% elif gateway.name == 'paypal' %}
+                                    <!-- PayPal Configuration -->
+                                    <div class="card mb-3">
+                                        <div class="card-header">
+                                            <h6 class="mb-0"><i class="fab fa-paypal"></i> PayPal Configuration</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                {{ form.client_id.label(class="form-label") }}
+                                                {{ form.client_id(class="form-control", placeholder="Your PayPal Client ID") }}
+                                                {% if form.client_id.errors %}
+                                                    <div class="text-danger">
+                                                        {% for error in form.client_id.errors %}
+                                                            <small>{{ error }}</small>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                                <small class="form-text text-muted">Your PayPal Client ID (safe to use in frontend code)</small>
                                             </div>
-                                        {% endif %}
-                                        {% if gateway.name == 'stripe' %}
-                                            <small class="form-text text-muted">Your Stripe Secret Key (sk_...)</small>
-                                        {% elif gateway.name == 'paypal' %}
-                                            <small class="form-text text-muted">Your PayPal Client Secret</small>
-                                        {% endif %}
+                                            
+                                            <div class="mb-3">
+                                                {{ form.secret_key.label(class="form-label") }}
+                                                {{ form.secret_key(class="form-control", placeholder="Your PayPal Client Secret") }}
+                                                {% if form.secret_key.errors %}
+                                                    <div class="text-danger">
+                                                        {% for error in form.secret_key.errors %}
+                                                            <small>{{ error }}</small>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                                <small class="form-text text-muted">Your PayPal Client Secret (keep this private!)</small>
+                                            </div>
+                                        </div>
                                     </div>
+                                    {% endif %}
                                     
-                                    <div class="mb-3">
-                                        {{ form.webhook_secret.label(class="form-label") }}
-                                        {{ form.webhook_secret(class="form-control", placeholder="Enter Webhook Secret...") }}
-                                        {% if form.webhook_secret.errors %}
-                                            <div class="text-danger">
-                                                {% for error in form.webhook_secret.errors %}
-                                                    <small>{{ error }}</small>
-                                                {% endfor %}
+                                    <!-- Legacy Fields (for backward compatibility) -->
+                                    <div class="card mb-3">
+                                        <div class="card-header">
+                                            <h6 class="mb-0">Legacy Configuration</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                {{ form.api_key.label(class="form-label") }}
+                                                {{ form.api_key(class="form-control", placeholder="Legacy API Key (if needed)") }}
+                                                <small class="form-text text-muted">Only needed for backward compatibility</small>
                                             </div>
-                                        {% endif %}
-                                        <small class="form-text text-muted">Optional: For webhook verification</small>
+                                        </div>
                                     </div>
                                     
                                     <div class="alert alert-info">
-                                        <h6>Security Notice:</h6>
+                                        <h6><i class="fas fa-shield-alt"></i> Security Notice:</h6>
                                         <p class="mb-0">All sensitive data is encrypted before storage. Keys will only be updated if you provide new values.</p>
+                                    </div>
+                                    
+                                    <div class="alert alert-warning">
+                                        <h6><i class="fas fa-exclamation-triangle"></i> Setup Instructions:</h6>
+                                        <ul class="mb-0">
+                                            {% if gateway.name == 'stripe' %}
+                                            <li>Get your keys from <a href="https://dashboard.stripe.com/apikeys" target="_blank">Stripe Dashboard</a></li>
+                                            <li>Set up webhooks at <a href="https://dashboard.stripe.com/webhooks" target="_blank">Stripe Webhooks</a></li>
+                                            <li>Webhook URL: <code>{{ url_for('payment.stripe_webhook', _external=True) }}</code></li>
+                                            {% elif gateway.name == 'paypal' %}
+                                            <li>Get your credentials from <a href="https://developer.paypal.com/developer/applications/" target="_blank">PayPal Developer</a></li>
+                                            <li>Create a REST API app for your application</li>
+                                            <li>Use sandbox credentials for testing</li>
+                                            {% endif %}
+                                        </ul>
                                     </div>
                                     
                                     <div class="d-grid gap-2">

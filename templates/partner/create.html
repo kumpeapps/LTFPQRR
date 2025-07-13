@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Create Partner Company - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Create Partner Company</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Create a new partner company to manage QR code tags for your business.
+                    </p>
+                    
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="company_name" class="form-label">Company Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="company_name" name="company_name" 
+                                   placeholder="Enter company name" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Company Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   placeholder="Enter company email address" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Phone Number</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" 
+                                   placeholder="Enter phone number">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Address</label>
+                            <textarea class="form-control" id="address" name="address" 
+                                      rows="3" placeholder="Enter company address"></textarea>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Note:</strong> You will be the owner of this partner company. 
+                            You can grant access to other users later and will need to purchase a subscription to activate tags.
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('partner.dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Dashboard
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create Partner Company
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

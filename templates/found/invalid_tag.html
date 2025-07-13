@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Invalid Tag - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card mt-5">
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-exclamation-triangle text-warning" style="font-size: 4rem;"></i>
+                    </div>
+                    
+                    <h2 class="card-title text-warning mb-3">Invalid QR Code</h2>
+                    
+                    <div class="alert alert-warning">
+                        <h5>Tag ID: <code>{{ tag_id }}</code></h5>
+                        <p class="mb-0">This QR code is not recognized in our system.</p>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h5>Possible Reasons:</h5>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-times text-danger me-2"></i>The QR code may be damaged or incorrect</li>
+                            <li><i class="fas fa-times text-danger me-2"></i>This might not be an LTFPQRR tag</li>
+                            <li><i class="fas fa-times text-danger me-2"></i>The tag may have been deactivated</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h5>What You Can Do:</h5>
+                        <div class="d-grid gap-2 d-md-block">
+                            <a href="/" class="btn btn-primary">
+                                <i class="fas fa-home me-2"></i>Return to Home
+                            </a>
+                            <a href="/contact" class="btn btn-outline-secondary">
+                                <i class="fas fa-envelope me-2"></i>Contact Support
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <h6><i class="fas fa-info-circle text-info me-2"></i>Found a Lost Pet?</h6>
+                        <p class="small mb-0">
+                            If you found a lost pet and this QR code doesn't work, try looking for other 
+                            identification like a collar tag with contact information, or contact local 
+                            animal shelters and veterinarians in the area.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

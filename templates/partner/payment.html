@@ -48,35 +48,46 @@
                     <h5>Choose Payment Method</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <!-- Stripe Payment -->
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100">
-                                <div class="card-body text-center">
-                                    <i class="fab fa-cc-stripe fa-3x text-primary mb-3"></i>
-                                    <h6>Credit Card</h6>
-                                    <p class="text-muted">Secure payment with Stripe</p>
-                                    <button class="btn btn-primary w-100" onclick="processPartnerPayment('stripe')">
-                                        Pay with Card
-                                    </button>
+                    {% if not enabled_gateways %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            No payment gateways are currently available. Please contact support for assistance.
+                        </div>
+                    {% else %}
+                        <div class="row">
+                            {% if 'stripe' in enabled_gateways %}
+                            <!-- Stripe Payment -->
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fab fa-cc-stripe fa-3x text-primary mb-3"></i>
+                                        <h6>Credit Card</h6>
+                                        <p class="text-muted">Secure payment with Stripe</p>
+                                        <button class="btn btn-primary w-100" onclick="processPartnerPayment('stripe')">
+                                            Pay with Card
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <!-- PayPal Payment -->
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100">
-                                <div class="card-body text-center">
-                                    <i class="fab fa-paypal fa-3x text-warning mb-3"></i>
-                                    <h6>PayPal</h6>
-                                    <p class="text-muted">Pay with PayPal balance or card</p>
-                                    <button class="btn btn-warning w-100" onclick="processPartnerPayment('paypal')">
-                                        Pay with PayPal
-                                    </button>
+                            {% endif %}
+                            
+                            {% if 'paypal' in enabled_gateways %}
+                            <!-- PayPal Payment -->
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fab fa-paypal fa-3x text-warning mb-3"></i>
+                                        <h6>PayPal</h6>
+                                        <p class="text-muted">Pay with PayPal balance or card</p>
+                                        <button class="btn btn-warning w-100" onclick="processPartnerPayment('paypal')">
+                                            Pay with PayPal
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
+                            {% endif %}
                         </div>
-                    </div>
+                    {% endif %}
                 </div>
             </div>
             
@@ -89,15 +100,308 @@
     </div>
 </div>
 
+<!-- Stripe Payment Modal -->
+<div class="modal fade" id="stripeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Credit Card Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="payment-form">
+                    <div id="payment-element">
+                        <!-- Stripe Elements will create form elements here -->
+                    </div>
+                    <div id="payment-message" class="hidden"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="submit-payment" disabled>
+                    <span id="button-text">Pay ${{ "%.2f"|format(amount) }}</span>
+                    <div id="spinner" class="spinner-border spinner-border-sm d-none" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PayPal Payment Modal -->
+<div class="modal fade" id="paypalModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">PayPal Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p>Click the button below to pay with PayPal.</p>
+                <div id="paypal-button-container"></div>
+                <div id="paypal-message" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://js.stripe.com/v3/"></script>
+{% if 'paypal' in enabled_gateways and gateway_config.paypal and gateway_config.paypal.client_id %}
+<script src="https://www.paypal.com/sdk/js?client-id={{ gateway_config.paypal.client_id }}&currency=USD"></script>
+{% endif %}
+
 <script>
-function processPartnerPayment(method) {
-    // For demo purposes - in a real implementation, you would integrate payment processing
-    if (confirm(`Process payment of ${{ "%.2f"|format(amount) }} via ${method}?`)) {
-        // Simulate successful payment
-        alert('Payment processing functionality would be implemented here');
-        // Redirect to success
-        window.location.href = '{{ url_for("partner_payment_success") }}';
+let stripe;
+let elements;
+
+// Initialize Stripe when the modal is opened
+async function processPartnerPayment(method) {
+    if (method === 'stripe') {
+        await openStripePayment();
+    } else if (method === 'paypal') {
+        await openPayPalPayment();
     }
 }
+
+async function openStripePayment() {
+    try {
+        // Create payment intent
+        const response = await fetch('/payment/stripe/create-intent', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                amount: {{ amount }},
+                currency: 'usd',
+                payment_type: 'partner'
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            showMessage(data.error);
+            return;
+        }
+        
+        // Check if we're in demo mode
+        if (data.demo_mode) {
+            // Show demo payment modal with simulated success
+            showDemoPayment();
+            return;
+        }
+        
+        // Initialize Stripe
+        stripe = Stripe(data.publishable_key);
+        
+        const appearance = {
+            theme: 'stripe',
+        };
+        
+        elements = stripe.elements({
+            appearance,
+            clientSecret: data.client_secret
+        });
+        
+        const paymentElement = elements.create('payment');
+        paymentElement.mount('#payment-element');
+        
+        // Show modal
+        new bootstrap.Modal(document.getElementById('stripeModal')).show();
+        
+        // Enable submit button when ready
+        document.getElementById('submit-payment').disabled = false;
+        
+    } catch (error) {
+        showMessage('Error setting up payment: ' + error.message);
+    }
+}
+
+// Demo payment simulation
+function showDemoPayment() {
+    // Create a simple demo payment modal
+    const demoModal = document.createElement('div');
+    demoModal.className = 'modal fade';
+    demoModal.innerHTML = `
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Demo Payment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Demo Mode:</strong> This is a simulated payment for demonstration purposes.
+                    </div>
+                    <p>Amount: <strong>$${{"%.2f"|format(amount)}}</strong></p>
+                    <p>Click "Complete Demo Payment" to simulate a successful payment.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="completeDemoPayment()">
+                        Complete Demo Payment
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(demoModal);
+    const modal = new bootstrap.Modal(demoModal);
+    modal.show();
+    
+    // Clean up when modal is hidden
+    demoModal.addEventListener('hidden.bs.modal', function() {
+        document.body.removeChild(demoModal);
+    });
+}
+
+// Complete demo payment
+function completeDemoPayment() {
+    // Close any open modals
+    const modals = document.querySelectorAll('.modal.show');
+    modals.forEach(modal => {
+        const modalInstance = bootstrap.Modal.getInstance(modal);
+        if (modalInstance) modalInstance.hide();
+    });
+    
+    // Redirect to success page
+    window.location.href = '{{ url_for("payment.success") }}';
+}
+
+async function openPayPalPayment() {
+    try {
+        // Create PayPal order
+        const response = await fetch('/payment/paypal/create-order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                amount: {{ amount }},
+                currency: 'USD',
+                payment_type: 'partner'
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            showMessage(data.error);
+            return;
+        }
+        
+        // Redirect to PayPal
+        window.location.href = data.approval_url;
+        
+    } catch (error) {
+        showMessage('Error setting up PayPal payment: ' + error.message);
+    }
+}
+
+// Handle Stripe form submission
+document.getElementById('submit-payment')?.addEventListener('click', async function(e) {
+    e.preventDefault();
+    
+    if (!stripe || !elements) {
+        return;
+    }
+    
+    setLoading(true);
+    
+    const {error, paymentIntent} = await stripe.confirmPayment({
+        elements,
+        redirect: 'if_required',
+    });
+    
+    if (error) {
+        if (error.type === "card_error" || error.type === "validation_error") {
+            showMessage(error.message);
+        } else {
+            showMessage("An unexpected error occurred.");
+        }
+        setLoading(false);
+    } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+        // Payment succeeded, now confirm it on our server
+        try {
+            const confirmResponse = await fetch('/payment/stripe/confirm', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    payment_intent_id: paymentIntent.id
+                })
+            });
+            
+            const confirmData = await confirmResponse.json();
+            
+            if (confirmData.status === 'success') {
+                // Redirect to success page
+                window.location.href = confirmData.redirect_url;
+            } else {
+                showMessage(confirmData.error || 'Failed to process payment');
+                setLoading(false);
+            }
+        } catch (confirmError) {
+            showMessage('Error confirming payment: ' + confirmError.message);
+            setLoading(false);
+        }
+    } else {
+        showMessage('Payment was not completed');
+        setLoading(false);
+    }
+});
+
+function setLoading(isLoading) {
+    const submitButton = document.getElementById('submit-payment');
+    const buttonText = document.getElementById('button-text');
+    const spinner = document.getElementById('spinner');
+    
+    if (isLoading) {
+        submitButton.disabled = true;
+        buttonText.textContent = 'Processing...';
+        spinner.classList.remove('d-none');
+    } else {
+        submitButton.disabled = false;
+        buttonText.textContent = 'Pay ${{ "%.2f"|format(amount) }}';
+        spinner.classList.add('d-none');
+    }
+}
+
+function showMessage(messageText) {
+    const messageContainer = document.getElementById('payment-message');
+    messageContainer.classList.remove('hidden');
+    messageContainer.textContent = messageText;
+    
+    setTimeout(() => {
+        messageContainer.classList.add('hidden');
+        messageContainer.textContent = '';
+    }, 4000);
+}
+
+// CSS for payment elements
+const style = document.createElement('style');
+style.textContent = `
+    .hidden {
+        display: none;
+    }
+    
+    #payment-message {
+        color: rgb(105, 115, 134);
+        font-size: 16px;
+        line-height: 20px;
+        padding-top: 12px;
+        text-align: center;
+    }
+    
+    #payment-element {
+        margin-bottom: 24px;
+    }
+`;
+document.head.appendChild(style);
 </script>
 {% endblock %}

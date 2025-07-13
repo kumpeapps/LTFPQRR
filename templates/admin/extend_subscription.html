@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Extend Partner Subscription - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        {% include 'includes/dashboard_sidebar.html' %}
+        
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-calendar-plus"></i> Extend Partner Subscription</h2>
+                    <a href="{{ url_for('admin.partner_subscriptions') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Subscriptions
+                    </a>
+                </div>
+
+                <!-- Subscription Details -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-info-circle"></i> Subscription Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Partner:</strong> {{ subscription.partner.company_name }}</p>
+                                <p><strong>Owner:</strong> {{ subscription.partner.owner.get_full_name() }}</p>
+                                <p><strong>Email:</strong> {{ subscription.partner.owner.email }}</p>
+                                <p><strong>Plan:</strong> 
+                                    {% if subscription.pricing_plan %}
+                                        {{ subscription.pricing_plan.plan_type.title() }} - {{ subscription.pricing_plan.billing_period.title() }}
+                                    {% else %}
+                                        Partner
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Status:</strong> 
+                                    {% if subscription.is_active() %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% elif subscription.is_expired() %}
+                                        <span class="badge bg-danger">Expired</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ subscription.status.title() }}</span>
+                                    {% endif %}
+                                </p>
+                                <p><strong>Start Date:</strong> {{ subscription.start_date.strftime('%B %d, %Y') if subscription.start_date else 'N/A' }}</p>
+                                <p><strong>Current End Date:</strong> 
+                                    {% if subscription.end_date %}
+                                        {{ subscription.end_date.strftime('%B %d, %Y') }}
+                                    {% else %}
+                                        <span class="text-success">Never (Unlimited)</span>
+                                    {% endif %}
+                                </p>
+                                <p><strong>Amount:</strong> ${{ "%.2f"|format(subscription.amount) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Extension Options -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> Extension Options</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Quick Actions -->
+                            <div class="col-md-6">
+                                <h6>Quick Actions</h6>
+                                <div class="d-grid gap-2">
+                                    <form method="POST" style="display: inline;">
+                                        <input type="hidden" name="action" value="extend_month">
+                                        <button type="submit" class="btn btn-outline-primary">
+                                            <i class="fas fa-plus"></i> Extend by 1 Month
+                                        </button>
+                                    </form>
+                                    
+                                    <form method="POST" style="display: inline;">
+                                        <input type="hidden" name="action" value="extend_year">
+                                        <button type="submit" class="btn btn-outline-primary">
+                                            <i class="fas fa-plus"></i> Extend by 1 Year
+                                        </button>
+                                    </form>
+                                    
+                                    <form method="POST" style="display: inline;">
+                                        <input type="hidden" name="action" value="set_unlimited">
+                                        <button type="submit" class="btn btn-outline-success"
+                                                onclick="return confirm('Are you sure you want to set this subscription to unlimited?')">
+                                            <i class="fas fa-infinity"></i> Set to Unlimited
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            
+                            <!-- Custom Date -->
+                            <div class="col-md-6">
+                                <h6>Set Custom Expiration Date</h6>
+                                <form method="POST">
+                                    <input type="hidden" name="action" value="set_custom">
+                                    <div class="input-group">
+                                        <input type="date" 
+                                               name="custom_date" 
+                                               class="form-control" 
+                                               required>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-calendar-check"></i> Set Date
+                                        </button>
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        Choose a specific expiration date for this subscription.
+                                    </small>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- Warning -->
+                        <div class="alert alert-warning mt-4">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Note:</strong> Changes to the subscription expiration will take effect immediately. 
+                            The partner will be notified of any changes to their subscription.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

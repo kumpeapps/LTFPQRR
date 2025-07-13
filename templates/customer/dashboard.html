@@ -6,44 +6,19 @@
 <div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
-        <div class="col-md-3 col-lg-2 sidebar">
-            <div class="py-3">
-                <h5>Customer Dashboard</h5>
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="{{ url_for('customer_dashboard') }}">
-                            <i class="fas fa-tachometer-alt"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('claim_tag') }}">
-                            <i class="fas fa-tags"></i> Claim Tag
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('create_pet') }}">
-                            <i class="fas fa-plus"></i> Add Pet
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('notification_settings') }}">
-                            <i class="fas fa-bell"></i> Notifications
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
+        {% set sidebar_context = 'customer' %}
+        {% include 'includes/dashboard_sidebar.html' %}
 
         <!-- Main Content -->
-        <div class="col-md-9 col-lg-10">
-            <div class="py-3">
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>Customer Dashboard</h2>
                     <div>
-                        <a href="{{ url_for('claim_tag') }}" class="btn btn-primary me-2">
+                        <a href="{{ url_for('tag.claim_tag') }}" class="btn btn-primary me-2">
                             <i class="fas fa-tags"></i> Claim Tag
                         </a>
-                        <a href="{{ url_for('create_pet') }}" class="btn btn-success">
+                        <a href="{{ url_for('pet.create_pet') }}" class="btn btn-success">
                             <i class="fas fa-plus"></i> Add Pet
                         </a>
                     </div>
@@ -111,7 +86,7 @@
                                                     <strong>Tag ID:</strong> 
                                                     <div class="tag-display mb-2">{{ pet.tag.tag_id }}</div>
                                                     <div class="text-center">
-                                                        <img src="{{ url_for('tag_qr_code', tag_id=pet.tag.tag_id) }}" 
+                                                        <img src="{{ url_for('tag_qr', tag_id=pet.tag.tag_id) }}" 
                                                              alt="QR Code for {{ pet.tag.tag_id }}" 
                                                              class="img-fluid" style="max-width: 100px;">
                                                     </div>
@@ -127,7 +102,7 @@
                                                        class="btn btn-sm btn-outline-success" target="_blank">
                                                         <i class="fas fa-eye"></i> View Public
                                                     </a>
-                                                    <a href="{{ url_for('tag_qr_code', tag_id=pet.tag.tag_id) }}" 
+                                                    <a href="{{ url_for('tag_qr', tag_id=pet.tag.tag_id) }}" 
                                                        class="btn btn-sm btn-outline-info" target="_blank" title="Download QR Code">
                                                         <i class="fas fa-qrcode"></i>
                                                     </a>
@@ -143,7 +118,7 @@
                                 <i class="fas fa-paw fa-3x text-muted mb-3"></i>
                                 <h5>No pets registered yet</h5>
                                 <p class="text-muted">Add your first pet to get started!</p>
-                                <a href="{{ url_for('create_pet') }}" class="btn btn-success">
+                                <a href="{{ url_for('pet.create_pet') }}" class="btn btn-success">
                                     <i class="fas fa-plus"></i> Add Pet
                                 </a>
                             </div>
@@ -221,7 +196,7 @@
                                 <i class="fas fa-tags fa-3x text-muted mb-3"></i>
                                 <h5>No tags claimed yet</h5>
                                 <p class="text-muted">Claim your first tag to protect your pet!</p>
-                                <a href="{{ url_for('claim_tag') }}" class="btn btn-primary">
+                                <a href="{{ url_for('tag.claim_tag') }}" class="btn btn-primary">
                                     <i class="fas fa-tags"></i> Claim Tag
                                 </a>
                             </div>

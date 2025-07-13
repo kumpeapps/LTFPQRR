@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}{{ partner.company_name }} - Partner Details - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        {% set sidebar_context = 'partner' %}
+        {% include 'includes/dashboard_sidebar.html' %}
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h2>{{ partner.company_name }}</h2>
+                        <p class="text-muted mb-0">Partner Details & Management</p>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('partner.management_dashboard') }}" class="btn btn-outline-secondary me-2">
+                            <i class="fas fa-arrow-left"></i> Back to Management
+                        </a>
+                        <a href="{{ url_for('partner.dashboard', partner_id=partner.id) }}" class="btn btn-primary">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Subscription Prompt for New Partners -->
+                {% if prompt_subscription and not subscription %}
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    <h5><i class="fas fa-rocket"></i> Welcome to your new partner account!</h5>
+                    <p class="mb-3">To start creating and managing QR tags for {{ partner.company_name }}, you'll need an active subscription.</p>
+                    <a href="{{ url_for('partner.subscription', partner_id=partner.id) }}" class="btn btn-primary">
+                        <i class="fas fa-credit-card"></i> Subscribe Now
+                    </a>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endif %}
+
+                <!-- Partner Information -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-building"></i> Company Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Company Name:</strong><br>{{ partner.company_name }}</p>
+                                        <p><strong>Email:</strong><br>{{ partner.email }}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        {% if partner.phone %}
+                                        <p><strong>Phone:</strong><br>{{ partner.phone }}</p>
+                                        {% endif %}
+                                        {% if partner.address %}
+                                        <p><strong>Address:</strong><br>{{ partner.address }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <p class="mb-0"><strong>Created:</strong> {{ partner.created_at.strftime('%B %d, %Y') }}</p>
+                                        <p class="mb-0"><strong>Your Role:</strong> <span class="badge bg-primary">{{ user_role.title() }}</span></p>
+                                    </div>
+                                    {% if user_role == 'owner' %}
+                                    <div>
+                                        <button class="btn btn-outline-secondary btn-sm">
+                                            <i class="fas fa-edit"></i> Edit Company
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Subscription Status -->
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-credit-card"></i> Subscription</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if subscription %}
+                                <div class="text-center">
+                                    <span class="badge bg-success mb-2">Active</span>
+                                    <h6>{{ subscription.subscription_type.title() }} Plan</h6>
+                                    <p class="text-muted small">
+                                        {% if subscription.end_date %}
+                                        Expires: {{ subscription.end_date.strftime('%m/%d/%Y') }}
+                                        {% else %}
+                                        Active
+                                        {% endif %}
+                                    </p>
+                                    <a href="{{ url_for('partner.subscription', partner_id=partner.id) }}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-cog"></i> Manage
+                                    </a>
+                                </div>
+                                {% else %}
+                                <div class="text-center">
+                                    <span class="badge bg-warning mb-2">No Subscription</span>
+                                    <p class="text-muted small">Subscribe to start creating tags</p>
+                                    <a href="{{ url_for('partner.subscription', partner_id=partner.id) }}" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-plus"></i> Subscribe
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 text-center mb-3">
+                                {% if subscription %}
+                                <a href="{{ url_for('partner.dashboard', partner_id=partner.id) }}" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-tachometer-alt fa-2x d-block mb-2"></i>
+                                    Dashboard
+                                </a>
+                                {% else %}
+                                <button class="btn btn-secondary btn-lg" disabled>
+                                    <i class="fas fa-tachometer-alt fa-2x d-block mb-2"></i>
+                                    Dashboard
+                                </button>
+                                {% endif %}
+                                <p class="text-muted small mt-2">Partner dashboard</p>
+                            </div>
+                            <div class="col-md-3 text-center mb-3">
+                                {% if subscription %}
+                                <a href="{{ url_for('tag.create_tag', partner_id=partner.id) }}" class="btn btn-success btn-lg">
+                                    <i class="fas fa-plus-circle fa-2x d-block mb-2"></i>
+                                    Create Tag
+                                </a>
+                                {% else %}
+                                <button class="btn btn-secondary btn-lg" disabled>
+                                    <i class="fas fa-plus-circle fa-2x d-block mb-2"></i>
+                                    Create Tag
+                                </button>
+                                {% endif %}
+                                <p class="text-muted small mt-2">Create QR tags</p>
+                            </div>
+                            <div class="col-md-3 text-center mb-3">
+                                <a href="{{ url_for('partner.subscription', partner_id=partner.id) }}" class="btn btn-outline-primary btn-lg">
+                                    <i class="fas fa-credit-card fa-2x d-block mb-2"></i>
+                                    Subscription
+                                </a>
+                                <p class="text-muted small mt-2">Manage subscription</p>
+                            </div>
+                            <div class="col-md-3 text-center mb-3">
+                                <a href="{{ url_for('dashboard.customer_dashboard') }}" class="btn btn-outline-secondary btn-lg">
+                                    <i class="fas fa-user fa-2x d-block mb-2"></i>
+                                    Customer Dashboard
+                                </a>
+                                <p class="text-muted small mt-2">Personal tags & pets</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Access Management (Owner Only) -->
+                {% if user_role == 'owner' %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-users"></i> Access Management</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Manage who has access to this partner account. (Feature coming soon)</p>
+                        <button class="btn btn-outline-primary" disabled>
+                            <i class="fas fa-user-plus"></i> Grant Access
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

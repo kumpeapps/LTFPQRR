@@ -6,37 +6,74 @@
 <div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
-        <div class="col-md-3 col-lg-2 sidebar">
-            <div class="py-3">
-                <h5>Partner Dashboard</h5>
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="{{ url_for('partner_dashboard') }}">
-                            <i class="fas fa-tachometer-alt"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('create_tag') }}">
-                            <i class="fas fa-plus"></i> Create Tag
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('partner_subscription') }}">
-                            <i class="fas fa-credit-card"></i> Subscription
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
+        {% set sidebar_context = 'partner' %}
+        {% include 'includes/dashboard_sidebar.html' %}
 
         <!-- Main Content -->
-        <div class="col-md-9 col-lg-10">
-            <div class="py-3">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2>Partner Dashboard</h2>
-                    <a href="{{ url_for('create_tag') }}" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Create New Tag
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
+                <!-- Subscription Prompt for New/Unsubscribed Partners -->
+                {% if request.args.get('prompt_subscription') and not subscription and partner %}
+                <div class="alert alert-primary alert-dismissible fade show mb-4" role="alert">
+                    <h5><i class="fas fa-rocket"></i> Almost there!</h5>
+                    <p class="mb-3">Welcome to {{ partner.company_name }}! To start creating and managing QR tags, you need an active subscription.</p>
+                    <a href="{{ url_for('partner.subscription', partner_id=partner.id) }}" class="btn btn-primary me-2">
+                        <i class="fas fa-credit-card"></i> Subscribe Now
                     </a>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endif %}
+                
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        {% if partner %}
+                        <h2>{{ partner.company_name }}</h2>
+                        <p class="text-muted mb-0">Partner Dashboard</p>
+                        {% elif show_pending_status %}
+                        <h2>Partner Dashboard</h2>
+                        <p class="text-muted mb-0">Subscription Pending Approval</p>
+                        {% else %}
+                        <h2>Partner Dashboard</h2>
+                        <p class="text-muted mb-0">No Partner Selected</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <!-- Partner Selection -->
+                        {% if owned_partners|length + accessible_partners|length > 1 %}
+                        <div class="dropdown me-2">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="partnerDropdown" data-bs-toggle="dropdown">
+                                <i class="fas fa-building"></i> Switch Partner
+                            </button>
+                            <ul class="dropdown-menu">
+                                {% for p in owned_partners %}
+                                <li><a class="dropdown-item {{ 'active' if partner and p.id == partner.id else '' }}" href="{{ url_for('partner.dashboard', partner_id=p.id) }}">
+                                    <i class="fas fa-crown text-warning"></i> {{ p.company_name }}
+                                </a></li>
+                                {% endfor %}
+                                {% for p in accessible_partners %}
+                                <li><a class="dropdown-item {{ 'active' if partner and p.id == partner.id else '' }}" href="{{ url_for('partner.dashboard', partner_id=p.id) }}">
+                                    <i class="fas fa-users text-secondary"></i> {{ p.company_name }}
+                                </a></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Action Buttons -->
+                        {% if subscription and partner %}
+                        <a href="{{ url_for('tag.create_tag', partner_id=partner.id) }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create New Tag
+                        </a>
+                        {% elif partner %}
+                        <a href="{{ url_for('partner.subscription', partner_id=partner.id) }}" class="btn btn-warning">
+                            <i class="fas fa-credit-card"></i> Subscribe Now
+                        </a>
+                        {% elif show_pending_status %}
+                        <button class="btn btn-secondary" disabled>
+                            <i class="fas fa-clock"></i> Waiting for Approval
+                        </button>
+                        {% endif %}
+                    </div>
                 </div>
 
                 <!-- Subscription Status -->
@@ -44,11 +81,45 @@
                     <div class="col-md-12">
                         <div class="card">
                             <div class="card-body">
-                                <h5 class="card-title">Subscription Status</h5>
-                                {% if subscription %}
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title mb-0">Subscription Status</h5>
+                                    {% if subscription %}
+                                    <a href="{{ url_for('partner.subscription', partner_id=partner.id) }}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-cog"></i> Manage Subscription
+                                    </a>
+                                    {% endif %}
+                                </div>
+                                <hr>
+                                {% if show_pending_status and pending_subscription %}
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-clock"></i> 
+                                        Your partner subscription is <strong>pending admin approval</strong>.
+                                        <br><small>You will receive an email notification once your subscription is approved by our admin team.</small>
+                                        <div class="mt-3">
+                                            <table class="table table-sm">
+                                                <tr>
+                                                    <td><strong>Plan:</strong></td>
+                                                    <td>{{ pending_subscription.pricing_plan.name if pending_subscription.pricing_plan else 'Partner Plan' }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Amount:</strong></td>
+                                                    <td>${{ pending_subscription.amount }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Submitted:</strong></td>
+                                                    <td>{{ pending_subscription.start_date.strftime('%B %d, %Y at %I:%M %p') }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Status:</strong></td>
+                                                    <td><span class="badge bg-warning">Pending Approval</span></td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                    </div>
+                                {% elif subscription %}
                                     <div class="alert alert-success">
                                         <i class="fas fa-check-circle"></i> 
-                                        Active {{ subscription.subscription_type.title() }} Subscription
+                                        Active {% if subscription.pricing_plan %}{{ subscription.pricing_plan.plan_type.title() }}{% else %}Partner{% endif %} Subscription
                                         {% if subscription.end_date %}
                                             - Expires: {{ subscription.end_date.strftime('%B %d, %Y') }}
                                         {% endif %}
@@ -56,7 +127,12 @@
                                 {% else %}
                                     <div class="alert alert-warning">
                                         <i class="fas fa-exclamation-triangle"></i> 
-                                        No active subscription. <a href="{{ url_for('partner_subscription') }}">Subscribe now</a> to create tags.
+                                        No active subscription{% if partner %} for {{ partner.company_name }}{% endif %}. 
+                                        {% if partner %}
+                                        <a href="{{ url_for('partner.subscription', partner_id=partner.id) }}" class="alert-link">Subscribe now</a> to create tags.
+                                        {% else %}
+                                        Please wait for your subscription approval or contact support.
+                                        {% endif %}
                                     </div>
                                 {% endif %}
                             </div>
@@ -65,34 +141,37 @@
                 </div>
 
                 <!-- Statistics -->
+                {% if not show_pending_status %}
                 <div class="row mb-4">
                     <div class="col-md-3">
                         <div class="card stats-card">
-                            <h3>{{ tags|length }}</h3>
+                            <h3>{{ tags|length if tags else 0 }}</h3>
                             <p>Total Tags Created</p>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card stats-card">
-                            <h3>{{ tags|selectattr('status', 'equalto', 'available')|list|length }}</h3>
+                            <h3>{{ tags|selectattr('status', 'equalto', 'pending')|list|length if tags else 0 }}</h3>
+                            <p>Pending Tags</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stats-card">
+                            <h3>{{ tags|selectattr('status', 'equalto', 'available')|list|length if tags else 0 }}</h3>
                             <p>Available Tags</p>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card stats-card">
-                            <h3>{{ tags|selectattr('status', 'equalto', 'claimed')|list|length }}</h3>
-                            <p>Claimed Tags</p>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card stats-card">
-                            <h3>{{ tags|selectattr('status', 'equalto', 'active')|list|length }}</h3>
-                            <p>Active Tags</p>
+                            <h3>{{ ((tags|selectattr('status', 'equalto', 'claimed')|list|length) + (tags|selectattr('status', 'equalto', 'active')|list|length)) if tags else 0 }}</h3>
+                            <p>In Use</p>
                         </div>
                     </div>
                 </div>
+                {% endif %}
 
                 <!-- Tags List -->
+                {% if not show_pending_status %}
                 <div class="card">
                     <div class="card-header">
                         <h5 class="mb-0">Your Tags</h5>
@@ -119,7 +198,8 @@
                                             </td>
                                             <td>
                                                 <span class="badge 
-                                                    {% if tag.status == 'available' %}bg-success
+                                                    {% if tag.status == 'pending' %}bg-secondary
+                                                    {% elif tag.status == 'available' %}bg-success
                                                     {% elif tag.status == 'claimed' %}bg-warning
                                                     {% elif tag.status == 'active' %}bg-primary
                                                     {% endif %}">
@@ -142,9 +222,24 @@
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                <a href="/found/{{ tag.tag_id }}" class="btn btn-sm btn-outline-primary" target="_blank">
-                                                    <i class="fas fa-eye"></i> View
-                                                </a>
+                                                <div class="btn-group" role="group">
+                                                    <a href="/found/{{ tag.tag_id }}" class="btn btn-sm btn-outline-primary" target="_blank" title="View Tag Page">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    {% if tag.status == 'pending' and current_user.can_activate_tags() %}
+                                                        <form method="POST" action="{{ url_for('tag.activate_tag', tag_id=tag.id) }}" style="display: inline;">
+                                                            <button type="submit" class="btn btn-sm btn-success" title="Activate Tag" onclick="return confirm('Activate this tag to make it available for customers?')">
+                                                                <i class="fas fa-play"></i>
+                                                            </button>
+                                                        </form>
+                                                    {% elif tag.status == 'available' %}
+                                                        <form method="POST" action="{{ url_for('tag.deactivate_tag', tag_id=tag.id) }}" style="display: inline;">
+                                                            <button type="submit" class="btn btn-sm btn-warning" title="Deactivate Tag" onclick="return confirm('Deactivate this tag? It will no longer be available for customers.')">
+                                                                <i class="fas fa-pause"></i>
+                                                            </button>
+                                                        </form>
+                                                    {% endif %}
+                                                </div>
                                             </td>
                                         </tr>
                                         {% endfor %}
@@ -156,13 +251,36 @@
                                 <i class="fas fa-qrcode fa-3x text-muted mb-3"></i>
                                 <h5>No tags created yet</h5>
                                 <p class="text-muted">Create your first tag to get started!</p>
-                                <a href="{{ url_for('create_tag') }}" class="btn btn-primary">
+                                {% if partner %}
+                                <a href="{{ url_for('tag.create_tag', partner_id=partner.id) }}" class="btn btn-primary">
                                     <i class="fas fa-plus"></i> Create Tag
                                 </a>
+                                {% endif %}
                             </div>
                         {% endif %}
                     </div>
                 </div>
+                {% else %}
+                <!-- Pending Subscription Message -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Partner Access Pending</h5>
+                    </div>
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-clock fa-3x text-warning mb-3"></i>
+                        <h5>Subscription Under Review</h5>
+                        <p class="text-muted">Your partner subscription payment has been received and is currently being reviewed by our admin team.</p>
+                        <p class="text-muted">Once approved, you will be able to create and manage QR tags for your customers.</p>
+                        <div class="alert alert-info mt-4">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>What happens next?</strong><br>
+                            • Our admin team will review your subscription<br>
+                            • You'll receive an email confirmation once approved<br>
+                            • You can then access all partner features
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>

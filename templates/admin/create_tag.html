@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Create Tag - Admin - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar">
+            <div class="py-3">
+                <h5>Admin Panel</h5>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin.dashboard') }}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin.users') }}">
+                            <i class="fas fa-users"></i> Users
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin.partner_subscriptions') }}">
+                            <i class="fas fa-handshake"></i> Partner Subscriptions
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('admin.tags') }}">
+                            <i class="fas fa-qrcode"></i> Tags
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin.pricing') }}">
+                            <i class="fas fa-dollar-sign"></i> Pricing Plans
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin.settings') }}">
+                            <i class="fas fa-cog"></i> Settings
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Create New Tag</h2>
+                    <a href="{{ url_for('admin.tags') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Tags
+                    </a>
+                </div>
+
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Tag Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST">
+                                    <div class="mb-3">
+                                        <label for="tag_id" class="form-label">Tag ID <span class="text-danger">*</span></label>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="tag_id" 
+                                               name="tag_id" 
+                                               placeholder="e.g., PET001" 
+                                               required
+                                               maxlength="20"
+                                               style="text-transform: uppercase;">
+                                        <div class="form-text">
+                                            Enter a unique identifier for this tag. It will be automatically converted to uppercase.
+                                        </div>
+                                    </div>
+
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>Note:</strong> Admin-created tags are immediately set to "available" status and can be claimed by customers right away.
+                                    </div>
+
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-plus"></i> Create Tag
+                                        </button>
+                                        <a href="{{ url_for('admin.tags') }}" class="btn btn-outline-secondary">
+                                            <i class="fas fa-times"></i> Cancel
+                                        </a>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-convert tag ID to uppercase as user types
+document.getElementById('tag_id').addEventListener('input', function(e) {
+    e.target.value = e.target.value.toUpperCase();
+});
+</script>
+{% endblock %}

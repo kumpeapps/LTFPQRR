@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy Policy - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div name="termly-embed" data-id="f6c2eef7-484f-46e3-81e6-a6b0ee717306"></div>
+            <script type="text/javascript">(function(d, s, id) {
+                var js, tjs = d.getElementsByTagName(s)[0];
+                if (d.getElementById(id)) return;
+                js = d.createElement(s); js.id = id;
+                js.src = "https://app.termly.io/embed-policy.min.js";
+                tjs.parentNode.insertBefore(js, tjs);
+                }(document, 'script', 'termly-jssdk'));
+            </script>
+        </div>
+    </div>
+</div>
+{% endblock %}

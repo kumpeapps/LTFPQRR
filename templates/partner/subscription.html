@@ -4,14 +4,79 @@
 
 {% block content %}
 <div class="container">
+    {% if partner %}
+    <!-- Specific Partner Subscription Management -->
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>{{ partner.company_name }} Subscription</h2>
+                    <p class="text-muted mb-0">Manage subscription for this partner</p>
+                </div>
+                <a href="{{ url_for('partner.dashboard', partner_id=partner.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+            
+            {% if subscription %}
+            <!-- Active Subscription -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-check-circle"></i> Active Subscription</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Plan:</strong> {{ subscription.subscription_type.title() }}</p>
+                            <p><strong>Amount:</strong> ${{ "%.2f"|format(subscription.amount) }}</p>
+                            <p><strong>Status:</strong> <span class="badge bg-success">{{ subscription.status.title() }}</span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Start Date:</strong> {{ subscription.start_date.strftime('%B %d, %Y') }}</p>
+                            {% if subscription.end_date %}
+                            <p><strong>End Date:</strong> {{ subscription.end_date.strftime('%B %d, %Y') }}</p>
+                            {% endif %}
+                            <p><strong>Auto Renew:</strong> {{ 'Yes' if subscription.auto_renew else 'No' }}</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="d-flex gap-2">
+                        {% if subscription.can_be_cancelled() %}
+                        <button class="btn btn-warning">
+                            <i class="fas fa-pause"></i> Cancel Subscription
+                        </button>
+                        {% endif %}
+                        <button class="btn btn-outline-secondary">
+                            <i class="fas fa-edit"></i> Modify Plan
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- No Active Subscription -->
+            <div class="alert alert-warning">
+                <h5><i class="fas fa-exclamation-triangle"></i> No Active Subscription</h5>
+                <p class="mb-0">{{ partner.company_name }} needs a subscription to create and manage tags. Choose a plan below to get started.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Subscription Plans -->
     <div class="row justify-content-center">
         <div class="col-md-8">
+            {% if not partner %}
             <div class="text-center mb-5">
                 <h2>Become a LTFPQRR Partner</h2>
                 <p class="lead">Join our network of pet professionals and businesses</p>
             </div>
+            {% else %}
+            <div class="text-center mb-4">
+                <h3>Choose a Plan for {{ partner.company_name }}</h3>
+            </div>
+            {% endif %}
             
-            <!-- Subscription Plans -->
             <div class="row">
                 <div class="col-md-6 mb-4">
                     <div class="card h-100">
@@ -29,10 +94,17 @@
                             </ul>
                         </div>
                         <div class="card-footer">
-                            <form method="POST" action="{{ url_for('partner_subscription_payment') }}">
+                            {% if partner %}
+                            <form method="POST" action="{{ url_for('partner.subscription_detail', partner_id=partner.id) }}">
                                 <input type="hidden" name="subscription_type" value="monthly">
                                 <button type="submit" class="btn btn-primary w-100">Choose Monthly</button>
                             </form>
+                            {% else %}
+                            <form method="POST" action="{{ url_for('payment.partner_subscription_payment') }}">
+                                <input type="hidden" name="subscription_type" value="monthly">
+                                <button type="submit" class="btn btn-primary w-100">Choose Monthly</button>
+                            </form>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -54,10 +126,17 @@
                             </ul>
                         </div>
                         <div class="card-footer">
-                            <form method="POST" action="{{ url_for('partner_subscription_payment') }}">
+                            {% if partner %}
+                            <form method="POST" action="{{ url_for('partner.subscription_detail', partner_id=partner.id) }}">
                                 <input type="hidden" name="subscription_type" value="yearly">
                                 <button type="submit" class="btn btn-success w-100">Choose Yearly</button>
                             </form>
+                            {% else %}
+                            <form method="POST" action="{{ url_for('payment.partner_subscription_payment') }}">
+                                <input type="hidden" name="subscription_type" value="yearly">
+                                <button type="submit" class="btn btn-success w-100">Choose Yearly</button>
+                            </form>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

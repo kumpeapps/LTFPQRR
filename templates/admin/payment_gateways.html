@@ -6,44 +6,12 @@
 <div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
-        <div class="col-md-3 col-lg-2 sidebar">
-            <div class="py-3">
-                <h5>Admin Dashboard</h5>
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
-                            <i class="fas fa-tachometer-alt"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin_users') }}">
-                            <i class="fas fa-users"></i> Users
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin_subscriptions') }}">
-                            <i class="fas fa-credit-card"></i> Subscriptions
-                        </a>
-                    </li>
-                    {% if current_user.has_role('super-admin') %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('admin_settings') }}">
-                                <i class="fas fa-cog"></i> Settings
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link active" href="{{ url_for('payment_gateways') }}">
-                                <i class="fas fa-credit-card"></i> Payment Gateways
-                            </a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </div>
-        </div>
+        {% set sidebar_context = 'admin' %}
+        {% include 'includes/dashboard_sidebar.html' %}
 
         <!-- Main Content -->
-        <div class="col-md-9 col-lg-10">
-            <div class="py-3">
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
                 <h2>Payment Gateways</h2>
                 
                 <div class="row">
@@ -72,7 +40,7 @@
                                 
                                 <p class="text-muted">Last Updated: {{ gateway.updated_at.strftime('%Y-%m-%d %H:%M') if gateway.updated_at else 'Never' }}</p>
                                 
-                                <a href="{{ url_for('edit_payment_gateway', gateway_id=gateway.id) }}" class="btn btn-primary">
+                                <a href="{{ url_for('admin.edit_payment_gateway', gateway_id=gateway.id) }}" class="btn btn-primary">
                                     <i class="fas fa-edit"></i> Configure
                                 </a>
                             </div>

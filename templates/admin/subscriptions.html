@@ -6,51 +6,48 @@
 <div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
-        <div class="col-md-3 col-lg-2 sidebar">
-            <div class="py-3">
-                <h5>Admin Dashboard</h5>
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
-                            <i class="fas fa-tachometer-alt"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin_users') }}">
-                            <i class="fas fa-users"></i> Users
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="{{ url_for('admin_subscriptions') }}">
-                            <i class="fas fa-credit-card"></i> Subscriptions
-                        </a>
-                    </li>
-                    {% if current_user.has_role('super-admin') %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('admin_settings') }}">
-                                <i class="fas fa-cog"></i> Settings
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('payment_gateways') }}">
-                                <i class="fas fa-credit-card"></i> Payment Gateways
-                            </a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </div>
-        </div>
+        {% set sidebar_context = 'admin' %}
+        {% include 'includes/dashboard_sidebar.html' %}
 
         <!-- Main Content -->
-        <div class="col-md-9 col-lg-10">
-            <div class="py-3">
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>Subscriptions Management</h2>
-                    {% if current_user.has_role('super-admin') %}
-                    <a href="{{ url_for('add_subscription') }}" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Add Subscription
-                    </a>
-                    {% endif %}
+                </div>
+                
+                <!-- Search Form -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <form method="GET" class="row g-3">
+                            <div class="col-md-8">
+                                <div class="input-group">
+                                    <input type="text" 
+                                           class="form-control" 
+                                           name="search" 
+                                           value="{{ search or '' }}" 
+                                           placeholder="Search by user, type, status, or payment method...">
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="fas fa-search"></i> Search
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                {% if search %}
+                                    <a href="{{ url_for('admin.subscriptions') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times"></i> Clear Search
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </form>
+                        {% if search %}
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    Showing {{ subscriptions|length }} result(s) for "{{ search }}"
+                                </small>
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
                 
                 <!-- Subscriptions Table -->
@@ -97,24 +94,25 @@
                                         <td>{{ subscription.payment_method.title() if subscription.payment_method else 'Manual' }}</td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
-                                                {% if current_user.has_role('super-admin') %}
-                                                <a href="{{ url_for('edit_subscription', subscription_id=subscription.id) }}" class="btn btn-outline-primary">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                                {% if subscription.status == 'active' %}
-                                                <form method="POST" action="{{ url_for('cancel_subscription_admin', subscription_id=subscription.id) }}" class="d-inline">
-                                                    <button type="submit" class="btn btn-outline-warning" onclick="return confirm('Cancel this subscription?')">
-                                                        <i class="fas fa-ban"></i>
-                                                    </button>
-                                                </form>
-                                                {% endif %}
+                                                {% if subscription.subscription_type == 'partner' %}
+                                                    <a href="{{ url_for('admin.partner_subscriptions') }}" class="btn btn-outline-info" title="Manage in Partner Subscriptions">
+                                                        <i class="fas fa-external-link-alt"></i>
+                                                    </a>
                                                 {% endif %}
                                             </div>
                                         </td>
                                     </tr>
                                     {% else %}
                                     <tr>
-                                        <td colspan="9" class="text-center text-muted">No subscriptions found.</td>
+                                        <td colspan="9" class="text-center text-muted py-4">
+                                            {% if search %}
+                                                <i class="fas fa-search fa-2x mb-2"></i><br>
+                                                No subscriptions found matching "{{ search }}"
+                                            {% else %}
+                                                <i class="fas fa-credit-card fa-2x mb-2"></i><br>
+                                                No subscriptions found.
+                                            {% endif %}
+                                        </td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -126,4 +124,26 @@
         </div>
     </div>
 </div>
+
+<script>
+// Enhanced search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('input[name="search"]');
+    if (searchInput) {
+        // Focus search input if there's a search query
+        if (searchInput.value) {
+            searchInput.focus();
+            searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+        }
+        
+        // Submit form on Enter key
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.closest('form').submit();
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

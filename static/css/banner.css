@@ -1,0 +1,88 @@
+/* Banner styling for hero section */
+.hero-banner {
+    position: relative;
+    height: 500px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-image: url('/static/assets/hero-banner.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 30px;
+    overflow: hidden;
+    color: white;
+}
+
+/* Hero content styling */
+.hero-content {
+    text-align: center;
+    z-index: 2;
+    max-width: 800px;
+    padding: 0 20px;
+}
+
+.hero-title {
+    font-size: 3.5rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    color: #13c1be;
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    text-shadow: 2px 2px 0px black, -2px -2px 0px black, 2px -2px 0px black, -2px 2px 0px black;
+}
+
+.hero-subtitle {
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+    color: #13c1be;
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    text-shadow: 1px 1px 0px black, -1px -1px 0px black, 1px -1px 0px black, -1px 1px 0px black;
+}
+
+.hero-cta {
+    display: inline-block;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: white;
+    padding: 15px 40px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-size: 1.2rem;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.hero-cta:hover {
+    background: linear-gradient(135deg, #ee5a24 0%, #ff6b6b 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    color: white;
+    text-decoration: none;
+}
+
+.hero-cta i {
+    margin-right: 10px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .hero-banner {
+        height: 400px;
+    }
+    
+    .hero-title {
+        font-size: 2.5rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.2rem;
+    }
+    
+    .hero-cta {
+        padding: 12px 30px;
+        font-size: 1.1rem;
+    }
+}

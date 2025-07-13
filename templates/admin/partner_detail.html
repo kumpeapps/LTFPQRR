@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}{{ partner.company_name }} - Partner Details - Admin - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        {% set sidebar_context = 'admin' %}
+        {% include 'includes/dashboard_sidebar.html' %}
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h2>{{ partner.company_name }}</h2>
+                        <p class="text-muted mb-0">Partner Details - Admin View</p>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('admin.partner_subscriptions') }}" class="btn btn-outline-secondary me-2">
+                            <i class="fas fa-arrow-left"></i> Back to Partners
+                        </a>
+                        {% if getattr(partner, 'is_suspended', False) %}
+                        <!-- Partner reactivation form - route not implemented -->
+                        <button type="button" class="btn btn-success" disabled>
+                            <i class="fas fa-check"></i> Reactivate (Not Available)
+                        </button>
+                        {% else %}
+                        <!-- Partner suspension form - route not implemented -->
+                        <button type="button" class="btn btn-warning" disabled>
+                            <i class="fas fa-ban"></i> Suspend (Not Available)
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Partner Status Alert -->
+                {% if getattr(partner, 'is_suspended', False) %}
+                <div class="alert alert-danger">
+                    <h5><i class="fas fa-ban"></i> Partner Suspended</h5>
+                    <p class="mb-0">This partner account is currently suspended and cannot create new tags or access services.</p>
+                </div>
+                {% endif %}
+
+                <!-- Partner Information -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-building"></i> Company Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Company Name:</strong><br>{{ partner.company_name }}</p>
+                                        <p><strong>Email:</strong><br>{{ partner.email }}</p>
+                                        {% if partner.phone %}
+                                        <p><strong>Phone:</strong><br>{{ partner.phone }}</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        {% if partner.address %}
+                                        <p><strong>Address:</strong><br>{{ partner.address }}</p>
+                                        {% endif %}
+                                        <p><strong>Created:</strong><br>{{ partner.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                                        {% if partner.updated_at and partner.updated_at != partner.created_at %}
+                                        <p><strong>Last Updated:</strong><br>{{ partner.updated_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Owner Information -->
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-user"></i> Owner</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if partner.owner %}
+                                <div class="text-center">
+                                    <h6>{{ partner.owner.get_full_name() }}</h6>
+                                    <p class="text-muted">{{ partner.owner.email }}</p>
+                                    <p class="text-muted small">
+                                        Joined: {{ partner.owner.created_at.strftime('%m/%d/%Y') }}
+                                    </p>
+                                    <a href="{{ url_for('edit_user', user_id=partner.owner.id) }}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-edit"></i> Edit User
+                                    </a>
+                                </div>
+                                {% else %}
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-user-slash fa-2x mb-2"></i>
+                                    <p>No owner assigned</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subscription Information -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-credit-card"></i> Subscription Status</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if subscription %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Plan Type:</strong> {{ subscription.subscription_type.title() }}</p>
+                                <p><strong>Status:</strong> 
+                                    {% if subscription.status == 'active' %}
+                                    <span class="badge bg-success">{{ subscription.status.title() }}</span>
+                                    {% elif subscription.status == 'pending' %}
+                                    <span class="badge bg-warning">{{ subscription.status.title() }}</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ subscription.status.title() }}</span>
+                                    {% endif %}
+                                </p>
+                                <p><strong>Amount:</strong> ${{ "%.2f"|format(subscription.amount) }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Start Date:</strong> {{ subscription.start_date.strftime('%B %d, %Y') }}</p>
+                                {% if subscription.end_date %}
+                                <p><strong>End Date:</strong> {{ subscription.end_date.strftime('%B %d, %Y') }}</p>
+                                {% endif %}
+                                <p><strong>Auto Renew:</strong> {{ 'Yes' if subscription.auto_renew else 'No' }}</p>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-credit-card fa-2x mb-2"></i>
+                            <h6>No Active Subscription</h6>
+                            <p class="mb-0">This partner does not have an active subscription.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Tags Information -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="fas fa-qrcode"></i> QR Tags ({{ tags|length }})</h5>
+                            <a href="{{ url_for('admin.tags', search=partner.company_name) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-external-link-alt"></i> View in Tag Manager
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if tags %}
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <div class="card border-primary">
+                                    <div class="card-body text-center">
+                                        <h5 class="text-primary">{{ tags|selectattr("status", "equalto", "active")|list|length }}</h5>
+                                        <p class="mb-0">Active Tags</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="card border-warning">
+                                    <div class="card-body text-center">
+                                        <h5 class="text-warning">{{ tags|selectattr("status", "equalto", "pending")|list|length }}</h5>
+                                        <p class="mb-0">Pending Tags</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="card border-success">
+                                    <div class="card-body text-center">
+                                        <h5 class="text-success">{{ tags|selectattr("status", "equalto", "claimed")|list|length }}</h5>
+                                        <p class="mb-0">Claimed Tags</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="card border-secondary">
+                                    <div class="card-body text-center">
+                                        <h5 class="text-secondary">{{ tags|selectattr("status", "equalto", "available")|list|length }}</h5>
+                                        <p class="mb-0">Available Tags</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Recent Tags -->
+                        {% set recent_tags = tags[:10] %}
+                        {% if recent_tags %}
+                        <h6 class="mt-4">Recent Tags</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Tag ID</th>
+                                        <th>Status</th>
+                                        <th>Owner</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for tag in recent_tags %}
+                                    <tr>
+                                        <td><code>{{ tag.tag_id }}</code></td>
+                                        <td>
+                                            {% if tag.status == 'active' %}
+                                            <span class="badge bg-success">{{ tag.status.title() }}</span>
+                                            {% elif tag.status == 'pending' %}
+                                            <span class="badge bg-warning">{{ tag.status.title() }}</span>
+                                            {% elif tag.status == 'claimed' %}
+                                            <span class="badge bg-primary">{{ tag.status.title() }}</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">{{ tag.status.title() }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if tag.owner %}
+                                            {{ tag.owner.get_full_name() }}
+                                            {% else %}
+                                            <span class="text-muted">Unassigned</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ tag.created_at.strftime('%m/%d/%Y') }}</td>
+                                        <td>
+                                            <a href="{{ url_for('admin.tags', search=tag.tag_id) }}" class="btn btn-xs btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% endif %}
+                        {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-qrcode fa-2x mb-2"></i>
+                            <h6>No Tags Created</h6>
+                            <p class="mb-0">This partner has not created any QR tags yet.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

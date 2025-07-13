@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Pet - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-edit"></i> Edit Pet Information</h4>
+                </div>
+                <div class="card-body">
+                    {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.name.label(class="form-label") }}
+                                {{ form.name(class="form-control") }}
+                                {% if form.name.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.name.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.breed.label(class="form-label") }}
+                                {{ form.breed(class="form-control") }}
+                                {% if form.breed.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.breed.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.species.label(class="form-label") }}
+                                {{ form.species(class="form-control") }}
+                                {% if form.species.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.species.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.color.label(class="form-label") }}
+                                {{ form.color(class="form-control") }}
+                                {% if form.color.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.color.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.age.label(class="form-label") }}
+                                {{ form.age(class="form-control") }}
+                                {% if form.age.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.age.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.weight.label(class="form-label") }}
+                                {{ form.weight(class="form-control") }}
+                                {% if form.weight.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.weight.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows="4") }}
+                            {% if form.description.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.description.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.medical_info.label(class="form-label") }}
+                            {{ form.medical_info(class="form-control", rows="3") }}
+                            {% if form.medical_info.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.medical_info.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.photo.label(class="form-label") }}
+                            {{ form.photo(class="form-control") }}
+                            {% if form.photo.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.photo.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Leave empty to keep current photo</div>
+                        </div>
+                        
+                        {% if pet.photo_filename %}
+                            <div class="mb-3">
+                                <label class="form-label">Current Photo:</label><br>
+                                <img src="{{ url_for('static', filename='uploads/' + pet.photo_filename) }}" 
+                                     alt="{{ pet.name }}" class="img-thumbnail" style="max-width: 200px;">
+                            </div>
+                        {% endif %}
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('dashboard.dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Update Pet
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}Subscription Management - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container">
+    {% if partner %}
+    <!-- Specific Partner Subscription Management -->
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <!-- Check for pending subscription alerts -->
+            {% set pending_subscription = partner.get_pending_subscription() %}
+            {% if pending_subscription %}
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-clock fa-2x me-3"></i>
+                    <div>
+                        <h5 class="alert-heading mb-1">Subscription Pending Approval</h5>
+                        <p class="mb-0">
+                            Your {{ pending_subscription.pricing_plan.name if pending_subscription.pricing_plan else 'Partner' }} subscription 
+                            is awaiting admin approval. You'll receive an email notification once it's approved.
+                        </p>
+                        <small class="text-muted">
+                            Submitted: {{ pending_subscription.start_date.strftime('%B %d, %Y at %I:%M %p') if pending_subscription.start_date else 'Unknown' }}
+                        </small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endif %}
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>{{ partner.company_name }} Subscription</h2>
+                    <p class="text-muted mb-0">Manage subscription for this partner</p>
+                </div>
+                <a href="{{ url_for('partner.dashboard', partner_id=partner.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+            
+            {% if subscription %}
+            <!-- Active Subscription -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-check-circle"></i> Active Subscription</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Plan:</strong> {% if subscription.pricing_plan %}{{ subscription.pricing_plan.plan_type.title() }}{% else %}Partner{% endif %} ({{ subscription.pricing_plan.billing_period if subscription.pricing_plan else 'N/A' }})</p>
+                            <p><strong>Status:</strong> 
+                                <span class="badge bg-{{ 'success' if subscription.status == 'active' else 'warning' }}">
+                                    {{ subscription.status.title() }}
+                                </span>
+                            </p>
+                            <p><strong>Start Date:</strong> {{ subscription.start_date.strftime('%B %d, %Y') if subscription.start_date else 'N/A' }}</p>
+                            {% if subscription.end_date %}
+                            <p><strong>End Date:</strong> {{ subscription.end_date.strftime('%B %d, %Y') }}</p>
+                            {% else %}
+                            <p><strong>End Date:</strong> <span class="text-success">Lifetime</span></p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Amount:</strong> ${{ "%.2f"|format(subscription.amount) }}</p>
+                            <p><strong>Payment Method:</strong> {{ subscription.payment_method.title() if subscription.payment_method else 'N/A' }}</p>
+                            <p><strong>Auto Renew:</strong> 
+                                <span class="badge bg-{{ 'success' if subscription.auto_renew else 'secondary' }}">
+                                    {{ 'Yes' if subscription.auto_renew else 'No' }}
+                                </span>
+                            </p>
+                            {% if subscription.pricing_plan %}
+                            <p><strong>Max Tags:</strong> {{ subscription.pricing_plan.max_tags or 'Unlimited' }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if subscription.pricing_plan %}
+                    <hr>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>Plan Features:</h6>
+                            {% if subscription.pricing_plan.features %}
+                                {% set features = subscription.pricing_plan.get_features_list() %}
+                                <ul class="list-unstyled">
+                                    {% for feature in features %}
+                                    <li><i class="fas fa-check text-success"></i> {{ feature }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="text-muted">No features listed</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        {% if subscription.auto_renew and subscription.status == 'active' %}
+                        <button class="btn btn-outline-warning" onclick="toggleAutoRenew({{ subscription.id }})">
+                            <i class="fas fa-pause"></i> Cancel Auto-Renewal
+                        </button>
+                        {% elif subscription.status == 'active' and subscription.end_date %}
+                        <button class="btn btn-success" onclick="toggleAutoRenew({{ subscription.id }})">
+                            <i class="fas fa-play"></i> Enable Auto-Renewal
+                        </button>
+                        {% endif %}
+                        
+                        {% if subscription.status == 'pending' %}
+                        <span class="text-warning">
+                            <i class="fas fa-clock"></i> Waiting for admin approval
+                        </span>
+                        {% endif %}
+                        
+                        <a href="{{ url_for('partner.purchase_subscription', partner_id=partner.id) }}" class="btn btn-outline-primary">
+                            <i class="fas fa-upgrade"></i> Upgrade Plan
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- No Active Subscription -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> No Active Subscription</h5>
+                </div>
+                <div class="card-body text-center">
+                    <p class="lead">This partner doesn't have an active subscription.</p>
+                    <p>Purchase a subscription to unlock partner features and capabilities.</p>
+                    <a href="{{ url_for('partner.purchase_subscription', partner_id=partner.id) }}" class="btn btn-primary">
+                        <i class="fas fa-shopping-cart"></i> Purchase Subscription
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <!-- All Partners Subscription Overview -->
+    <div class="row justify-content-center">
+        <div class="col-md-12">
+            <!-- Check for any pending subscriptions across all partners -->
+            {% set all_partners = owned_partners + accessible_partners %}
+            {% set pending_subscriptions = [] %}
+            {% for partner in all_partners %}
+                {% if partner.get_pending_subscription() %}
+                    {% set _ = pending_subscriptions.append(partner.get_pending_subscription()) %}
+                {% endif %}
+            {% endfor %}
+            {% set pending_count = pending_subscriptions|length %}
+            {% if pending_count > 0 %}
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle fa-2x me-3"></i>
+                    <div>
+                        <h5 class="alert-heading mb-1">Pending Subscriptions</h5>
+                        <p class="mb-0">
+                            You have {{ pending_count }} subscription{{ 's' if pending_count != 1 else '' }} pending admin approval.
+                            You'll receive email notifications once they're approved.
+                        </p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endif %}
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>Subscription Management</h2>
+                    <p class="text-muted mb-0">Manage subscriptions for all your partners</p>
+                </div>
+                <a href="{{ url_for('partner.management_dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Partners
+                </a>
+            </div>
+            
+            <!-- Owned Partners -->
+            {% if owned_partners %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-building"></i> Owned Partners</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for partner_obj in owned_partners %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="card-title">{{ partner_obj.company_name }}</h6>
+                                            <p class="card-text text-muted">{{ partner_obj.business_type.title() if partner_obj.business_type else 'N/A' }}</p>
+                                            {% set partner_subscription = partner_obj.get_any_subscription() %}
+                                            {% if partner_subscription %}
+                                                {% if partner_subscription.status == 'pending' and not partner_subscription.admin_approved %}
+                                                    <span class="badge bg-warning">
+                                                        <i class="fas fa-clock"></i> Pending Approval
+                                                    </span>
+                                                    <small class="text-muted d-block">{{ partner_subscription.pricing_plan.name if partner_subscription.pricing_plan else 'Partner Plan' }}</small>
+                                                {% elif partner_subscription.status == 'active' and partner_subscription.admin_approved %}
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check-circle"></i> Active
+                                                    </span>
+                                                    <small class="text-success d-block">{{ partner_subscription.pricing_plan.name if partner_subscription.pricing_plan else 'Partner Plan' }}</small>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">
+                                                        {{ partner_subscription.status.title() }}
+                                                    </span>
+                                                    <small class="text-muted d-block">{{ partner_subscription.pricing_plan.name if partner_subscription.pricing_plan else 'Partner Plan' }}</small>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-outline-secondary">
+                                                    <i class="fas fa-plus"></i> No Subscription
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-end">
+                                            <a href="{{ url_for('partner.subscription', partner_id=partner_obj.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-cog"></i> Manage
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Accessible Partners -->
+            {% if accessible_partners %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-handshake"></i> Accessible Partners</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for partner_obj in accessible_partners %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="card-title">{{ partner_obj.company_name }}</h6>
+                                            <p class="card-text text-muted">{{ partner_obj.business_type.title() if partner_obj.business_type else 'N/A' }}</p>
+                                            {% set partner_subscription = partner_obj.get_any_subscription() %}
+                                            {% if partner_subscription %}
+                                                {% if partner_subscription.status == 'pending' and not partner_subscription.admin_approved %}
+                                                    <span class="badge bg-warning">
+                                                        <i class="fas fa-clock"></i> Pending Approval
+                                                    </span>
+                                                    <small class="text-muted d-block">{{ partner_subscription.pricing_plan.name if partner_subscription.pricing_plan else 'Partner Plan' }}</small>
+                                                {% elif partner_subscription.status == 'active' and partner_subscription.admin_approved %}
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check-circle"></i> Active
+                                                    </span>
+                                                    <small class="text-success d-block">{{ partner_subscription.pricing_plan.name if partner_subscription.pricing_plan else 'Partner Plan' }}</small>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">
+                                                        {{ partner_subscription.status.title() }}
+                                                    </span>
+                                                    <small class="text-muted d-block">{{ partner_subscription.pricing_plan.name if partner_subscription.pricing_plan else 'Partner Plan' }}</small>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-outline-secondary">
+                                                    <i class="fas fa-plus"></i> No Subscription
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-end">
+                                            <a href="{{ url_for('partner.subscription', partner_id=partner_obj.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if not owned_partners and not accessible_partners %}
+            <div class="card">
+                <div class="card-body text-center">
+                    <i class="fas fa-building fa-3x text-muted mb-3"></i>
+                    <h5>No Partners Found</h5>
+                    <p class="text-muted">You don't have any partners yet.</p>
+                    <a href="{{ url_for('partner.create_partner') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create Partner
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function toggleAutoRenew(subscriptionId) {
+    // TODO: Implement AJAX call to toggle auto-renewal
+    alert('Auto-renewal toggle functionality coming soon!');
+}
+</script>
+{% endblock %}

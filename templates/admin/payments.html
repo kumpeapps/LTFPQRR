@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Management - Admin - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">        <!-- Sidebar -->
+        {% set sidebar_context = 'admin' %}
+        {% include 'includes/dashboard_sidebar.html' %}
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Payment Management</h2>
+                </div>
+                
+                <!-- Search Form -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <form method="GET" class="row g-3">
+                            <div class="col-md-8">
+                                <div class="input-group">
+                                    <input type="text" 
+                                           class="form-control" 
+                                           name="search" 
+                                           value="{{ search or '' }}" 
+                                           placeholder="Search by user, transaction ID, payment intent ID, or status...">
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="fas fa-search"></i> Search
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                {% if search %}
+                                    <a href="{{ url_for('admin_payments') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times"></i> Clear Search
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </form>
+                        {% if search %}
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    Showing {{ payments|length }} result(s) for "{{ search }}"
+                                </small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Payments Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">All Payments</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Transaction ID</th>
+                                        <th>User</th>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th>Gateway</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Subscription</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for payment in payments %}
+                                    <tr>
+                                        <td>
+                                            <code>{{ payment.transaction_id or payment.payment_intent_id[:20] + '...' if payment.payment_intent_id else 'N/A' }}</code>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <strong>{{ payment.user.get_full_name() }}</strong>
+                                                <small class="text-muted d-block">{{ payment.user.email }}</small>
+                                            </div>
+                                        </td>
+                                        <td>{{ payment.created_at.strftime('%m/%d/%Y %I:%M %p') }}</td>
+                                        <td>
+                                            <span class="badge bg-info">{{ payment.payment_type.title() }}</span>
+                                            {% if payment.payment_metadata and payment.payment_metadata.get('claiming_tag_id') %}
+                                                <small class="text-muted d-block">Tag: {{ payment.payment_metadata.claiming_tag_id }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if payment.payment_gateway == 'stripe' %}
+                                                <i class="fab fa-stripe text-primary"></i> Stripe
+                                            {% elif payment.payment_gateway == 'paypal' %}
+                                                <i class="fab fa-paypal text-primary"></i> PayPal
+                                            {% else %}
+                                                {{ payment.payment_gateway.title() }}
+                                            {% endif %}
+                                        </td>
+                                        <td>${{ "%.2f"|format(payment.amount) }}</td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if payment.status == 'completed' %}bg-success
+                                                {% elif payment.status == 'pending' %}bg-warning
+                                                {% elif payment.status == 'failed' %}bg-danger
+                                                {% elif payment.status == 'refunded' %}bg-secondary
+                                                {% endif %}">
+                                                {{ payment.status.title() }}
+                                            </span>
+                                            {% if payment.processed_at %}
+                                                <small class="text-muted d-block">{{ payment.processed_at.strftime('%m/%d %I:%M %p') }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if payment.subscription %}
+                                                <a href="{{ url_for('admin.edit_subscription', subscription_id=payment.subscription.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    View Subscription
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted">None</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-4">
+                                            {% if search %}
+                                                <i class="fas fa-search fa-2x mb-2"></i><br>
+                                                No payments found matching "{{ search }}"
+                                            {% else %}
+                                                <i class="fas fa-receipt fa-2x mb-2"></i><br>
+                                                No payments found.
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Enhanced search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('input[name="search"]');
+    if (searchInput) {
+        // Focus search input if there's a search query
+        if (searchInput.value) {
+            searchInput.focus();
+            searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+        }
+        
+        // Submit form on Enter key
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.closest('form').submit();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

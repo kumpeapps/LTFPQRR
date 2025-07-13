@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Contact Us - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="text-center mb-5">
+                <h2 class="display-5">Contact Us</h2>
+                <p class="lead">We're here to help! Get in touch with our support team.</p>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-envelope fa-3x text-primary mb-3"></i>
+                            <h5>Email Support</h5>
+                            <p class="text-muted">For general inquiries and account questions</p>
+                            <a href="mailto:support@ltfpqrr.com" class="btn btn-outline-primary">support@ltfpqrr.com</a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="row mt-5">
+                <div class="col-md-12">
+                    <h4>Frequently Asked Questions</h4>
+                    <div class="accordion" id="faqAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingOne">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                                    How quickly will I be notified if someone finds my pet?
+                                </button>
+                            </h2>
+                            <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    You'll receive instant notifications via email and SMS (if enabled) as soon as someone scans your pet's QR code. Our system operates 24/7 to ensure immediate contact.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingTwo">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                                    What information can people see when they scan the QR code?
+                                </button>
+                            </h2>
+                            <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    People who find your pet will see only basic information like your pet's name, photo, and a secure contact form. Your personal contact information remains private until you choose to share it.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingThree">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
+                                    Can I update my pet's information after registration?
+                                </button>
+                            </h2>
+                            <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Yes! You can update your pet's profile, photo, veterinary information, and your contact details anytime through your dashboard. Changes are reflected immediately.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

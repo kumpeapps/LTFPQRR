@@ -6,44 +6,12 @@
 <div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
-        <div class="col-md-3 col-lg-2 sidebar">
-            <div class="py-3">
-                <h5>Admin Dashboard</h5>
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
-                            <i class="fas fa-tachometer-alt"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin_users') }}">
-                            <i class="fas fa-users"></i> Users
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin_subscriptions') }}">
-                            <i class="fas fa-credit-card"></i> Subscriptions
-                        </a>
-                    </li>
-                    {% if current_user.has_role('super-admin') %}
-                        <li class="nav-item">
-                            <a class="nav-link active" href="{{ url_for('admin_settings') }}">
-                                <i class="fas fa-cog"></i> Settings
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('payment_gateways') }}">
-                                <i class="fas fa-credit-card"></i> Payment Gateways
-                            </a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </div>
-        </div>
+        {% set sidebar_context = 'admin' %}
+        {% include 'includes/dashboard_sidebar.html' %}
 
         <!-- Main Content -->
-        <div class="col-md-9 col-lg-10">
-            <div class="py-3">
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
                 <h2>System Settings</h2>
                 
                 <div class="card">
@@ -51,29 +19,194 @@
                         <h5 class="mb-0">Application Configuration</h5>
                     </div>
                     <div class="card-body">
-                        <form method="POST" action="{{ url_for('update_settings') }}">
+                        <form method="POST" action="{{ url_for('admin.settings') }}">
+                            {% set smtp_settings = ['smtp_enabled', 'smtp_server', 'smtp_port', 'smtp_username', 'smtp_password', 'smtp_from_email', 'smtp_use_tls'] %}
                             {% for setting in settings %}
-                            <div class="mb-3">
-                                <label class="form-label">
-                                    <strong>{{ setting.key.replace('_', ' ').title() }}</strong>
-                                    {% if setting.description %}
-                                        <small class="text-muted d-block">{{ setting.description }}</small>
+                                {% if setting.key not in smtp_settings %}
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        <strong>{{ setting.key.replace('_', ' ').title() }}</strong>
+                                        {% if setting.description %}
+                                            <small class="text-muted d-block">{{ setting.description }}</small>
+                                        {% endif %}
+                                    </label>
+                                    {% set boolean_fields = ['registration_enabled', 'email_verification_required', 'maintenance_mode'] %}
+                                    {% if setting.key in boolean_fields %}
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="setting_{{ setting.key }}" value="false">
+                                            <input class="form-check-input" type="checkbox" name="setting_{{ setting.key }}" 
+                                                   id="switch_{{ setting.key }}" value="true"
+                                                   {% if setting.value.lower() == 'true' %}checked{% endif %}>
+                                            <label class="form-check-label" for="switch_{{ setting.key }}">
+                                                {% if setting.value.lower() == 'true' %}Enabled{% else %}Disabled{% endif %}
+                                            </label>
+                                        </div>
+                                    {% elif setting.key.endswith('_type') or setting.key.endswith('_mode') %}
+                                        <select name="setting_{{ setting.key }}" class="form-select">
+                                            {% if setting.key == 'registration_type' %}
+                                                <option value="open" {% if setting.value == 'open' %}selected{% endif %}>Open Registration</option>
+                                                <option value="invite" {% if setting.value == 'invite' %}selected{% endif %}>Invite Only</option>
+                                                <option value="approval" {% if setting.value == 'approval' %}selected{% endif %}>Require Approval</option>
+                                            {% elif setting.key == 'payment_mode' %}
+                                                <option value="live" {% if setting.value == 'live' %}selected{% endif %}>Live</option>
+                                                <option value="test" {% if setting.value == 'test' %}selected{% endif %}>Test</option>
+                                            {% else %}
+                                                <option value="{{ setting.value }}">{{ setting.value }}</option>
+                                            {% endif %}
+                                        </select>
+                                    {% else %}
+                                        <input type="text" name="setting_{{ setting.key }}" value="{{ setting.value }}" class="form-control">
                                     {% endif %}
-                                </label>
-                                {% if setting.key in ['registration_enabled'] %}
-                                    <select name="setting_{{ setting.key }}" class="form-select">
-                                        <option value="true" {% if setting.value.lower() == 'true' %}selected{% endif %}>Enabled</option>
-                                        <option value="false" {% if setting.value.lower() == 'false' %}selected{% endif %}>Disabled</option>
-                                    </select>
-                                {% else %}
-                                    <input type="text" name="setting_{{ setting.key }}" value="{{ setting.value }}" class="form-control">
+                                </div>
                                 {% endif %}
-                            </div>
                             {% endfor %}
                             
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-save"></i> Save Settings
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Email Settings Section -->
+                <div class="card mt-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Email Configuration</h5>
+                        <small class="text-muted">Configure SMTP settings for email notifications</small>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('admin.settings') }}">
+                            {% set smtp_settings = ['smtp_enabled', 'smtp_server', 'smtp_port', 'smtp_username', 'smtp_password', 'smtp_from_email', 'smtp_use_tls'] %}
+                            {% for setting in settings %}
+                                {% if setting.key in smtp_settings %}
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        <strong>{{ setting.key.replace('_', ' ').title() }}</strong>
+                                        {% if setting.key == 'smtp_enabled' %}
+                                            <small class="text-muted d-block">Enable or disable email notifications</small>
+                                        {% elif setting.key == 'smtp_server' %}
+                                            <small class="text-muted d-block">SMTP server address (e.g., smtp.gmail.com)</small>
+                                        {% elif setting.key == 'smtp_port' %}
+                                            <small class="text-muted d-block">SMTP server port (usually 587 for TLS or 465 for SSL)</small>
+                                        {% elif setting.key == 'smtp_username' %}
+                                            <small class="text-muted d-block">Username for SMTP authentication</small>
+                                        {% elif setting.key == 'smtp_password' %}
+                                            <small class="text-muted d-block">Password or app password for SMTP authentication</small>
+                                        {% elif setting.key == 'smtp_from_email' %}
+                                            <small class="text-muted d-block">Email address that notifications will be sent from</small>
+                                        {% elif setting.key == 'smtp_use_tls' %}
+                                            <small class="text-muted d-block">Use TLS encryption for secure connection</small>
+                                        {% endif %}
+                                    </label>
+                                    
+                                    {% if setting.key in ['smtp_enabled', 'smtp_use_tls'] %}
+                                        <div class="form-check form-switch">
+                                            <input type="hidden" name="setting_{{ setting.key }}" value="false">
+                                            <input class="form-check-input" type="checkbox" name="setting_{{ setting.key }}" 
+                                                   id="switch_{{ setting.key }}" value="true"
+                                                   {% if setting.value.lower() == 'true' %}checked{% endif %}>
+                                            <label class="form-check-label" for="switch_{{ setting.key }}">
+                                                {% if setting.value.lower() == 'true' %}Enabled{% else %}Disabled{% endif %}
+                                            </label>
+                                        </div>
+                                    {% elif setting.key == 'smtp_password' %}
+                                        <input type="password" name="setting_{{ setting.key }}" value="{{ setting.value }}" class="form-control" placeholder="Enter SMTP password">
+                                    {% elif setting.key == 'smtp_port' %}
+                                        <input type="number" name="setting_{{ setting.key }}" value="{{ setting.value }}" class="form-control" min="1" max="65535">
+                                    {% else %}
+                                        <input type="text" name="setting_{{ setting.key }}" value="{{ setting.value }}" class="form-control"
+                                               {% if setting.key == 'smtp_server' %}placeholder="smtp.gmail.com"
+                                               {% elif setting.key == 'smtp_username' %}placeholder="your-email@gmail.com"
+                                               {% elif setting.key == 'smtp_from_email' %}placeholder="noreply@yoursite.com"
+                                               {% endif %}>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Note:</strong> For Gmail, you'll need to use an "App Password" instead of your regular password. 
+                                Go to your Google Account settings → Security → 2-Step Verification → App passwords to generate one.
+                            </div>
+                            
+                            <div class="row g-2">
+                                <div class="col-md-8">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Save Email Settings
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                        
+                        <!-- Test Email Section -->
+                        <hr class="my-4">
+                        <h6 class="mb-3">Test Email Configuration</h6>
+                        <form method="POST" action="{{ url_for('admin.test_email') }}">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-6">
+                                    <label class="form-label">Test Email Address</label>
+                                    <input type="email" name="test_email" class="form-control" placeholder="Enter email to send test to" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <button type="submit" class="btn btn-outline-primary">
+                                        <i class="fas fa-paper-plane"></i> Send Test Email
+                                    </button>
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                This will send a test email to verify your SMTP configuration is working correctly.
+                            </small>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Payment Gateways Section -->
+                <div class="card mt-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Payment Gateways</h5>
+                        <small class="text-muted">Enable or disable payment gateways</small>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('admin.settings') }}">
+                            {% for gateway in gateways %}
+                            <div class="row align-items-center mb-3">
+                                <div class="col-md-3">
+                                    <label class="form-label mb-0">
+                                        <i class="fas fa-credit-card me-2"></i>
+                                        <strong>{{ gateway.name.title() }}</strong>
+                                    </label>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-check form-switch">
+                                        <input type="hidden" name="gateway_{{ gateway.name }}" value="false">
+                                        <input class="form-check-input" type="checkbox" name="gateway_{{ gateway.name }}" 
+                                               id="gateway_{{ gateway.name }}" value="true"
+                                               {% if gateway.enabled %}checked{% endif %}>
+                                        <label class="form-check-label" for="gateway_{{ gateway.name }}">
+                                            {% if gateway.enabled %}Enabled{% else %}Disabled{% endif %}
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">
+                                        Environment: {{ gateway.environment.title() }}
+                                    </small>
+                                </div>
+                                <div class="col-md-3">
+                                    <a href="{{ url_for('admin.edit_payment_gateway', gateway_id=gateway.id) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-cog"></i> Configure
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save"></i> Update Payment Gateways
                                 </button>
                             </div>
                         </form>
@@ -86,7 +219,7 @@
                         <h5 class="mb-0">Add New Setting</h5>
                     </div>
                     <div class="card-body">
-                        <form method="POST" action="{{ url_for('add_setting') }}">
+                        <form method="POST" action="{{ url_for('admin.add_setting') }}">
                             <div class="row">
                                 <div class="col-md-4">
                                     <input type="text" name="key" placeholder="Setting Key" class="form-control" required>

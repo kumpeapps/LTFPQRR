@@ -6,47 +6,15 @@
 <div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
-        <div class="col-md-3 col-lg-2 sidebar">
-            <div class="py-3">
-                <h5>Admin Dashboard</h5>
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
-                            <i class="fas fa-tachometer-alt"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="{{ url_for('admin_users') }}">
-                            <i class="fas fa-users"></i> Users
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin_subscriptions') }}">
-                            <i class="fas fa-credit-card"></i> Subscriptions
-                        </a>
-                    </li>
-                    {% if current_user.has_role('super-admin') %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('admin_settings') }}">
-                                <i class="fas fa-cog"></i> Settings
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('payment_gateways') }}">
-                                <i class="fas fa-credit-card"></i> Payment Gateways
-                            </a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </div>
-        </div>
+        {% set sidebar_context = 'admin' %}
+        {% include 'includes/dashboard_sidebar.html' %}
 
         <!-- Main Content -->
-        <div class="col-md-9 col-lg-10">
-            <div class="py-3">
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>Edit User: {{ user.username }}</h2>
-                    <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">
+                    <a href="{{ url_for('admin.users') }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> Back to Users
                     </a>
                 </div>
@@ -59,6 +27,7 @@
                             </div>
                             <div class="card-body">
                                 <form method="POST">
+                                    {{ form.hidden_tag() }}
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
                                             <label class="form-label">First Name</label>
@@ -87,23 +56,50 @@
                                     
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label">Account Type</label>
-                                            <input type="text" value="{{ user.account_type.title() }}" class="form-control" readonly>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
                                             <label class="form-label">Member Since</label>
                                             <input type="text" value="{{ user.created_at.strftime('%Y-%m-%d') }}" class="form-control" readonly>
                                         </div>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label">Roles</label>
-                                        <div>
-                                            {% for role in user.roles %}
-                                                <span class="badge bg-secondary me-1">{{ role.name }}</span>
-                                            {% endfor %}
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Current Roles</label>
+                                            <div>
+                                                {% for role in user.roles %}
+                                                    <span class="badge bg-secondary me-1">{{ role.name }}</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary me-1">user</span>
+                                                {% endfor %}
+                                            </div>
                                         </div>
                                     </div>
+                                    
+                                    {% if current_user.has_role('super-admin') %}
+                                    <div class="mb-3">
+                                        <label class="form-label">Manage Roles <small class="text-muted">(Super Admin Only)</small></label>
+                                        <div class="row">
+                                            {% for role in all_roles %}
+                                            <div class="col-md-4 mb-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="roles" value="{{ role.id }}" id="role_{{ role.id }}"
+                                                           {% if role in user.roles %}checked{% endif %}>
+                                                    <label class="form-check-label" for="role_{{ role.id }}">
+                                                        {{ role.name.title() }}
+                                                        {% if role.description %}
+                                                            <small class="text-muted d-block">{{ role.description }}</small>
+                                                        {% endif %}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        <small class="text-muted">Note: At least one role will be automatically assigned if none are selected.</small>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if current_user.id == user.id and current_user.has_role('super-admin') %}
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <strong>Warning:</strong> Be careful when modifying your own roles. Removing admin privileges may lock you out of administrative functions.
+                                    </div>
+                                    {% endif %}
                                     
                                     <div class="d-grid gap-2">
                                         <button type="submit" class="btn btn-primary">
