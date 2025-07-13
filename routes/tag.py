@@ -3,7 +3,7 @@ Tag management routes
 """
 import uuid
 from datetime import datetime
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
 from flask_login import login_required, current_user
 from forms import TagForm, ClaimTagForm, TransferTagForm, ContactOwnerForm
 
@@ -337,7 +337,8 @@ def batch_create():
         subscription = partner.get_active_subscription()
         if subscription:
             current_tag_count = partner.tags.count()
-            if current_tag_count + form.quantity.data > subscription.max_tags:
+            # Only check if max_tags is positive (0 means unlimited)
+            if subscription.max_tags > 0 and current_tag_count + form.quantity.data > subscription.max_tags:
                 flash(f"Cannot create {form.quantity.data} tags. Partner subscription allows maximum {subscription.max_tags} tags. Currently have {current_tag_count} tags.", "error")
                 return redirect(url_for("tag.batch_create"))
         
@@ -373,6 +374,7 @@ def batch_action():
     from models.models import Tag
     from forms import BatchTagActionForm
     from extensions import db
+    from datetime import datetime
     import json
     import zipfile
     import tempfile
@@ -386,10 +388,27 @@ def batch_action():
         return redirect(url_for("dashboard.dashboard"))
     
     form = BatchTagActionForm()
-    if form.validate_on_submit():
+    
+    # Handle the case where there are multiple selected_tags fields (one empty, one with data)
+    selected_tags_values = request.form.getlist('selected_tags')
+    selected_tags_data = None
+    for value in selected_tags_values:
+        if value and value.strip():  # Find the non-empty value
+            selected_tags_data = value
+            break
+    
+    if not selected_tags_data:
+        flash("No tags selected.", "error")
+        return redirect(request.referrer or url_for("partner.dashboard"))
+    
+    # Override the form's selected_tags data with our found value
+    form.selected_tags.data = selected_tags_data
+    
+    # Now validate just the action field since we handled selected_tags manually
+    if form.action.data and selected_tags_data:
         try:
             # Parse selected tag IDs
-            selected_tag_ids = json.loads(form.selected_tags.data)
+            selected_tag_ids = json.loads(selected_tags_data)
             if not selected_tag_ids:
                 flash("No tags selected.", "error")
                 return redirect(request.referrer or url_for("partner.dashboard"))
@@ -445,6 +464,11 @@ def batch_action():
         except Exception as e:
             db.session.rollback()
             flash(f"Error performing batch action: {str(e)}", "error")
+    else:
+        # Debug form validation errors
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f"Form validation error in {field}: {error}", "error")
     
     return redirect(request.referrer or url_for("partner.dashboard"))
 
@@ -492,3 +516,47 @@ def _generate_qr_zip(tags):
             response.headers['Content-Type'] = 'application/zip'
             response.headers['Content-Disposition'] = f'attachment; filename=qr_codes_{len(tags)}_tags.zip'
             return response
+
+@tag.route("/qr/<int:tag_id>")
+@login_required
+def download_qr(tag_id):
+    """Download QR code for individual tag."""
+    from models.models import Tag
+    import qrcode
+    from io import BytesIO
+    from flask import make_response
+    
+    tag_obj = Tag.query.get_or_404(tag_id)
+    
+    # Check if current user has access to this tag
+    if tag_obj.partner and not tag_obj.partner.user_has_access(current_user):
+        flash("You don't have access to this tag.", "error")
+        return redirect(url_for("partner.dashboard"))
+    elif not tag_obj.partner and tag_obj.created_by != current_user.id:
+        flash("You can only download QR codes for tags you created.", "error")
+        return redirect(url_for("partner.dashboard"))
+    
+    # Generate QR code
+    qr_url = f"{request.host_url}found/{tag_obj.tag_id}"
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(qr_url)
+    qr.make(fit=True)
+    
+    # Create QR code image
+    qr_img = qr.make_image(fill_color="black", back_color="white")
+    
+    # Save to bytes
+    img_bytes = BytesIO()
+    qr_img.save(img_bytes, format='PNG')
+    img_bytes.seek(0)
+    
+    # Return as downloadable file
+    response = make_response(img_bytes.getvalue())
+    response.headers['Content-Type'] = 'image/png'
+    response.headers['Content-Disposition'] = f'attachment; filename=QR_{tag_obj.tag_id}.png'
+    return response
