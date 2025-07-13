@@ -48,7 +48,7 @@ with app.app_context():
             sys.exit(1)
         
         # Ensure roles exist even after migrations
-        roles = ['user', 'admin', 'super-admin']
+        roles = ['user', 'admin', 'super-admin', 'partner']
         for role_name in roles:
             if not Role.query.filter_by(name=role_name).first():
                 role = Role(name=role_name)
@@ -59,7 +59,7 @@ with app.app_context():
         db.create_all()
         
         # Create initial roles
-        roles = ['user', 'admin', 'super-admin']
+        roles = ['user', 'admin', 'super-admin', 'partner']
         for role_name in roles:
             if not Role.query.filter_by(name=role_name).first():
                 role = Role(name=role_name)

@@ -43,6 +43,12 @@ def dashboard():
         
         # If user doesn't have partner role yet, show only pending status
         if not current_user.has_partner_role():
+            # Create forms for CSRF protection and batch actions
+            from flask_wtf import FlaskForm
+            from forms import BatchTagActionForm
+            form = FlaskForm()
+            batch_form = BatchTagActionForm()
+            
             return render_template('partner/dashboard.html', 
                                  pending_subscription=pending_subscription,
                                  show_pending_status=True,
@@ -50,7 +56,9 @@ def dashboard():
                                  accessible_partners=[],
                                  tags=[],
                                  subscription=None,
-                                 partner=None)
+                                 partner=None,
+                                 form=form,
+                                 batch_form=batch_form)
         
         # If user has partner role, show normal dashboard but with pending status banner
         owned_partners = current_user.get_owned_partners()
@@ -78,6 +86,12 @@ def dashboard():
         
         # Get partner's tags
         tags = partner_obj.tags.all()
+        
+        # Create forms for CSRF protection and batch actions
+        from flask_wtf import FlaskForm
+        from forms import BatchTagActionForm
+        form = FlaskForm()
+        batch_form = BatchTagActionForm()
 
         return render_template(
             "partner/dashboard.html", 
@@ -87,7 +101,9 @@ def dashboard():
             owned_partners=owned_partners,
             accessible_partners=accessible_partners,
             pending_subscription=pending_subscription,
-            show_pending_status=True
+            show_pending_status=True,
+            form=form,
+            batch_form=batch_form
         )
 
     # Get user's owned partners
@@ -116,6 +132,12 @@ def dashboard():
     
     # Get partner's tags
     tags = partner_obj.tags.all()
+    
+    # Create forms for CSRF protection and batch actions
+    from flask_wtf import FlaskForm
+    from forms import BatchTagActionForm
+    form = FlaskForm()
+    batch_form = BatchTagActionForm()
 
     return render_template(
         "partner/dashboard.html", 
@@ -123,7 +145,9 @@ def dashboard():
         subscription=subscription,
         partner=partner_obj,
         owned_partners=owned_partners,
-        accessible_partners=accessible_partners
+        accessible_partners=accessible_partners,
+        form=form,
+        batch_form=batch_form
     )
 
 

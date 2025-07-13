@@ -182,6 +182,7 @@
                                 <table class="table table-striped">
                                     <thead>
                                         <tr>
+                                            <th><input type="checkbox" id="select-all-tags" class="form-check-input"></th>
                                             <th>Tag ID</th>
                                             <th>Status</th>
                                             <th>Created</th>
@@ -193,6 +194,7 @@
                                     <tbody>
                                         {% for tag in tags %}
                                         <tr>
+                                            <td><input type="checkbox" name="tag_ids" value="{{ tag.id }}" class="form-check-input tag-checkbox" data-tag-id="{{ tag.id }}"></td>
                                             <td>
                                                 <span class="tag-display">{{ tag.tag_id }}</span>
                                             </td>
@@ -226,6 +228,9 @@
                                                     <a href="/found/{{ tag.tag_id }}" class="btn btn-sm btn-outline-primary" target="_blank" title="View Tag Page">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
+                                                    <a href="{{ url_for('tag.download_qr', tag_id=tag.id) }}" class="btn btn-sm btn-outline-secondary" title="Download QR Code">
+                                                        <i class="fas fa-qrcode"></i>
+                                                    </a>
                                                     {% if tag.status == 'pending' and current_user.can_activate_tags() %}
                                                         <form method="POST" action="{{ url_for('tag.activate_tag', tag_id=tag.id) }}" style="display: inline;">
                                                             <button type="submit" class="btn btn-sm btn-success" title="Activate Tag" onclick="return confirm('Activate this tag to make it available for customers?')">
@@ -246,6 +251,54 @@
                                     </tbody>
                                 </table>
                             </div>
+                        
+                        {% if tags %}
+                        <div class="card mt-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="fas fa-cogs"></i> Batch Actions</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="batch-action-form" method="POST" action="{{ url_for('tag.batch_action') }}">
+                                    {% if batch_form %}{{ batch_form.hidden_tag() }}{% endif %}
+                                    {% if batch_form %}
+                                        {{ batch_form.selected_tags(id="selected-tags-input") }}
+                                    {% else %}
+                                        <input type="hidden" name="selected_tags" id="selected-tags-input">
+                                    {% endif %}
+                                    <div class="row align-items-center">
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="action" class="form-label">Action for Selected Tags</label>
+                                                {% if batch_form %}
+                                                {{ batch_form.action(id="batch-action", class="form-select") }}
+                                                {% else %}
+                                                <select name="action" id="batch-action" class="form-select">
+                                                    <option value="activate">Activate Tags</option>
+                                                    <option value="deactivate">Deactivate Tags</option>
+                                                    <option value="download_qr">Download QR Codes</option>
+                                                </select>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group mt-md-4">
+                                                <button type="button" id="apply-batch-action" class="btn btn-primary" disabled>
+                                                    <i class="fas fa-play"></i> Apply to Selected (<span id="selected-count">0</span>)
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group mt-md-4 text-md-end">
+                                                <a href="{{ url_for('tag.batch_create') }}" class="btn btn-success">
+                                                    <i class="fas fa-plus-circle"></i> Create Multiple Tags
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
                         {% else %}
                             <div class="text-center py-5">
                                 <i class="fas fa-qrcode fa-3x text-muted mb-3"></i>
@@ -285,4 +338,105 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script>
+    $(document).ready(function() {
+        console.log('Dashboard script initialized');
+        
+        // Helper function to update selected count
+        function updateSelectedCount() {
+            const selectedCount = $('.tag-checkbox:checked').length;
+            console.log('Selected count:', selectedCount);
+            $('#selected-count').text(selectedCount);
+            $('#apply-batch-action').prop('disabled', selectedCount === 0);
+        }
+        
+        // Helper function to get selected tag IDs
+        function getSelectedTagIds() {
+            return $('.tag-checkbox:checked').map(function() {
+                return $(this).val();
+            }).get();
+        }
+        
+        console.log('Found checkboxes:', $('.tag-checkbox').length);
+        console.log('Found select-all:', $('#select-all-tags').length);
+        
+        // Initialize the selected count on page load
+        updateSelectedCount();
+        
+        // Select all tags
+        $('#select-all-tags').on('change', function() {
+            console.log('Select all clicked:', $(this).prop('checked'));
+            $('.tag-checkbox').prop('checked', $(this).prop('checked'));
+            updateSelectedCount();
+        });
+
+        // Update count when individual checkboxes change
+        $('.tag-checkbox').on('change', function() {
+            console.log('Individual checkbox changed');
+            updateSelectedCount();
+            
+            // Update the select-all checkbox state
+            const totalCheckboxes = $('.tag-checkbox').length;
+            const checkedCheckboxes = $('.tag-checkbox:checked').length;
+            $('#select-all-tags').prop('checked', totalCheckboxes === checkedCheckboxes);
+        });
+
+        // Apply batch action
+        $('#apply-batch-action').on('click', function() {
+            console.log('Apply batch action clicked');
+            const selectedIds = getSelectedTagIds();
+            console.log('Selected IDs:', selectedIds);
+            
+            if (selectedIds.length === 0) {
+                alert('Please select at least one tag');
+                return;
+            }
+            
+            const action = $('#batch-action').val();
+            console.log('Selected action:', action);
+            let confirmMessage = '';
+            
+            if (action === 'activate') {
+                confirmMessage = 'Are you sure you want to activate ' + selectedIds.length + ' selected tags?';
+            } else if (action === 'deactivate') {
+                confirmMessage = 'Are you sure you want to deactivate ' + selectedIds.length + ' selected tags?';
+            } else if (action === 'download_qr') {
+                confirmMessage = 'Download QR codes for ' + selectedIds.length + ' selected tags?';
+            }
+            
+            console.log('About to show confirmation dialog:', confirmMessage);
+            const userConfirmed = confirm(confirmMessage);
+            console.log('User confirmation result:', userConfirmed);
+            
+            if (userConfirmed) {
+                console.log('User confirmed - proceeding with form submission');
+                
+                // Set the selected tags input
+                const selectedIdsJson = JSON.stringify(selectedIds);
+                console.log('Setting selected tags to:', selectedIdsJson);
+                $('#selected-tags-input').val(selectedIdsJson);
+                console.log('Selected tags input value after setting:', $('#selected-tags-input').val());
+                console.log('Selected tags input element:', $('#selected-tags-input')[0]);
+                
+                // Validate the form before submitting
+                if (!$('#selected-tags-input').val()) {
+                    console.error('ERROR: selected_tags field is empty after setting!');
+                    alert('Error: selected_tags field is empty!');
+                    return;
+                }
+                
+                console.log('All validations passed - submitting form');
+                // Submit the form
+                $('#batch-action-form').submit();
+                console.log('Form submit() called');
+            } else {
+                console.log('User cancelled the operation');
+            }
+        });
+    });
+</script>
 {% endblock %}

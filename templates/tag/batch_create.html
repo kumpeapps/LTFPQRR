@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Create Multiple Tags{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-tags"></i> Create Multiple Tags</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('tag.batch_create') }}">
+                        {{ form.csrf_token }}
+                        <div class="mb-3">
+                            <label for="partner_id" class="form-label">Select Partner Company</label>
+                            {{ form.partner_id(class="form-select") }}
+                            {% if form.partner_id.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.partner_id.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">Number of Tags to Create</label>
+                            {{ form.quantity(class="form-control", type="number", min="1", max="100", value="10") }}
+                            {% if form.quantity.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.quantity.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                You can create up to 100 tags at once. Tags will be created with random IDs and pending status.
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus-circle"></i> Create Tags
+                            </button>
+                            <a href="{{ url_for('partner.dashboard') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Dashboard
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -79,6 +79,18 @@ class TransferTagForm(FlaskForm):
         if not user.has_role('user'):
             raise ValidationError('Tags can only be transferred to customer accounts.')
 
+class BatchTagCreateForm(FlaskForm):
+    quantity = IntegerField('Number of Tags to Create', validators=[DataRequired(), NumberRange(min=1, max=100)])
+    partner_id = SelectField('Partner', coerce=int, validators=[DataRequired()])
+
+class BatchTagActionForm(FlaskForm):
+    selected_tags = HiddenField('Selected Tags', validators=[DataRequired()])
+    action = SelectField('Action', choices=[
+        ('activate', 'Activate Tags'),
+        ('deactivate', 'Deactivate Tags'),
+        ('download_qr', 'Download QR Codes')
+    ], validators=[DataRequired()])
+
 class ContactOwnerForm(FlaskForm):
     finder_name = StringField('Your Name', validators=[DataRequired(), Length(max=100)])
     finder_email = StringField('Your Email', validators=[DataRequired(), Email()])

@@ -29,8 +29,9 @@ This is a Mercury Bank Integration Platform consisting of two main components:
 
 3. **Role-Based Access Control**
    - Use the role-based system for all user management
-   - Users must have appropriate roles: "user", "admin", "super-admin", etc.
+   - Users must have appropriate roles: "user", "admin", "super-admin", "partner", etc.
    - All permissions are managed through the role system
+   - Always ensure partner role is included in role initialization arrays
 
 4. **Admin Features**
    - First user is automatically assigned admin and super-admin roles
