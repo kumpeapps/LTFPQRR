@@ -36,8 +36,8 @@ services:
     environment:
       - DATABASE_URL=mysql+pymysql://ltfpqrr_user:ltfpqrr_password@db/ltfpqrr
       - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=Po-MvDNsMztsuc8ixBcTIarfI1tcQK_22FF9e5KCtwk=
-      - ENCRYPTION_KEY=Po-MvDNsMztsuc8ixBcTIarfI1tcQK_22FF9e5KCtwk=
+      - SECRET_KEY=you-key-here
+      - ENCRYPTION_KEY=you-key-here
       - FLASK_ENV=production
     volumes:
       - static_uploads:/app/static/uploads
@@ -52,8 +52,8 @@ services:
     environment:
       - DATABASE_URL=mysql+pymysql://ltfpqrr_user:ltfpqrr_password@db/ltfpqrr
       - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=Po-MvDNsMztsuc8ixBcTIarfI1tcQK_22FF9e5KCtwk=
-      - ENCRYPTION_KEY=Po-MvDNsMztsuc8ixBcTIarfI1tcQK_22FF9e5KCtwk=
+      - SECRET_KEY=you-key-here
+      - ENCRYPTION_KEY=you-key-here
     restart: unless-stopped
 
   adminer:
