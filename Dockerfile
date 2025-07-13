@@ -19,6 +19,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
+# Diagnostic: List all files in /app to debug missing app.py issue
+RUN echo "=== DIAGNOSTIC: Contents of /app ===" && ls -la /app/
+RUN echo "=== DIAGNOSTIC: Looking for app.py specifically ===" && find /app -name "app.py" -type f
+RUN echo "=== DIAGNOSTIC: Python version ===" && python --version
 # Create upload directory
 RUN mkdir -p static/uploads
 
