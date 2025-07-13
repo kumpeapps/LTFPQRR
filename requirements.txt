@@ -8,7 +8,7 @@ Werkzeug==2.3.6
 SQLAlchemy==2.0.19
 PyMySQL==1.1.1
 psycopg2-binary==2.9.7
-cryptography==41.0.3
+cryptography==44.0.1
 stripe==5.5.0
 paypalrestsdk==1.13.1
 python-dotenv==1.0.0
