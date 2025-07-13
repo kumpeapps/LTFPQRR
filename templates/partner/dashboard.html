@@ -182,6 +182,7 @@
                                 <table class="table table-striped">
                                     <thead>
                                         <tr>
+                                            <th><input type="checkbox" id="select-all-tags" class="form-check-input"></th>
                                             <th>Tag ID</th>
                                             <th>Status</th>
                                             <th>Created</th>
@@ -193,6 +194,7 @@
                                     <tbody>
                                         {% for tag in tags %}
                                         <tr>
+                                            <td><input type="checkbox" name="tag_ids" value="{{ tag.id }}" class="form-check-input tag-checkbox"></td>
                                             <td>
                                                 <span class="tag-display">{{ tag.tag_id }}</span>
                                             </td>
@@ -246,6 +248,46 @@
                                     </tbody>
                                 </table>
                             </div>
+                        
+                        {% if tags %}
+                        <div class="card mt-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="fas fa-cogs"></i> Batch Actions</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="batch-action-form" method="POST" action="{{ url_for('tag.batch_action') }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="selected_tags" id="selected-tags-input">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="action" class="form-label">Action for Selected Tags</label>
+                                                <select name="action" id="batch-action" class="form-select">
+                                                    <option value="activate">Activate Tags</option>
+                                                    <option value="deactivate">Deactivate Tags</option>
+                                                    <option value="download_qr">Download QR Codes</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group mt-md-4">
+                                                <button type="button" id="apply-batch-action" class="btn btn-primary" disabled>
+                                                    <i class="fas fa-play"></i> Apply to Selected (<span id="selected-count">0</span>)
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group mt-md-4 text-md-end">
+                                                <a href="{{ url_for('tag.batch_create') }}" class="btn btn-success">
+                                                    <i class="fas fa-plus-circle"></i> Create Multiple Tags
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
                         {% else %}
                             <div class="text-center py-5">
                                 <i class="fas fa-qrcode fa-3x text-muted mb-3"></i>
@@ -285,4 +327,63 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    $(document).ready(function() {
+        // Select all tags
+        $('#select-all-tags').on('change', function() {
+            $('.tag-checkbox').prop('checked', $(this).prop('checked'));
+            updateSelectedCount();
+        });
+
+        // Update count when individual checkboxes change
+        $('.tag-checkbox').on('change', function() {
+            updateSelectedCount();
+        });
+
+        // Apply batch action
+        $('#apply-batch-action').on('click', function() {
+            const selectedIds = getSelectedTagIds();
+            if (selectedIds.length === 0) {
+                alert('Please select at least one tag');
+                return;
+            }
+            
+            const action = $('#batch-action').val();
+            let confirmMessage = '';
+            
+            if (action === 'activate') {
+                confirmMessage = 'Are you sure you want to activate ' + selectedIds.length + ' selected tags?';
+            } else if (action === 'deactivate') {
+                confirmMessage = 'Are you sure you want to deactivate ' + selectedIds.length + ' selected tags?';
+            } else if (action === 'download_qr') {
+                confirmMessage = 'Download QR codes for ' + selectedIds.length + ' selected tags?';
+            }
+            
+            if (confirm(confirmMessage)) {
+                // Set the selected tags input
+                $('#selected-tags-input').val(JSON.stringify(selectedIds));
+                // Submit the form
+                $('#batch-action-form').submit();
+            }
+        });
+        
+        // Helper function to update selected count
+        function updateSelectedCount() {
+            const selectedCount = $('.tag-checkbox:checked').length;
+            $('#selected-count').text(selectedCount);
+            $('#apply-batch-action').prop('disabled', selectedCount === 0);
+        }
+        
+        // Helper function to get selected tag IDs
+        function getSelectedTagIds() {
+            return $('.tag-checkbox:checked').map(function() {
+                return $(this).val();
+            }).get();
+        }
+    });
+</script>
 {% endblock %}
