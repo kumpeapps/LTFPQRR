@@ -12,9 +12,9 @@ from models.models import PaymentGateway
 from cryptography.fernet import Fernet
 
 # Test credentials (these are safe to use - they're from Stripe's documentation)
-STRIPE_TEST_PUBLISHABLE_KEY = "pk_test_51234567890123456789012345678901234567890123456789012345678901234"
-STRIPE_TEST_SECRET_KEY = "sk_test_51234567890123456789012345678901234567890123456789012345678901234"
-PAYPAL_TEST_CLIENT_ID = "AYour_PayPal_Client_ID_Here"
+STRIPE_TEST_PUBLISHABLE_KEY = ""
+STRIPE_TEST_SECRET_KEY = ""
+PAYPAL_TEST_CLIENT_ID = ""
 
 def encrypt_value(value):
     """Encrypt a value using the app's encryption key"""
