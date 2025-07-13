@@ -30,7 +30,7 @@ COPY start_ltfpqrr.sh /start_ltfpqrr.sh
 RUN chmod +x /start_ltfpqrr.sh
 
 # Set environment variables
-ENV PYTHONPATH=/
+ENV PYTHONPATH=/app
 ENV FLASK_APP=app.py
 ENV FLASK_ENV=production
 
