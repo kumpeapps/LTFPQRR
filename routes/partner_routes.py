@@ -178,12 +178,21 @@ def partner_subscription(partner_id):
         from datetime import datetime, timedelta
         start_date = datetime.utcnow()
         end_date = None
-        if pricing_plan.duration_months > 0:
+        if hasattr(pricing_plan, 'duration_months') and pricing_plan.duration_months > 0:
             end_date = start_date + timedelta(days=pricing_plan.duration_months * 30)
+        elif pricing_plan.billing_period == "yearly":
+            end_date = start_date + timedelta(days=365)
+        elif pricing_plan.billing_period == "monthly":
+            end_date = start_date + timedelta(days=30)
+        
+        # Check if approval is required
+        requires_approval = pricing_plan.requires_approval if pricing_plan else False
         
         subscription = PartnerSubscription(
             partner_id=partner.id,
             pricing_plan_id=pricing_plan.id,
+            status="pending" if requires_approval else "active",
+            admin_approved=not requires_approval,
             max_tags=pricing_plan.max_tags,
             payment_method=payment_method,
             amount=pricing_plan.price,
@@ -194,7 +203,33 @@ def partner_subscription(partner_id):
         db.session.add(subscription)
         db.session.commit()
         
-        flash('Subscription created successfully! Waiting for admin approval.', 'success')
+        # Send email notifications
+        try:
+            if requires_approval:
+                # Send notification to partner that subscription requires approval
+                from email_utils import send_partner_subscription_confirmation_email
+                send_partner_subscription_confirmation_email(current_user, subscription)
+                
+                # Send notification to admins that approval is needed
+                from email_utils import send_partner_admin_approval_notification
+                send_partner_admin_approval_notification(subscription)
+                
+                flash('Subscription created successfully! Waiting for admin approval. You will receive an email when approved.', 'success')
+            else:
+                # Send confirmation email for immediately active subscription
+                from email_utils import send_partner_subscription_confirmation_email
+                send_partner_subscription_confirmation_email(current_user, subscription)
+                
+                flash('Subscription created and activated successfully!', 'success')
+        except Exception as email_error:
+            from extensions import logger
+            logger.error(f"Error sending subscription emails: {email_error}")
+            # Don't fail the subscription if email fails
+            if requires_approval:
+                flash('Subscription created successfully! Waiting for admin approval. You will receive an email when approved.', 'success')
+            else:
+                flash('Subscription created and activated successfully!', 'success')
+        
         return redirect(url_for('partner_detail', partner_id=partner_id))
     
     return render_template('partner/subscription.html', 

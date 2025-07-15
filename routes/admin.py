@@ -171,17 +171,24 @@ def subscriptions():
 @admin_required
 def partner_subscriptions():
     """Manage partner subscription requests."""
-    from models.models import Subscription
+    from models.models import PartnerSubscription
     
     pending_subs = (
-        Subscription.query.filter_by(subscription_type="partner", admin_approved=False)
-        .order_by(Subscription.created_at.desc())
+        PartnerSubscription.query.filter_by(admin_approved=False, status='pending')
+        .order_by(PartnerSubscription.created_at.desc())
         .all()
     )
 
     approved_subs = (
-        Subscription.query.filter_by(subscription_type="partner", admin_approved=True)
-        .order_by(Subscription.created_at.desc())
+        PartnerSubscription.query.filter_by(admin_approved=True)
+        .filter(PartnerSubscription.status.in_(['active', 'expired']))
+        .order_by(PartnerSubscription.created_at.desc())
+        .all()
+    )
+    
+    rejected_subs = (
+        PartnerSubscription.query.filter_by(status='cancelled')
+        .order_by(PartnerSubscription.created_at.desc())
         .all()
     )
 
@@ -189,6 +196,7 @@ def partner_subscriptions():
         "admin/partner_subscriptions.html",
         pending_subscriptions=pending_subs,
         approved_subscriptions=approved_subs,
+        rejected_subscriptions=rejected_subs,
     )
 
 
@@ -196,14 +204,10 @@ def partner_subscriptions():
 @admin_required
 def approve_partner_subscription(subscription_id):
     """Approve a partner subscription."""
-    from models.models import Subscription
+    from models.models import PartnerSubscription
     from extensions import db
     
-    subscription = Subscription.query.get_or_404(subscription_id)
-
-    if subscription.subscription_type != "partner":
-        flash("Invalid subscription type.", "error")
-        return redirect(url_for("admin.partner_subscriptions"))
+    subscription = PartnerSubscription.query.get_or_404(subscription_id)
 
     if subscription.admin_approved:
         flash("Subscription is already approved.", "warning")
@@ -211,13 +215,14 @@ def approve_partner_subscription(subscription_id):
 
     try:
         subscription.approve(current_user)
-        db.session.commit()
         
-        # Send approval email to customer
+        # Send approval email to partner's owner
         try:
-            from email_utils import send_subscription_approved_email
+            from email_utils import send_partner_subscription_approved_email
             from extensions import logger
-            send_subscription_approved_email(subscription.user, subscription)
+            # Get the partner owner user
+            partner_owner = subscription.partner.owner
+            send_partner_subscription_approved_email(partner_owner, subscription)
         except Exception as email_error:
             from extensions import logger
             logger.error(f"Error sending approval email: {email_error}")
@@ -238,24 +243,21 @@ def approve_partner_subscription(subscription_id):
 @admin_required
 def reject_partner_subscription(subscription_id):
     """Reject a partner subscription."""
-    from models.models import Subscription
+    from models.models import PartnerSubscription
     from extensions import db
     
-    subscription = Subscription.query.get_or_404(subscription_id)
-
-    if subscription.subscription_type != "partner":
-        flash("Invalid subscription type.", "error")
-        return redirect(url_for("admin.partner_subscriptions"))
+    subscription = PartnerSubscription.query.get_or_404(subscription_id)
 
     try:
-        subscription.status = "cancelled"
-        db.session.commit()
+        subscription.reject(current_user)
         
-        # Send rejection email to customer
+        # Send rejection email to partner's owner
         try:
-            from email_utils import send_subscription_rejected_email
+            from email_utils import send_partner_subscription_rejected_email
             from extensions import logger
-            send_subscription_rejected_email(subscription.user, subscription)
+            # Get the partner owner user
+            partner_owner = subscription.partner.owner
+            send_partner_subscription_rejected_email(partner_owner, subscription)
         except Exception as email_error:
             logger.error(f"Error sending rejection email: {email_error}")
             # Don't fail the rejection if email fails
@@ -722,8 +724,8 @@ def test_email():
     
     try:
         # Get SMTP settings
-        smtp_enabled = SystemSetting.get_value('smtp_enabled', False)
-        if not smtp_enabled:
+        smtp_enabled = SystemSetting.get_value('smtp_enabled', 'false')
+        if smtp_enabled.lower() != 'true':
             flash("SMTP is not enabled. Please enable SMTP first.", "error")
             return redirect(url_for("admin.settings"))
         
@@ -732,7 +734,7 @@ def test_email():
         smtp_username = SystemSetting.get_value('smtp_username')
         smtp_password = SystemSetting.get_value('smtp_password')
         smtp_from_email = SystemSetting.get_value('smtp_from_email')
-        smtp_use_tls = SystemSetting.get_value('smtp_use_tls', True)
+        smtp_use_tls = SystemSetting.get_value('smtp_use_tls', 'true')
         
         if not all([smtp_server, smtp_username, smtp_password, smtp_from_email]):
             flash("SMTP configuration is incomplete. Please check all required fields.", "error")
@@ -762,7 +764,7 @@ def test_email():
         
         # Send email
         server = smtplib.SMTP(smtp_server, smtp_port)
-        if smtp_use_tls:
+        if smtp_use_tls.lower() == 'true':
             server.starttls()
         server.login(smtp_username, smtp_password)
         server.send_message(msg)
