@@ -250,6 +250,16 @@ def reject_partner_subscription(subscription_id):
     try:
         subscription.status = "cancelled"
         db.session.commit()
+        
+        # Send rejection email to customer
+        try:
+            from email_utils import send_subscription_rejected_email
+            from extensions import logger
+            send_subscription_rejected_email(subscription.user, subscription)
+        except Exception as email_error:
+            logger.error(f"Error sending rejection email: {email_error}")
+            # Don't fail the rejection if email fails
+        
         flash(
             f"Partner subscription for {subscription.partner.company_name} has been rejected.",
             "success",
@@ -712,8 +722,8 @@ def test_email():
     
     try:
         # Get SMTP settings
-        smtp_enabled = SystemSetting.get_value('smtp_enabled', 'false')
-        if smtp_enabled.lower() != 'true':
+        smtp_enabled = SystemSetting.get_value('smtp_enabled', False)
+        if not smtp_enabled:
             flash("SMTP is not enabled. Please enable SMTP first.", "error")
             return redirect(url_for("admin.settings"))
         
@@ -722,7 +732,7 @@ def test_email():
         smtp_username = SystemSetting.get_value('smtp_username')
         smtp_password = SystemSetting.get_value('smtp_password')
         smtp_from_email = SystemSetting.get_value('smtp_from_email')
-        smtp_use_tls = SystemSetting.get_value('smtp_use_tls', 'true')
+        smtp_use_tls = SystemSetting.get_value('smtp_use_tls', True)
         
         if not all([smtp_server, smtp_username, smtp_password, smtp_from_email]):
             flash("SMTP configuration is incomplete. Please check all required fields.", "error")
@@ -752,7 +762,7 @@ def test_email():
         
         # Send email
         server = smtplib.SMTP(smtp_server, smtp_port)
-        if smtp_use_tls.lower() == 'true':
+        if smtp_use_tls:
             server.starttls()
         server.login(smtp_username, smtp_password)
         server.send_message(msg)
@@ -808,6 +818,16 @@ def cancel_partner_subscription(subscription_id):
         subscription.status = "cancelled"
         subscription.end_date = datetime.utcnow()
         db.session.commit()
+        
+        # Send cancellation email to customer
+        try:
+            from email_utils import send_subscription_cancelled_email
+            from extensions import logger
+            send_subscription_cancelled_email(subscription.user, subscription, refunded=False)
+        except Exception as email_error:
+            logger.error(f"Error sending cancellation email: {email_error}")
+            # Don't fail the cancellation if email fails
+        
         flash(
             f"Partner subscription for {subscription.partner.company_name} has been cancelled.",
             "success",

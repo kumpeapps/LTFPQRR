@@ -18,13 +18,13 @@ def get_smtp_config():
         smtp_settings = {}
         settings = SystemSetting.query.filter(
             SystemSetting.key.in_([
-                'smtp_server', 'smtp_port', 'smtp_username', 'smtp_password',
+                'smtp_enabled', 'smtp_server', 'smtp_port', 'smtp_username', 'smtp_password',
                 'smtp_use_tls', 'smtp_use_ssl', 'smtp_from_email', 'smtp_from_name'
             ])
         ).all()
         
         for setting in settings:
-            if setting.key in ['smtp_use_tls', 'smtp_use_ssl']:
+            if setting.key in ['smtp_use_tls', 'smtp_use_ssl', 'smtp_enabled']:
                 # Handle both boolean and string values
                 if isinstance(setting.value, bool):
                     smtp_settings[setting.key] = setting.value
@@ -45,6 +45,11 @@ def send_email(to_email, subject, html_body, text_body=None, from_email=None, fr
     """Send an email using configured SMTP settings"""
     try:
         smtp_config = get_smtp_config()
+        
+        # Check if SMTP is enabled
+        if not smtp_config.get('smtp_enabled', False):
+            logger.warning("SMTP is disabled, cannot send email")
+            return False
         
         if not smtp_config.get('smtp_server'):
             logger.warning("SMTP not configured, cannot send email")
@@ -1007,4 +1012,69 @@ def send_test_email(to_email, test_type="basic"):
         
     except Exception as e:
         logger.error("Error sending test email: %s", e)
+        return False
+
+
+def send_subscription_rejected_email(user, subscription):
+    """Send email to customer when subscription is rejected"""
+    try:
+        subject = "Subscription Request Rejected - LTFPQRR"
+        
+        html_template = get_email_template_base()
+        
+        html_body = html_template.format(
+            content=f"""
+        <div class="title">Subscription Request Rejected</div>
+        
+        <div class="subtitle">We're sorry, but your subscription request has been rejected.</div>
+        
+        <div class="content-box">
+            <div class="box-title">Rejected Subscription</div>
+            <div class="box-content">
+                <p><strong>Subscription Type:</strong> {subscription.subscription_type.title()}</p>
+                <p><strong>Status:</strong> Rejected</p>
+                <p><strong>Request Date:</strong> {subscription.created_at.strftime('%B %d, %Y')}</p>
+                <p><strong>Rejected Date:</strong> {subscription.updated_at.strftime('%B %d, %Y') if subscription.updated_at else 'Today'}</p>
+            </div>
+        </div>
+        
+        <div class="content-box">
+            <div class="box-title">What's Next?</div>
+            <div class="box-content">
+                <p>If you believe this rejection was made in error, please contact our support team for assistance.</p>
+                <p>You may also review our subscription requirements and submit a new request if appropriate.</p>
+            </div>
+        </div>
+        
+        <div class="content-box">
+            <div class="box-title">Need Help?</div>
+            <div class="box-content">
+                <p>If you have any questions about this rejection or need assistance, please don't hesitate to contact our support team.</p>
+                <p>Thank you for your interest in LTFPQRR.</p>
+            </div>
+        </div>
+        """)
+        
+        text_body = f"""
+        Your subscription request has been rejected.
+        
+        Rejected Subscription:
+        - Type: {subscription.subscription_type.title()}
+        - Status: Rejected
+        - Request Date: {subscription.created_at.strftime('%B %d, %Y')}
+        - Rejected Date: {subscription.updated_at.strftime('%B %d, %Y') if subscription.updated_at else 'Today'}
+        
+        If you believe this rejection was made in error, please contact our support team for assistance.
+        
+        Thank you for your interest in LTFPQRR.
+        """
+        
+        success = send_email(user.email, subject, html_body, text_body)
+        
+        if success:
+            logger.info(f"Subscription rejected email sent to {user.email}")
+        return success
+        
+    except Exception as e:
+        logger.error(f"Error sending subscription rejected email: {e}")
         return False
