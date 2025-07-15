@@ -102,34 +102,75 @@ def success():
     elif "partner_subscription_type" in session:
         subscription_type = session.pop("partner_subscription_type")
         partner_id = session.pop("partner_id", None)
+        pricing_plan_id = session.pop("pricing_plan_id", None)
+        
+        # Get pricing plan to check if approval is required
+        from models.models import PricingPlan
+        pricing_plan = None
+        if pricing_plan_id:
+            pricing_plan = PricingPlan.query.get(pricing_plan_id)
+        
+        # Determine if approval is required
+        requires_approval = pricing_plan.requires_approval if pricing_plan else False
         
         # Create partner subscription
         try:
+            # Calculate end date based on pricing plan
+            start_date = datetime.utcnow()
+            end_date = None
+            if pricing_plan and hasattr(pricing_plan, 'duration_months') and pricing_plan.duration_months > 0:
+                end_date = start_date + timedelta(days=pricing_plan.duration_months * 30)
+            elif subscription_type == "yearly":
+                end_date = start_date + timedelta(days=365)
+            elif subscription_type == "monthly":
+                end_date = start_date + timedelta(days=30)
+            
             # Create a partner subscription record
             partner_subscription = PartnerSubscription(
                 partner_id=partner_id,
-                status="pending" if not partner_id else "active",
-                admin_approved=False if not partner_id else True,
-                max_tags=0,
+                pricing_plan_id=pricing_plan_id,
+                status="pending" if requires_approval else "active",
+                admin_approved=not requires_approval,
+                max_tags=pricing_plan.max_tags if pricing_plan else 0,
                 payment_method="stripe",
-                amount=29.99 if subscription_type == "monthly" else 299.99,
-                start_date=datetime.utcnow(),
-                end_date=(
-                    datetime.utcnow() + timedelta(days=365)
-                    if subscription_type == "yearly"
-                    else datetime.utcnow() + timedelta(days=30)
-                ),
+                amount=pricing_plan.price if pricing_plan else (29.99 if subscription_type == "monthly" else 299.99),
+                start_date=start_date,
+                end_date=end_date,
                 auto_renew=True
             )
             
             db.session.add(partner_subscription)
             db.session.commit()
             
+            # Send email notifications
+            try:
+                if requires_approval:
+                    # Send notification to partner that subscription requires approval
+                    from email_utils import send_partner_subscription_confirmation_email
+                    send_partner_subscription_confirmation_email(current_user, partner_subscription)
+                    
+                    # Send notification to admins that approval is needed
+                    from email_utils import send_partner_admin_approval_notification
+                    send_partner_admin_approval_notification(partner_subscription)
+                    
+                    flash("Partner subscription request submitted for approval. You will receive an email when it's approved.", "info")
+                else:
+                    # Send confirmation email for immediately active subscription
+                    from email_utils import send_partner_subscription_confirmation_email
+                    send_partner_subscription_confirmation_email(current_user, partner_subscription)
+                    
+                    flash("Partner subscription activated successfully!", "success")
+            except Exception as email_error:
+                logger.error(f"Error sending subscription emails: {email_error}")
+                # Don't fail the subscription if email fails
+                if requires_approval:
+                    flash("Partner subscription request submitted for approval. You will receive an email when it's approved.", "info")
+                else:
+                    flash("Partner subscription activated successfully!", "success")
+            
             if partner_id:
-                flash("Partner subscription activated successfully!", "success")
                 return redirect(url_for("partner.dashboard", partner_id=partner_id))
             else:
-                flash("Partner subscription request submitted for approval.", "info")
                 return redirect(url_for("partner.management_dashboard"))
             
         except Exception as e:

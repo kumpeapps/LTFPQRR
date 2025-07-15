@@ -567,6 +567,122 @@ def send_subscription_confirmation_email(user, subscription):
         return False
 
 
+def send_partner_subscription_confirmation_email(user, partner_subscription):
+    """Send subscription confirmation email to partner customer"""
+    try:
+        # Determine approval status
+        if partner_subscription.admin_approved:
+            subject = "Partner Subscription Activated - Welcome!"
+            status_color = "#28a745"
+            status_bg = "#d4edda"
+            status_message = "Your partner subscription is now active!"
+        else:
+            subject = "Partner Subscription Confirmed - Pending Approval"
+            status_color = "#ffc107"
+            status_bg = "#fff3cd"
+            status_message = "Your subscription is pending admin approval. You will receive another email once approved."
+        
+        plan_name = partner_subscription.pricing_plan.name if partner_subscription.pricing_plan else "Partner Plan"
+        partner_name = partner_subscription.partner.company_name if partner_subscription.partner else "Your Partner"
+        cta_url = "http://localhost:8000/partner"
+        cta_text = "Access Partner Dashboard"
+        
+        # Build the subscription details table
+        details_rows = [
+            f"<tr><td style='padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;'>Partner:</td><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'><strong>{partner_name}</strong></td></tr>",
+            f"<tr><td style='padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;'>Plan:</td><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'><strong>{plan_name}</strong></td></tr>",
+            f"<tr><td style='padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;'>Amount:</td><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'><strong>${partner_subscription.amount}</strong></td></tr>",
+            f"<tr><td style='padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;'>Start Date:</td><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'>{partner_subscription.start_date.strftime('%B %d, %Y')}</td></tr>"
+        ]
+        
+        if partner_subscription.pricing_plan:
+            details_rows.append(f"<tr><td style='padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;'>Billing:</td><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'>{partner_subscription.pricing_plan.billing_period.title()}</td></tr>")
+        
+        if partner_subscription.end_date:
+            details_rows.append(f"<tr><td style='padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;'>End Date:</td><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'>{partner_subscription.end_date.strftime('%B %d, %Y')}</td></tr>")
+        
+        if partner_subscription.max_tags:
+            max_tags_text = str(partner_subscription.max_tags) if partner_subscription.max_tags > 0 else "Unlimited"
+            details_rows.append(f"<tr><td style='padding: 8px; color: #666;'>Max Tags:</td><td style='padding: 8px;'>{max_tags_text}</td></tr>")
+        else:
+            details_rows.append("<tr><td style='padding: 8px; color: #666;'>Max Tags:</td><td style='padding: 8px;'>Unlimited</td></tr>")
+        
+        details_table = "\n".join(details_rows)
+        
+        html_body = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>LTFPQRR Partner Subscription Confirmation</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 12px 12px 0 0;">
+                <h1 style="color: #13c1be; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">LTFPQRR</h1>
+                <p style="margin: 10px 0 0 0; font-size: 1.1rem;">Lost Then Found Pet QR Registry</p>
+            </div>
+            
+            <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <div style="margin-bottom: 30px;">
+                    <h2 style="color: #333; margin: 0 0 10px 0; font-size: 1.8rem;">Hi {user.get_full_name()},</h2>
+                    <p style="color: #666; margin: 0; font-size: 1.1rem;">Thank you for your partner subscription!</p>
+                </div>
+                
+                <div style="background: {status_bg}; border: 1px solid {status_color}; border-radius: 8px; padding: 20px; margin: 25px 0; text-align: center;">
+                    <h3 style="color: {status_color}; margin: 0 0 10px 0; font-size: 1.3rem;">Subscription Status</h3>
+                    <p style="margin: 0; font-size: 1rem; color: #333;">{status_message}</p>
+                </div>
+                
+                <div style="background: #f8f9fa; border-radius: 8px; padding: 25px; margin: 25px 0;">
+                    <h3 style="color: #333; margin: 0 0 20px 0; font-size: 1.3rem; text-align: center;">Subscription Details</h3>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        {details_table}
+                    </table>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{cta_url}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 1.1rem;">{cta_text}</a>
+                </div>
+                
+                <div style="border-top: 1px solid #e9ecef; padding-top: 20px; margin-top: 30px; color: #666; font-size: 0.9rem;">
+                    <p>Questions about your subscription? Contact us at <a href="mailto:support@ltfpqrr.com" style="color: #667eea;">support@ltfpqrr.com</a></p>
+                    <p style="margin: 10px 0 0 0;">Thank you for choosing LTFPQRR!</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Plain text version
+        plain_body = f"""
+        LTFPQRR - Partner Subscription Confirmation
+        
+        Hi {user.get_full_name()},
+        
+        Thank you for your partner subscription!
+        
+        Status: {status_message}
+        
+        Subscription Details:
+        - Partner: {partner_name}
+        - Plan: {plan_name}
+        - Amount: ${partner_subscription.amount}
+        - Start Date: {partner_subscription.start_date.strftime('%B %d, %Y')}
+        
+        Access your partner dashboard: {cta_url}
+        
+        Questions? Contact us at support@ltfpqrr.com
+        
+        Thank you for choosing LTFPQRR!
+        """
+        
+        return send_email(user.email, subject, html_body, plain_body)
+        
+    except Exception as e:
+        logger.error(f"Error sending partner subscription confirmation email: {e}")
+        return False
+
+
 def send_admin_approval_notification(subscription):
     """Send notification to admins when a partner subscription needs approval"""
     try:
@@ -1077,4 +1193,291 @@ def send_subscription_rejected_email(user, subscription):
         
     except Exception as e:
         logger.error(f"Error sending subscription rejected email: {e}")
+        return False
+
+
+def send_partner_admin_approval_notification(partner_subscription):
+    """Send notification to admins when a partner subscription needs approval"""
+    try:
+        from models.models import User, Role
+        
+        # Get all admin users
+        admin_role = Role.query.filter_by(name='admin').first()
+        if not admin_role:
+            logger.warning("No admin role found")
+            return False
+            
+        admin_users = admin_role.users
+        if not admin_users:
+            logger.warning("No admin users found")
+            return False
+        
+        subject = "New Partner Subscription Requires Approval"
+        partner_name = partner_subscription.partner.company_name if partner_subscription.partner else "Unknown Partner"
+        user_name = partner_subscription.partner.owner.get_full_name() if partner_subscription.partner and partner_subscription.partner.owner else "Unknown User"
+        plan_name = partner_subscription.pricing_plan.name if partner_subscription.pricing_plan else "Partner Plan"
+        
+        content = f"""
+        <div style="margin-bottom: 30px;">
+            <h2 style="color: #333; margin: 0 0 10px 0; font-size: 1.8rem;">Hello Admin,</h2>
+        </div>
+        
+        <div style="text-align: center; margin: 25px 0;">
+            <h3 style="color: #333; margin: 0 0 10px 0; font-size: 1.5rem;">New Partner Subscription Awaiting Approval</h3>
+            <p style="color: #666; margin: 0; font-size: 1.1rem;">A new partner subscription has been purchased and requires your approval.</p>
+        </div>
+        
+        <div style="background: #f8f9fa; border-radius: 8px; padding: 25px; margin: 25px 0;">
+            <h4 style="color: #333; margin: 0 0 20px 0; font-size: 1.3rem; text-align: center;">Subscription Details</h4>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Partner:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>{partner_name}</strong></td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Owner:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{user_name}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Plan:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>{plan_name}</strong></td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Amount:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>${partner_subscription.amount}</strong></td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Start Date:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{partner_subscription.start_date.strftime('%B %d, %Y')}</td></tr>
+                <tr><td style="padding: 8px; color: #666;">Max Tags:</td><td style="padding: 8px;">{'Unlimited' if partner_subscription.max_tags == 0 else partner_subscription.max_tags}</td></tr>
+            </table>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="http://localhost:8000/admin/partner-subscriptions" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 1.1rem;">Review Subscription</a>
+        </div>
+        
+        <div style="border-top: 1px solid #e9ecef; padding-top: 20px; margin-top: 30px; color: #666; font-size: 0.9rem; text-align: center;">
+            <p>Please review and approve this subscription in the admin panel.</p>
+        </div>
+        """
+        
+        html_body = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>LTFPQRR - Partner Subscription Approval Needed</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 12px 12px 0 0;">
+                <h1 style="color: #13c1be; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">LTFPQRR</h1>
+                <p style="margin: 10px 0 0 0; font-size: 1.1rem;">Lost Then Found Pet QR Registry</p>
+            </div>
+            
+            <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                {content}
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 12px 12px; border-top: 1px solid #e9ecef; color: #666; font-size: 0.9rem;">
+                <p style="margin: 0;">LTFPQRR - Lost Then Found Pet QR Registry</p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        plain_body = f"""
+        LTFPQRR - Partner Subscription Approval Needed
+        
+        Hello Admin,
+        
+        A new partner subscription requires approval:
+        
+        Partner: {partner_name}
+        Owner: {user_name}
+        Plan: {plan_name}
+        Amount: ${partner_subscription.amount}
+        Start Date: {partner_subscription.start_date.strftime('%B %d, %Y')}
+        Max Tags: {'Unlimited' if partner_subscription.max_tags == 0 else partner_subscription.max_tags}
+        
+        Please review and approve this subscription in the admin panel:
+        http://localhost:8000/admin/partner-subscriptions
+        
+        Thank you,
+        LTFPQRR Team
+        """
+        
+        # Send to all admin users
+        success = True
+        for admin in admin_users:
+            if not send_email(admin.email, subject, html_body, plain_body):
+                success = False
+                
+        return success
+        
+    except Exception as e:
+        logger.error(f"Error sending admin approval notification: {e}")
+        return False
+
+
+def send_partner_subscription_approved_email(user, partner_subscription):
+    """Send approval notification email to partner customer"""
+    try:
+        subject = "Partner Subscription Approved - Welcome!"
+        
+        plan_name = partner_subscription.pricing_plan.name if partner_subscription.pricing_plan else "Partner Plan"
+        partner_name = partner_subscription.partner.company_name if partner_subscription.partner else "Your Partner"
+        
+        content = f"""
+        <div style="margin-bottom: 30px;">
+            <h2 style="color: #333; margin: 0 0 10px 0; font-size: 1.8rem;">Hi {user.get_full_name()},</h2>
+        </div>
+        
+        <div style="text-align: center; margin: 25px 0;">
+            <h3 style="color: #28a745; margin: 0 0 10px 0; font-size: 1.5rem;">Congratulations! Your Partner Subscription is Approved</h3>
+            <p style="color: #666; margin: 0; font-size: 1.1rem;">Great news! Your partner subscription has been approved by our admin team. Welcome to the LTFPQRR partner network!</p>
+        </div>
+        
+        <div style="background: #f8f9fa; border-radius: 8px; padding: 25px; margin: 25px 0;">
+            <h4 style="color: #333; margin: 0 0 20px 0; font-size: 1.3rem; text-align: center;">Subscription Details</h4>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Partner:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>{partner_name}</strong></td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Plan:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>{plan_name}</strong></td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Amount:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>${partner_subscription.amount}</strong></td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Start Date:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{partner_subscription.start_date.strftime('%B %d, %Y')}</td></tr>
+                <tr><td style="padding: 8px; color: #666;">Max Tags:</td><td style="padding: 8px;">{'Unlimited' if partner_subscription.max_tags == 0 else partner_subscription.max_tags}</td></tr>
+            </table>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="http://localhost:8000/partner" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 1.1rem;">Access Partner Dashboard</a>
+        </div>
+        
+        <div style="border-top: 1px solid #e9ecef; padding-top: 20px; margin-top: 30px; color: #666; font-size: 0.9rem; text-align: center;">
+            <p>You can now start creating and managing QR tags for your partner business!</p>
+        </div>
+        """
+        
+        html_body = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>LTFPQRR - Partner Subscription Approved</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 12px 12px 0 0;">
+                <h1 style="color: #13c1be; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">LTFPQRR</h1>
+                <p style="margin: 10px 0 0 0; font-size: 1.1rem;">Lost Then Found Pet QR Registry</p>
+            </div>
+            
+            <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                {content}
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 12px 12px; border-top: 1px solid #e9ecef; color: #666; font-size: 0.9rem;">
+                <p style="margin: 0;">LTFPQRR - Lost Then Found Pet QR Registry</p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        plain_body = f"""
+        LTFPQRR - Partner Subscription Approved
+        
+        Hi {user.get_full_name()},
+        
+        Congratulations! Your partner subscription has been approved.
+        
+        Subscription Details:
+        Partner: {partner_name}
+        Plan: {plan_name}
+        Amount: ${partner_subscription.amount}
+        Start Date: {partner_subscription.start_date.strftime('%B %d, %Y')}
+        Max Tags: {'Unlimited' if partner_subscription.max_tags == 0 else partner_subscription.max_tags}
+        
+        Access your partner dashboard: http://localhost:8000/partner
+        
+        You can now start creating and managing QR tags for your partner business!
+        
+        Thank you for choosing LTFPQRR!
+        """
+        
+        return send_email(user.email, subject, html_body, plain_body)
+        
+    except Exception as e:
+        logger.error(f"Error sending partner subscription approved email: {e}")
+        return False
+
+
+def send_partner_subscription_rejected_email(user, partner_subscription):
+    """Send rejection notification email to partner customer"""
+    try:
+        subject = "Partner Subscription Update - Decision Required"
+        
+        plan_name = partner_subscription.pricing_plan.name if partner_subscription.pricing_plan else "Partner Plan"
+        partner_name = partner_subscription.partner.company_name if partner_subscription.partner else "Your Partner"
+        
+        content = f"""
+        <div style="margin-bottom: 30px;">
+            <h2 style="color: #333; margin: 0 0 10px 0; font-size: 1.8rem;">Hi {user.get_full_name()},</h2>
+        </div>
+        
+        <div style="text-align: center; margin: 25px 0;">
+            <h3 style="color: #dc3545; margin: 0 0 10px 0; font-size: 1.5rem;">Partner Subscription Update</h3>
+            <p style="color: #666; margin: 0; font-size: 1.1rem;">We regret to inform you that your partner subscription request could not be approved at this time.</p>
+        </div>
+        
+        <div style="background: #f8f9fa; border-radius: 8px; padding: 25px; margin: 25px 0;">
+            <h4 style="color: #333; margin: 0 0 20px 0; font-size: 1.3rem; text-align: center;">Subscription Details</h4>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Partner:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>{partner_name}</strong></td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Plan:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>{plan_name}</strong></td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Amount:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>${partner_subscription.amount}</strong></td></tr>
+                <tr><td style="padding: 8px; color: #666;">Requested Date:</td><td style="padding: 8px;">{partner_subscription.start_date.strftime('%B %d, %Y')}</td></tr>
+            </table>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="mailto:support@ltfpqrr.com" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 1.1rem;">Contact Support</a>
+        </div>
+        
+        <div style="border-top: 1px solid #e9ecef; padding-top: 20px; margin-top: 30px; color: #666; font-size: 0.9rem; text-align: center;">
+            <p>If you have questions about this decision or would like to reapply, please contact our support team at support@ltfpqrr.com.</p>
+        </div>
+        """
+        
+        html_body = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>LTFPQRR - Partner Subscription Update</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 12px 12px 0 0;">
+                <h1 style="color: #13c1be; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">LTFPQRR</h1>
+                <p style="margin: 10px 0 0 0; font-size: 1.1rem;">Lost Then Found Pet QR Registry</p>
+            </div>
+            
+            <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                {content}
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 12px 12px; border-top: 1px solid #e9ecef; color: #666; font-size: 0.9rem;">
+                <p style="margin: 0;">LTFPQRR - Lost Then Found Pet QR Registry</p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        plain_body = f"""
+        LTFPQRR - Partner Subscription Update
+        
+        Hi {user.get_full_name()},
+        
+        We regret to inform you that your partner subscription request could not be approved at this time.
+        
+        Subscription Details:
+        Partner: {partner_name}
+        Plan: {plan_name}
+        Amount: ${partner_subscription.amount}
+        Requested Date: {partner_subscription.start_date.strftime('%B %d, %Y')}
+        
+        If you have questions about this decision or would like to reapply, please contact our support team:
+        support@ltfpqrr.com
+        
+        Thank you for your interest in LTFPQRR.
+        """
+        
+        return send_email(user.email, subject, html_body, plain_body)
+        
+    except Exception as e:
+        logger.error(f"Error sending partner subscription rejected email: {e}")
         return False
