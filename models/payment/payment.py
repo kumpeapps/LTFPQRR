@@ -180,6 +180,7 @@ class Payment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     subscription_id = db.Column(db.Integer, db.ForeignKey('subscription.id'))
+    partner_subscription_id = db.Column(db.Integer, db.ForeignKey('partner_subscription.id'))  # Link to PartnerSubscription
     payment_gateway = db.Column(db.String(50), nullable=False)  # stripe, paypal
     payment_intent_id = db.Column(db.String(200))  # External payment ID
     transaction_id = db.Column(db.String(200))  # Our internal transaction ID
@@ -196,6 +197,7 @@ class Payment(db.Model):
     # Relationships
     user = db.relationship('User', backref='payments')
     subscription = db.relationship('Subscription', backref='payments')
+    partner_subscription = db.relationship('PartnerSubscription', backref='payments')
     
     def generate_transaction_id(self):
         """Generate internal transaction ID"""

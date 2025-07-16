@@ -173,21 +173,26 @@ def partner_subscriptions():
     """Manage partner subscription requests."""
     from models.models import PartnerSubscription
     
+    # Pending subscriptions: admin_approved=False AND status='pending'
     pending_subs = (
         PartnerSubscription.query.filter_by(admin_approved=False, status='pending')
         .order_by(PartnerSubscription.created_at.desc())
         .all()
     )
 
+    # Approved subscriptions: admin_approved=True AND status='active'
+    # This includes both manually approved and auto-approved subscriptions
     approved_subs = (
-        PartnerSubscription.query.filter_by(admin_approved=True)
-        .filter(PartnerSubscription.status.in_(['active', 'expired']))
+        PartnerSubscription.query.filter_by(admin_approved=True, status='active')
         .order_by(PartnerSubscription.created_at.desc())
         .all()
     )
     
+    # Rejected subscriptions: status='cancelled' OR 'rejected'
     rejected_subs = (
-        PartnerSubscription.query.filter_by(status='cancelled')
+        PartnerSubscription.query.filter(
+            PartnerSubscription.status.in_(['cancelled', 'rejected'])
+        )
         .order_by(PartnerSubscription.created_at.desc())
         .all()
     )
@@ -243,29 +248,68 @@ def approve_partner_subscription(subscription_id):
 @admin_required
 def reject_partner_subscription(subscription_id):
     """Reject a partner subscription."""
-    from models.models import PartnerSubscription
-    from extensions import db
+    from models.models import PartnerSubscription, Payment
+    from extensions import db, logger
     
     subscription = PartnerSubscription.query.get_or_404(subscription_id)
 
     try:
+        # Check if there's a payment that needs to be refunded
+        payment = Payment.query.filter_by(partner_subscription_id=subscription_id).first()
+        refund_processed = False
+        
+        if payment and payment.payment_gateway == 'stripe' and payment.payment_intent_id:
+            try:
+                # Process Stripe refund
+                import stripe
+                from utils import decrypt_value
+                from models.models import PaymentGateway
+                
+                # Get Stripe configuration from database
+                stripe_gateway = PaymentGateway.query.filter_by(name='stripe').first()
+                if stripe_gateway and stripe_gateway.enabled:
+                    stripe.api_key = decrypt_value(stripe_gateway.secret_key)
+                else:
+                    raise Exception("Stripe gateway not configured or not enabled")
+                refund = stripe.Refund.create(
+                    payment_intent=payment.payment_intent_id,
+                    reason='requested_by_customer'
+                )
+                
+                if refund.status == 'succeeded':
+                    payment.refunded = True
+                    payment.refund_id = refund.id
+                    payment.updated_at = datetime.utcnow()
+                    refund_processed = True
+                    logger.info(f"Stripe refund processed for subscription {subscription_id}: {refund.id}")
+                
+            except Exception as refund_error:
+                logger.error(f"Error processing Stripe refund for subscription {subscription_id}: {refund_error}")
+                # Continue with rejection even if refund fails
+        
+        # Reject the subscription
         subscription.reject(current_user)
         
         # Send rejection email to partner's owner
         try:
             from email_utils import send_partner_subscription_rejected_email
-            from extensions import logger
             # Get the partner owner user
             partner_owner = subscription.partner.owner
-            send_partner_subscription_rejected_email(partner_owner, subscription)
+            send_partner_subscription_rejected_email(partner_owner, subscription, refund_processed)
         except Exception as email_error:
             logger.error(f"Error sending rejection email: {email_error}")
             # Don't fail the rejection if email fails
         
-        flash(
-            f"Partner subscription for {subscription.partner.company_name} has been rejected.",
-            "success",
-        )
+        if refund_processed:
+            flash(
+                f"Partner subscription for {subscription.partner.company_name} has been rejected and refunded.",
+                "success",
+            )
+        else:
+            flash(
+                f"Partner subscription for {subscription.partner.company_name} has been rejected.",
+                "success",
+            )
     except Exception as e:
         db.session.rollback()
         flash(f"Error rejecting subscription: {str(e)}", "error")
@@ -807,14 +851,10 @@ def partners():
 @admin_required
 def cancel_partner_subscription(subscription_id):
     """Cancel a partner subscription."""
-    from models.models import Subscription
+    from models.models import PartnerSubscription
     from extensions import db
     
-    subscription = Subscription.query.get_or_404(subscription_id)
-
-    if subscription.subscription_type != "partner":
-        flash("Invalid subscription type.", "error")
-        return redirect(url_for("admin.partner_subscriptions"))
+    subscription = PartnerSubscription.query.get_or_404(subscription_id)
 
     try:
         subscription.status = "cancelled"
@@ -825,7 +865,9 @@ def cancel_partner_subscription(subscription_id):
         try:
             from email_utils import send_subscription_cancelled_email
             from extensions import logger
-            send_subscription_cancelled_email(subscription.user, subscription, refunded=False)
+            # Get user through partner relationship
+            user = subscription.partner.owner
+            send_subscription_cancelled_email(user, subscription, refunded=False)
         except Exception as email_error:
             logger.error(f"Error sending cancellation email: {email_error}")
             # Don't fail the cancellation if email fails
@@ -845,22 +887,18 @@ def cancel_partner_subscription(subscription_id):
 @admin_required
 def refund_partner_subscription(subscription_id):
     """Process a refund for a partner subscription."""
-    from models.models import Subscription, Payment
+    from models.models import PartnerSubscription, Payment
     from extensions import db, logger
     import stripe
     
-    subscription = Subscription.query.get_or_404(subscription_id)
-
-    if subscription.subscription_type != "partner":
-        flash("Invalid subscription type.", "error")
-        return redirect(url_for("admin.partner_subscriptions"))
+    subscription = PartnerSubscription.query.get_or_404(subscription_id)
 
     try:
         # Configure payment gateways to ensure Stripe is properly set up
         configure_payment_gateways()
         
-        # Find associated payment record using the subscription link
-        payment = Payment.query.filter_by(subscription_id=subscription.id).first()
+        # Find associated payment record using the partner subscription link
+        payment = Payment.query.filter_by(partner_subscription_id=subscription.id).first()
         
         stripe_refund_successful = False
         
@@ -908,7 +946,9 @@ def refund_partner_subscription(subscription_id):
         try:
             from email_utils import send_subscription_cancelled_email
             from extensions import logger
-            send_subscription_cancelled_email(subscription.user, subscription, refunded=stripe_refund_successful)
+            # Get user through partner relationship
+            user = subscription.partner.owner
+            send_subscription_cancelled_email(user, subscription, refunded=stripe_refund_successful)
         except Exception as email_error:
             logger.error(f"Error sending cancellation email: {email_error}")
             # Don't fail the refund if email fails
@@ -935,15 +975,11 @@ def refund_partner_subscription(subscription_id):
 @admin_required
 def extend_partner_subscription(subscription_id):
     """Extend or modify the expiration date of a partner subscription."""
-    from models.models import Subscription
+    from models.models import PartnerSubscription
     from extensions import db
     from datetime import datetime, timedelta
     
-    subscription = Subscription.query.get_or_404(subscription_id)
-
-    if subscription.subscription_type != "partner":
-        flash("Invalid subscription type.", "error")
-        return redirect(url_for("admin.partner_subscriptions"))
+    subscription = PartnerSubscription.query.get_or_404(subscription_id)
     
     if request.method == "POST":
         try:

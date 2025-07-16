@@ -35,11 +35,13 @@ def dashboard():
 
     # Check if user has pending partner subscription
     if current_user.has_pending_partner_subscription():
-        # Show pending subscription status
-        pending_subscription = current_user.subscriptions.filter_by(
-            subscription_type='partner',
-            status='pending'
-        ).first()
+        # Get the actual pending PartnerSubscription
+        from models.models import PartnerSubscription, Partner
+        pending_subscription = PartnerSubscription.query.join(Partner)\
+            .filter(Partner.owner_id == current_user.id)\
+            .filter(PartnerSubscription.status == "pending")\
+            .filter(PartnerSubscription.admin_approved == False)\
+            .first()
         
         # If user doesn't have partner role yet, show only pending status
         if not current_user.has_partner_role():

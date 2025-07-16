@@ -55,9 +55,16 @@ def success():
     """Handle successful payment."""
     from models.models import Tag, Subscription, PartnerSubscription
     from extensions import db
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info("=== Payment success handler called ===")
+    logger.info(f"Session contents: {dict(session)}")
+    logger.info(f"Current user: {current_user.username}")
     
     # Handle tag claim payments
     if "claiming_tag_id" in session:
+        logger.info("Processing tag claim payment")
         tag_id = session.pop("claiming_tag_id")
         subscription_type = session.pop("subscription_type", "monthly")
 
@@ -100,6 +107,7 @@ def success():
     
     # Handle partner subscription payments
     elif "partner_subscription_type" in session:
+        logger.info("Processing partner subscription payment")
         subscription_type = session.pop("partner_subscription_type")
         partner_id = session.pop("partner_id", None)
         pricing_plan_id = session.pop("pricing_plan_id", None)
@@ -115,6 +123,8 @@ def success():
         
         # Create partner subscription
         try:
+            logger.info(f"Creating partner subscription for partner_id: {partner_id}, pricing_plan_id: {pricing_plan_id}")
+            
             # Calculate end date based on pricing plan
             start_date = datetime.utcnow()
             end_date = None
@@ -124,6 +134,8 @@ def success():
                 end_date = start_date + timedelta(days=365)
             elif subscription_type == "monthly":
                 end_date = start_date + timedelta(days=30)
+            
+            logger.info(f"Calculated dates - start: {start_date}, end: {end_date}")
             
             # Create a partner subscription record
             partner_subscription = PartnerSubscription(
@@ -139,45 +151,51 @@ def success():
                 auto_renew=True
             )
             
+            logger.info("Created PartnerSubscription object, attempting to save to database")
             db.session.add(partner_subscription)
             db.session.commit()
+            logger.info("Successfully saved partner subscription to database")
             
             # Send email notifications
             try:
                 if requires_approval:
-                    # Send notification to partner that subscription requires approval
-                    from email_utils import send_partner_subscription_confirmation_email
-                    send_partner_subscription_confirmation_email(current_user, partner_subscription)
-                    
-                    # Send notification to admins that approval is needed
-                    from email_utils import send_partner_admin_approval_notification
-                    send_partner_admin_approval_notification(partner_subscription)
-                    
                     flash("Partner subscription request submitted for approval. You will receive an email when it's approved.", "info")
-                else:
-                    # Send confirmation email for immediately active subscription
-                    from email_utils import send_partner_subscription_confirmation_email
-                    send_partner_subscription_confirmation_email(current_user, partner_subscription)
                     
+                    # Try to send emails but don't fail if they don't work
+                    try:
+                        from email_utils import send_partner_subscription_confirmation_email, send_partner_admin_approval_notification
+                        send_partner_subscription_confirmation_email(current_user, partner_subscription)
+                        send_partner_admin_approval_notification(partner_subscription)
+                    except Exception as email_error:
+                        logger.error(f"Error sending approval emails (non-critical): {email_error}")
+                else:
                     flash("Partner subscription activated successfully!", "success")
+                    
+                    # Try to send confirmation email but don't fail if it doesn't work
+                    try:
+                        from email_utils import send_partner_subscription_confirmation_email
+                        send_partner_subscription_confirmation_email(current_user, partner_subscription)
+                    except Exception as email_error:
+                        logger.error(f"Error sending confirmation email (non-critical): {email_error}")
             except Exception as email_error:
-                logger.error(f"Error sending subscription emails: {email_error}")
-                # Don't fail the subscription if email fails
+                logger.error(f"Error in email notification flow: {email_error}")
+                # Always show success message regardless of email issues
                 if requires_approval:
                     flash("Partner subscription request submitted for approval. You will receive an email when it's approved.", "info")
                 else:
                     flash("Partner subscription activated successfully!", "success")
             
             if partner_id:
-                return redirect(url_for("partner.dashboard", partner_id=partner_id))
+                return redirect(url_for("partner_dashboard"))
             else:
-                return redirect(url_for("partner.management_dashboard"))
+                return redirect(url_for("partner_dashboard"))
             
         except Exception as e:
             logger.error(f"Error creating partner subscription: {e}")
             flash("Payment processed but there was an error setting up your subscription. Please contact support.", "error")
             return redirect(url_for("partner.management_dashboard"))
 
+    logger.info("Payment completed but no specific handler matched")
     flash("Payment completed successfully!", "success")
     return redirect(url_for("dashboard.dashboard"))
 
@@ -187,9 +205,19 @@ def success():
 @login_required
 def partner_subscription_payment(partner_id=None):
     """Process partner subscription payment."""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"=== Partner subscription payment initiated ===")
+    logger.info(f"Partner ID: {partner_id}")
+    logger.info(f"Form data: {dict(request.form)}")
+    
     # Users can request partner subscriptions for specific partners
     subscription_type = request.form.get("subscription_type")
     pricing_plan_id = request.form.get("pricing_plan_id")
+    
+    logger.info(f"Subscription type: {subscription_type}")
+    logger.info(f"Pricing plan ID: {pricing_plan_id}")
     
     # Get pricing plan from database
     from models.models import PricingPlan
@@ -235,6 +263,10 @@ def partner_subscription_payment(partner_id=None):
     # Store subscription info in session for payment processing
     session["partner_subscription_type"] = subscription_type
     session["pricing_plan_id"] = pricing_plan.id
+    
+    logger.info(f"Set session data - partner_subscription_type: {subscription_type}")
+    logger.info(f"Set session data - pricing_plan_id: {pricing_plan.id}")
+    logger.info(f"Session after setting: {dict(session)}")
     
     amount = float(pricing_plan.price)
 

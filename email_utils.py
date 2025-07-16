@@ -582,8 +582,8 @@ def send_partner_subscription_confirmation_email(user, partner_subscription):
             status_bg = "#fff3cd"
             status_message = "Your subscription is pending admin approval. You will receive another email once approved."
         
-        plan_name = partner_subscription.pricing_plan.name if partner_subscription.pricing_plan else "Partner Plan"
-        partner_name = partner_subscription.partner.company_name if partner_subscription.partner else "Your Partner"
+        plan_name = partner_subscription.pricing_plan.name if hasattr(partner_subscription, 'pricing_plan') and partner_subscription.pricing_plan else "Partner Plan"
+        partner_name = partner_subscription.partner.company_name if hasattr(partner_subscription, 'partner') and partner_subscription.partner else "Your Partner"
         cta_url = "http://localhost:8000/partner"
         cta_text = "Access Partner Dashboard"
         
@@ -884,7 +884,16 @@ def send_subscription_cancelled_email(user, subscription, refunded=False):
     try:
         subject = "Subscription Cancelled - LTFPQRR"
         
-        plan_name = subscription.pricing_plan.name if subscription.pricing_plan else "Subscription Plan"
+        # Handle both regular subscriptions and partner subscriptions
+        if hasattr(subscription, 'pricing_plan') and subscription.pricing_plan:
+            plan_name = subscription.pricing_plan.name
+        else:
+            plan_name = "Subscription Plan"
+        
+        amount = str(subscription.amount) if subscription.amount else "N/A"
+        start_date = subscription.start_date.strftime('%B %d, %Y') if subscription.start_date else "N/A"
+        end_date = subscription.end_date.strftime('%B %d, %Y') if subscription.end_date else 'Today'
+        
         refund_message = "A refund has been processed and should appear in your account within 5-10 business days." if refunded else "No refund was processed for this cancellation."
         
         content = f"""
@@ -903,15 +912,15 @@ def send_subscription_cancelled_email(user, subscription, refunded=False):
                 </tr>
                 <tr>
                     <td>Amount:</td>
-                    <td>${subscription.amount}</td>
+                    <td>${amount}</td>
                 </tr>
                 <tr>
                     <td>Original Start:</td>
-                    <td>{subscription.start_date.strftime('%B %d, %Y')}</td>
+                    <td>{start_date}</td>
                 </tr>
                 <tr>
                     <td>Cancelled:</td>
-                    <td>{subscription.end_date.strftime('%B %d, %Y') if subscription.end_date else 'Today'}</td>
+                    <td>{end_date}</td>
                 </tr>
                 <tr>
                     <td>Refund Status:</td>
@@ -941,9 +950,9 @@ def send_subscription_cancelled_email(user, subscription, refunded=False):
         
         Cancelled Subscription:
         - Plan: {plan_name}
-        - Amount: ${subscription.amount}
-        - Original Start: {subscription.start_date.strftime('%B %d, %Y')}
-        - Cancelled: {subscription.end_date.strftime('%B %d, %Y') if subscription.end_date else 'Today'}
+        - Amount: ${amount}
+        - Original Start: {start_date}
+        - Cancelled: {end_date}
         - Refund: {'Processed' if refunded else 'None'}
         
         {refund_message}
@@ -952,10 +961,19 @@ def send_subscription_cancelled_email(user, subscription, refunded=False):
         The LTFPQRR Team
         """
         
-        success = send_email(user.email, subject, html_body, text_body)
-        if success:
-            logger.info(f"Subscription cancelled email sent to {user.email}")
-        return success
+        return send_email(
+            to_email=user.email,
+            subject=subject,
+            html_body=html_body,
+            text_body=text_body
+        )
+        
+        return send_email(
+            to_email=user.email,
+            subject=subject,
+            html_body=html_body,
+            text_body=text_body
+        )
         
     except Exception as e:
         logger.error(f"Error sending subscription cancelled email: {e}")
@@ -1213,9 +1231,20 @@ def send_partner_admin_approval_notification(partner_subscription):
             return False
         
         subject = "New Partner Subscription Requires Approval"
-        partner_name = partner_subscription.partner.company_name if partner_subscription.partner else "Unknown Partner"
-        user_name = partner_subscription.partner.owner.get_full_name() if partner_subscription.partner and partner_subscription.partner.owner else "Unknown User"
-        plan_name = partner_subscription.pricing_plan.name if partner_subscription.pricing_plan else "Partner Plan"
+        
+        # Safely get partner and user information
+        try:
+            partner_name = partner_subscription.partner.company_name if hasattr(partner_subscription, 'partner') and partner_subscription.partner else "Unknown Partner"
+            user_name = partner_subscription.partner.owner.get_full_name() if (hasattr(partner_subscription, 'partner') 
+                                                                               and partner_subscription.partner 
+                                                                               and hasattr(partner_subscription.partner, 'owner')
+                                                                               and partner_subscription.partner.owner) else "Unknown User"
+            plan_name = partner_subscription.pricing_plan.name if hasattr(partner_subscription, 'pricing_plan') and partner_subscription.pricing_plan else "Partner Plan"
+        except Exception as attr_error:
+            logger.error(f"Error accessing partner subscription attributes: {attr_error}")
+            partner_name = "Unknown Partner"
+            user_name = "Unknown User"  
+            plan_name = "Partner Plan"
         
         content = f"""
         <div style="margin-bottom: 30px;">
@@ -1311,8 +1340,8 @@ def send_partner_subscription_approved_email(user, partner_subscription):
     try:
         subject = "Partner Subscription Approved - Welcome!"
         
-        plan_name = partner_subscription.pricing_plan.name if partner_subscription.pricing_plan else "Partner Plan"
-        partner_name = partner_subscription.partner.company_name if partner_subscription.partner else "Your Partner"
+        plan_name = partner_subscription.pricing_plan.name if hasattr(partner_subscription, 'pricing_plan') and partner_subscription.pricing_plan else "Partner Plan"
+        partner_name = partner_subscription.partner.company_name if hasattr(partner_subscription, 'partner') and partner_subscription.partner else "Your Partner"
         
         content = f"""
         <div style="margin-bottom: 30px;">
@@ -1396,13 +1425,26 @@ def send_partner_subscription_approved_email(user, partner_subscription):
         return False
 
 
-def send_partner_subscription_rejected_email(user, partner_subscription):
+def send_partner_subscription_rejected_email(user, partner_subscription, refund_processed=False):
     """Send rejection notification email to partner customer"""
     try:
-        subject = "Partner Subscription Update - Decision Required"
+        subject = "Partner Subscription Update - Request Rejected"
         
-        plan_name = partner_subscription.pricing_plan.name if partner_subscription.pricing_plan else "Partner Plan"
-        partner_name = partner_subscription.partner.company_name if partner_subscription.partner else "Your Partner"
+        plan_name = partner_subscription.pricing_plan.name if hasattr(partner_subscription, 'pricing_plan') and partner_subscription.pricing_plan else "Partner Plan"
+        partner_name = partner_subscription.partner.company_name if hasattr(partner_subscription, 'partner') and partner_subscription.partner else "Your Partner"
+        
+        refund_message = ""
+        if refund_processed:
+            refund_message = """
+            <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; margin: 25px 0;">
+                <h4 style="color: #155724; margin: 0 0 10px 0; font-size: 1.2rem;">
+                    <i class="fas fa-check-circle"></i> Refund Processed
+                </h4>
+                <p style="color: #155724; margin: 0;">
+                    Your payment has been fully refunded and should appear in your account within 5-10 business days.
+                </p>
+            </div>
+            """
         
         content = f"""
         <div style="margin-bottom: 30px;">
@@ -1413,6 +1455,8 @@ def send_partner_subscription_rejected_email(user, partner_subscription):
             <h3 style="color: #dc3545; margin: 0 0 10px 0; font-size: 1.5rem;">Partner Subscription Update</h3>
             <p style="color: #666; margin: 0; font-size: 1.1rem;">We regret to inform you that your partner subscription request could not be approved at this time.</p>
         </div>
+        
+        {refund_message}
         
         <div style="background: #f8f9fa; border-radius: 8px; padding: 25px; margin: 25px 0;">
             <h4 style="color: #333; margin: 0 0 20px 0; font-size: 1.3rem; text-align: center;">Subscription Details</h4>
