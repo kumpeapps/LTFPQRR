@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}Email Campaigns - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% set sidebar_context = 'admin' %}
+        {% include 'includes/dashboard_sidebar.html' %}
+        
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Email Campaigns</h2>
+                <div>
+                    <a href="{{ url_for('email_admin.dashboard') }}" class="btn btn-secondary me-2">Back to Dashboard</a>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCampaignModal">
+                        <i class="fas fa-plus"></i> Create Campaign
+                    </button>
+                </div>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Campaign Name</th>
+                                    <th>Template</th>
+                                    <th>Target</th>
+                                    <th>Status</th>
+                                    <th>Recipients</th>
+                                    <th>Sent/Failed</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for campaign in campaigns %}
+                                <tr>
+                                    <td>{{ campaign.name }}</td>
+                                    <td>
+                                        {% if campaign.template %}
+                                            {{ campaign.template.name }}
+                                        {% else %}
+                                            <span class="text-muted">Custom</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ campaign.target_audience }}</span>
+                                    </td>
+                                    <td>
+                                        {% if campaign.status == 'draft' %}
+                                            <span class="badge bg-secondary">Draft</span>
+                                        {% elif campaign.status == 'scheduled' %}
+                                            <span class="badge bg-warning">Scheduled</span>
+                                        {% elif campaign.status == 'sending' %}
+                                            <span class="badge bg-primary">Sending</span>
+                                        {% elif campaign.status == 'completed' %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% elif campaign.status == 'failed' %}
+                                            <span class="badge bg-danger">Failed</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ campaign.total_recipients }}</td>
+                                    <td>{{ campaign.emails_sent }}/{{ campaign.emails_failed }}</td>
+                                    <td>{{ campaign.created_at.strftime('%Y-%m-%d') if campaign.created_at else 'N/A' }}</td>
+                                    <td>
+                                        {% if campaign.status == 'draft' %}
+                                            <button class="btn btn-sm btn-outline-primary" 
+                                                    onclick="sendCampaign({{ campaign.id }})">Send</button>
+                                        {% endif %}
+                                        <a href="{{ url_for('email_admin.view_campaign', campaign_id=campaign.id) }}" 
+                                           class="btn btn-sm btn-outline-info">View</a>
+                                        {% if campaign.status in ['draft'] %}
+                                            <button class="btn btn-sm btn-outline-danger" 
+                                                    onclick="deleteCampaign({{ campaign.id }}, '{{ campaign.name }}')">Delete</button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% if not campaigns %}
+                        <div class="text-center py-4">
+                            <p class="text-muted">No email campaigns found. Create your first campaign to get started.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Campaign Modal -->
+<div class="modal fade" id="createCampaignModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('email_admin.create_campaign') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Email Campaign</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Campaign Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="template_id" class="form-label">Email Template</label>
+                        <select class="form-control" id="template_id" name="template_id">
+                            <option value="">Custom Content</option>
+                            {% for template in templates %}
+                                <option value="{{ template.id }}">{{ template.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="target_audience" class="form-label">Target Audience</label>
+                        <select class="form-control" id="target_audience" name="target_audience" required>
+                            <option value="all_users">All Users</option>
+                            <option value="partners">Partners Only</option>
+                            <option value="customers">Customers Only</option>
+                            <option value="active_subscriptions">Users with Active Subscriptions</option>
+                            <option value="custom">Custom Query</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="customQueryDiv" style="display: none;">
+                        <label for="custom_query" class="form-label">Custom Query (JSON)</label>
+                        <textarea class="form-control" id="custom_query" name="custom_query" rows="3" 
+                                  placeholder='{"role": "partner", "status": "active"}'></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">Email Subject</label>
+                        <input type="text" class="form-control" id="subject" name="subject" required>
+                    </div>
+                    <div class="mb-3" id="contentDiv">
+                        <label for="content" class="form-label">Email Content (HTML)</label>
+                        <textarea class="form-control" id="content" name="content" rows="8"></textarea>
+                        <small class="form-text text-muted">Leave empty to use template content</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="scheduled_at" class="form-label">Schedule Send (Optional)</label>
+                        <input type="datetime-local" class="form-control" id="scheduled_at" name="scheduled_at">
+                        <small class="form-text text-muted">Leave empty to send immediately</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Campaign</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('target_audience').addEventListener('change', function() {
+    const customDiv = document.getElementById('customQueryDiv');
+    if (this.value === 'custom') {
+        customDiv.style.display = 'block';
+    } else {
+        customDiv.style.display = 'none';
+    }
+});
+
+function sendCampaign(campaignId) {
+    if (confirm('Are you sure you want to send this campaign? This action cannot be undone.')) {
+        fetch(`{{ url_for('email_admin.send_campaign', campaign_id=0) }}`.replace('0', campaignId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error sending campaign: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error sending campaign: ' + error);
+        });
+    }
+}
+
+function deleteCampaign(campaignId, campaignName) {
+    if (confirm(`Are you sure you want to delete the campaign "${campaignName}"?`)) {
+        fetch(`{{ url_for('email_admin.delete_campaign', campaign_id=0) }}`.replace('0', campaignId), {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting campaign: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error deleting campaign: ' + error);
+        });
+    }
+}
+</script>
+{% endblock %}

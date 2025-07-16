@@ -161,20 +161,48 @@ def success():
                 if requires_approval:
                     flash("Partner subscription request submitted for approval. You will receive an email when it's approved.", "info")
                     
-                    # Try to send emails but don't fail if they don't work
+                    # Try to send emails using enhanced email system
                     try:
-                        from email_utils import send_partner_subscription_confirmation_email, send_partner_admin_approval_notification
-                        send_partner_subscription_confirmation_email(current_user, partner_subscription)
-                        send_partner_admin_approval_notification(partner_subscription)
+                        from email_utils import send_partner_subscription_confirmation_email_enhanced
+                        from services.email_service import EmailTemplateManager
+                        
+                        # Send confirmation to partner
+                        send_partner_subscription_confirmation_email_enhanced(current_user, partner_subscription)
+                        
+                        # Send admin notification using template
+                        admin_variables = {
+                            'partner_name': partner_subscription.partner.company_name if partner_subscription.partner else "Unknown Partner",
+                            'user_name': current_user.get_full_name(),
+                            'user_email': current_user.email,
+                            'plan_name': partner_subscription.pricing_plan.name if partner_subscription.pricing_plan else "Partner Plan",
+                            'amount': str(partner_subscription.amount),
+                            'start_date': partner_subscription.start_date.strftime('%B %d, %Y'),
+                            'max_tags': 'Unlimited' if partner_subscription.max_tags == 0 else str(partner_subscription.max_tags)
+                        }
+                        
+                        # Get admin users and send notifications
+                        from models.models import User, Role
+                        admin_role = Role.query.filter_by(name='admin').first()
+                        if admin_role and admin_role.users:
+                            for admin_user in admin_role.users:
+                                EmailTemplateManager.send_from_template(
+                                    template_name='admin_partner_approval_notification',
+                                    to_email=admin_user.email,
+                                    variables=admin_variables,
+                                    user_id=admin_user.id,
+                                    priority='high',
+                                    email_type='admin_approval_notification'
+                                )
+                        
                     except Exception as email_error:
                         logger.error(f"Error sending approval emails (non-critical): {email_error}")
                 else:
                     flash("Partner subscription activated successfully!", "success")
                     
-                    # Try to send confirmation email but don't fail if it doesn't work
+                    # Try to send confirmation email using enhanced system
                     try:
-                        from email_utils import send_partner_subscription_confirmation_email
-                        send_partner_subscription_confirmation_email(current_user, partner_subscription)
+                        from email_utils import send_partner_subscription_confirmation_email_enhanced
+                        send_partner_subscription_confirmation_email_enhanced(current_user, partner_subscription)
                     except Exception as email_error:
                         logger.error(f"Error sending confirmation email (non-critical): {email_error}")
             except Exception as email_error:

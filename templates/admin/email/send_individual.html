@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Send Individual Email - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% set sidebar_context = 'admin' %}
+        {% include 'includes/dashboard_sidebar.html' %}
+        
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Send Individual Email</h2>
+                    <div>
+                        <a href="{{ url_for('email_admin.dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+                    </div>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Send Email to Individual User</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="recipient_type" class="form-label">Recipient Type</label>
+                                        <select class="form-control" id="recipient_type" name="recipient_type" required onchange="updateRecipientList()">
+                                            <option value="">Select recipient type...</option>
+                                            <option value="user">User</option>
+                                            <option value="partner">Partner (Owner)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="recipient_id" class="form-label">Recipient</label>
+                                        <select class="form-control" id="recipient_id" name="recipient_id" required disabled>
+                                            <option value="">Select recipient type first...</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="template_id" class="form-label">Email Template</label>
+                                        <select class="form-control" id="template_id" name="template_id" required onchange="loadTemplateVariables()">
+                                            <option value="">Select template...</option>
+                                            {% for template in templates %}
+                                                <option value="{{ template.id }}" 
+                                                        data-subject="{{ template.subject }}"
+                                                        data-variables="{{ template.variables | join(',') if template.variables else '' }}">
+                                                    {{ template.name }} ({{ template.template_type or 'General' }})
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="custom_subject" class="form-label">Custom Subject (Optional)</label>
+                                        <input type="text" class="form-control" id="custom_subject" name="custom_subject" 
+                                               placeholder="Leave empty to use template subject">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="template_variables" class="mb-3" style="display: none;">
+                                <label class="form-label">Template Variables</label>
+                                <div id="variables_container" class="row">
+                                    <!-- Variables will be loaded here dynamically -->
+                                </div>
+                                <small class="form-text text-muted">Customize the variables that will be used in the email template</small>
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane"></i> Send Email
+                                </button>
+                                <button type="button" class="btn btn-outline-info" onclick="previewEmail()" disabled id="previewBtn">
+                                    <i class="fas fa-eye"></i> Preview Email
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Recipients Data (Hidden) -->
+                <script type="application/json" id="users-data">
+                    [
+                    {% for user in users %}
+                        {
+                            "id": {{ user.id }},
+                            "first_name": "{{ user.first_name | e }}",
+                            "last_name": "{{ user.last_name | e }}",
+                            "email": "{{ user.email | e }}"
+                        }{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                    ]
+                </script>
+                <script type="application/json" id="partners-data">
+                    [
+                    {% for partner in partners %}
+                        {
+                            "id": {{ partner.id }},
+                            "company_name": "{{ partner.company_name | e }}",
+                            "email": "{{ partner.email | e }}"
+                        }{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                    ]
+                </script>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let usersData = JSON.parse(document.getElementById('users-data').textContent);
+let partnersData = JSON.parse(document.getElementById('partners-data').textContent);
+
+function updateRecipientList() {
+    const recipientType = document.getElementById('recipient_type').value;
+    const recipientSelect = document.getElementById('recipient_id');
+    
+    // Clear current options
+    recipientSelect.innerHTML = '<option value="">Select recipient...</option>';
+    
+    if (recipientType === 'user') {
+        recipientSelect.disabled = false;
+        usersData.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.id;
+            option.textContent = `${user.first_name} ${user.last_name} (${user.email})`;
+            recipientSelect.appendChild(option);
+        });
+    } else if (recipientType === 'partner') {
+        recipientSelect.disabled = false;
+        partnersData.forEach(partner => {
+            const option = document.createElement('option');
+            option.value = partner.id;
+            option.textContent = `${partner.company_name} (${partner.email})`;
+            recipientSelect.appendChild(option);
+        });
+    } else {
+        recipientSelect.disabled = true;
+    }
+}
+
+function loadTemplateVariables() {
+    const templateSelect = document.getElementById('template_id');
+    const selectedOption = templateSelect.options[templateSelect.selectedIndex];
+    const variables = selectedOption.dataset.variables;
+    const subject = selectedOption.dataset.subject;
+    
+    // Update custom subject placeholder
+    const customSubjectInput = document.getElementById('custom_subject');
+    customSubjectInput.placeholder = subject || 'Leave empty to use template subject';
+    
+    // Show/hide variables section
+    const variablesSection = document.getElementById('template_variables');
+    const variablesContainer = document.getElementById('variables_container');
+    
+    if (variables && variables.trim()) {
+        variablesSection.style.display = 'block';
+        variablesContainer.innerHTML = '';
+        
+        const variablesList = variables.split(',');
+        variablesList.forEach(variable => {
+            const varName = variable.trim();
+            if (varName) {
+                const colDiv = document.createElement('div');
+                colDiv.className = 'col-md-6 mb-2';
+                
+                const label = document.createElement('label');
+                label.className = 'form-label';
+                label.textContent = varName.replace('_', ' ').toUpperCase();
+                
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'form-control';
+                input.name = `var_${varName}`;
+                input.placeholder = `Value for ${varName}`;
+                
+                // Set default values for common variables
+                if (varName === 'user_name') input.placeholder = 'Will use recipient name if empty';
+                if (varName === 'first_name') input.placeholder = 'Will use recipient first name if empty';
+                if (varName === 'user_email') input.placeholder = 'Will use recipient email if empty';
+                
+                colDiv.appendChild(label);
+                colDiv.appendChild(input);
+                variablesContainer.appendChild(colDiv);
+            }
+        });
+    } else {
+        variablesSection.style.display = 'none';
+    }
+    
+    // Enable preview button
+    document.getElementById('previewBtn').disabled = false;
+}
+
+function previewEmail() {
+    const templateId = document.getElementById('template_id').value;
+    if (templateId) {
+        window.open(`{{ url_for('email_admin.preview_template', template_id=0) }}`.replace('0', templateId), '_blank');
+    }
+}
+</script>
+{% endblock %}

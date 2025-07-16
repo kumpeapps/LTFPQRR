@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}Email Queue - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% set sidebar_context = 'admin' %}
+        {% include 'includes/dashboard_sidebar.html' %}
+        
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Email Queue</h2>
+                <div>
+                    <a href="{{ url_for('email_admin.dashboard') }}" class="btn btn-secondary me-2">Back to Dashboard</a>
+                    <button type="button" class="btn btn-warning" onclick="processQueue()">
+                        <i class="fas fa-play"></i> Process Queue
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="clearFailed()">
+                        <i class="fas fa-trash"></i> Clear Failed
+                    </button>
+                </div>
+            </div>
+
+            <!-- Queue Stats -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Pending</h5>
+                            <h3 class="text-primary">{{ queue_stats.pending }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Sending</h5>
+                            <h3 class="text-warning">{{ queue_stats.sending }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Sent</h5>
+                            <h3 class="text-success">{{ queue_stats.sent }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Failed</h5>
+                            <h3 class="text-danger">{{ queue_stats.failed }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-control" id="status" name="status">
+                                <option value="">All Statuses</option>
+                                <option value="pending" {{ 'selected' if request.args.get('status') == 'pending' }}>Pending</option>
+                                <option value="sending" {{ 'selected' if request.args.get('status') == 'sending' }}>Sending</option>
+                                <option value="sent" {{ 'selected' if request.args.get('status') == 'sent' }}>Sent</option>
+                                <option value="failed" {{ 'selected' if request.args.get('status') == 'failed' }}>Failed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="priority" class="form-label">Priority</label>
+                            <select class="form-control" id="priority" name="priority">
+                                <option value="">All Priorities</option>
+                                <option value="critical" {{ 'selected' if request.args.get('priority') == 'critical' }}>Critical</option>
+                                <option value="high" {{ 'selected' if request.args.get('priority') == 'high' }}>High</option>
+                                <option value="normal" {{ 'selected' if request.args.get('priority') == 'normal' }}>Normal</option>
+                                <option value="low" {{ 'selected' if request.args.get('priority') == 'low' }}>Low</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="recipient" class="form-label">Recipient</label>
+                            <input type="text" class="form-control" id="recipient" name="recipient" 
+                                   value="{{ request.args.get('recipient', '') }}" placeholder="Search recipient...">
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">Filter</button>
+                            <a href="{{ url_for('email_admin.queue') }}" class="btn btn-secondary">Clear</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Queue Items -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Recipient</th>
+                                    <th>Subject</th>
+                                    <th>Status</th>
+                                    <th>Priority</th>
+                                    <th>Attempts</th>
+                                    <th>Created</th>
+                                    <th>Next Retry</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in queue_items %}
+                                <tr>
+                                    <td>{{ item.id }}</td>
+                                    <td>{{ item.to_email }}</td>
+                                    <td>{{ item.subject[:50] }}{% if item.subject|length > 50 %}...{% endif %}</td>
+                                    <td>
+                                        {% if item.status.value == 'pending' %}
+                                            <span class="badge bg-primary">Pending</span>
+                                        {% elif item.status.value == 'sending' %}
+                                            <span class="badge bg-warning">Sending</span>
+                                        {% elif item.status.value == 'sent' %}
+                                            <span class="badge bg-success">Sent</span>
+                                        {% elif item.status.value == 'failed' %}
+                                            <span class="badge bg-danger">Failed</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.priority.value == 'critical' %}
+                                            <span class="badge bg-danger">Critical</span>
+                                        {% elif item.priority.value == 'high' %}
+                                            <span class="badge bg-warning">High</span>
+                                        {% elif item.priority.value == 'normal' %}
+                                            <span class="badge bg-info">Normal</span>
+                                        {% elif item.priority.value == 'low' %}
+                                            <span class="badge bg-secondary">Low</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item.retry_count }}/5</td>
+                                    <td>{{ item.created_at.strftime('%m/%d %H:%M') if item.created_at else 'N/A' }}</td>
+                                    <td>
+                                        {% if item.next_retry_at and item.status.value == 'failed' and item.can_retry() %}
+                                            {{ item.next_retry_at.strftime('%m/%d %H:%M') }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-info" 
+                                                onclick="viewEmail({{ item.id }})">View</button>
+                                        {% if item.status.value == 'failed' %}
+                                            <button class="btn btn-sm btn-outline-warning" 
+                                                    onclick="retryEmail({{ item.id }})">Retry</button>
+                                        {% endif %}
+                                        <button class="btn btn-sm btn-outline-danger" 
+                                                onclick="deleteEmail({{ item.id }})">Delete</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% if not queue_items %}
+                        <div class="text-center py-4">
+                            <p class="text-muted">No emails found in queue matching current filters.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function processQueue() {
+    if (confirm('Process the email queue now? This will attempt to send all pending emails.')) {
+        fetch('{{ url_for("email_admin.process_queue") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Queue processed successfully. ${data.processed} emails processed.`);
+                location.reload();
+            } else {
+                alert('Error processing queue: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error processing queue: ' + error);
+        });
+    }
+}
+
+function clearFailed() {
+    if (confirm('Clear all failed emails from the queue? This action cannot be undone.')) {
+        fetch('{{ url_for("email_admin.clear_failed") }}', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`${data.cleared} failed emails cleared from queue.`);
+                location.reload();
+            } else {
+                alert('Error clearing failed emails: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error clearing failed emails: ' + error);
+        });
+    }
+}
+
+function retryEmail(emailId) {
+    fetch(`{{ url_for('email_admin.retry_email', email_id=0) }}`.replace('0', emailId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Email queued for retry.');
+            location.reload();
+        } else {
+            alert('Error retrying email: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error retrying email: ' + error);
+    });
+}
+
+function deleteEmail(emailId) {
+    if (confirm('Delete this email from the queue?')) {
+        fetch(`{{ url_for('email_admin.delete_queue_item', email_id=0) }}`.replace('0', emailId), {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting email: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error deleting email: ' + error);
+        });
+    }
+}
+
+function viewEmail(emailId) {
+    window.open(`{{ url_for('email_admin.view_email', email_id=0) }}`.replace('0', emailId), '_blank');
+}
+</script>
+{% endblock %}

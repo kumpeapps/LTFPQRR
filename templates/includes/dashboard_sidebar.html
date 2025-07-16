@@ -50,6 +50,11 @@
                         <i class="fas fa-dollar-sign"></i> Pricing Plans
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('email_admin.') else '' }}" href="{{ url_for('email_admin.dashboard') }}">
+                        <i class="fas fa-envelope"></i> Email Management
+                    </a>
+                </li>
                 
                 <!-- Super Admin Only Items -->
                 {% if current_user.has_role('super-admin') %}

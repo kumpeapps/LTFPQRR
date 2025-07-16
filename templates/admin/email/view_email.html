@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}View Email - ID {{ queue_item.id }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% set sidebar_context = 'admin' %}
+        {% include 'includes/dashboard_sidebar.html' %}
+        
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Email Details - ID {{ queue_item.id }}</h2>
+                    <div>
+                        <a href="{{ url_for('email_admin.queue') }}" class="btn btn-secondary">Back to Queue</a>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Email Content</h5>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="toggleFullscreen()">
+                                    <i class="fas fa-expand"></i> Fullscreen
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="p-3 border-bottom bg-light">
+                                    <div class="row">
+                                        <div class="col-md-2"><strong>Subject:</strong></div>
+                                        <div class="col-md-10">{{ queue_item.subject }}</div>
+                                    </div>
+                                </div>
+                                <div class="p-4" style="min-height: 500px; background: white;" id="emailContent">
+                                    <iframe srcdoc="{{ queue_item.html_body | escape }}" 
+                                            style="width: 100%; min-height: 500px; border: none; background: white;"
+                                            onload="this.style.height=(this.contentWindow.document.body.scrollHeight+20)+'px'">
+                                    </iframe>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if queue_item.text_body %}
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6>Text Version</h6>
+                            </div>
+                            <div class="card-body">
+                                <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; white-space: pre-wrap; line-height: 1.4;">{{ queue_item.text_body }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if queue_item.last_error %}
+                        <div class="card mt-3 border-danger">
+                            <div class="card-header bg-danger text-white">
+                                <h6>Error Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <div style="background: #f8d7da; padding: 15px; border-radius: 5px; font-family: monospace; white-space: pre-wrap; line-height: 1.4;">{{ queue_item.last_error }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6>Email Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>To:</strong> {{ queue_item.to_email }}</p>
+                                {% if queue_item.from_email %}
+                                <p><strong>From:</strong> {{ queue_item.from_email }}</p>
+                                {% endif %}
+                                <p><strong>Status:</strong> 
+                                    {% if queue_item.status.value == 'pending' %}
+                                        <span class="badge bg-primary">Pending</span>
+                                    {% elif queue_item.status.value == 'sending' %}
+                                        <span class="badge bg-warning">Sending</span>
+                                    {% elif queue_item.status.value == 'sent' %}
+                                        <span class="badge bg-success">Sent</span>
+                                    {% elif queue_item.status.value == 'failed' %}
+                                        <span class="badge bg-danger">Failed</span>
+                                    {% elif queue_item.status.value == 'retry' %}
+                                        <span class="badge bg-info">Retry</span>
+                                    {% elif queue_item.status.value == 'expired' %}
+                                        <span class="badge bg-secondary">Expired</span>
+                                    {% endif %}
+                                </p>
+                                <p><strong>Priority:</strong> 
+                                    {% if queue_item.priority.value == 'critical' %}
+                                        <span class="badge bg-danger">Critical</span>
+                                    {% elif queue_item.priority.value == 'high' %}
+                                        <span class="badge bg-warning">High</span>
+                                    {% elif queue_item.priority.value == 'normal' %}
+                                        <span class="badge bg-info">Normal</span>
+                                    {% elif queue_item.priority.value == 'low' %}
+                                        <span class="badge bg-secondary">Low</span>
+                                    {% endif %}
+                                </p>
+                                <p><strong>Attempts:</strong> {{ queue_item.retry_count }}/5</p>
+                                <p><strong>Created:</strong> {{ queue_item.created_at.strftime('%Y-%m-%d %H:%M:%S') if queue_item.created_at else 'N/A' }}</p>
+                                {% if queue_item.scheduled_at %}
+                                <p><strong>Scheduled:</strong> {{ queue_item.scheduled_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                                {% endif %}
+                                {% if queue_item.sent_at %}
+                                <p><strong>Sent:</strong> {{ queue_item.sent_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                                {% endif %}
+                                {% if queue_item.expires_at %}
+                                <p><strong>Expires:</strong> {{ queue_item.expires_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                                {% endif %}
+                                {% if queue_item.next_retry_at %}
+                                <p><strong>Next Retry:</strong> {{ queue_item.next_retry_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if queue_item.template %}
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6>Template Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Template:</strong> {{ queue_item.template.name }}</p>
+                                <p><strong>Type:</strong> {{ queue_item.template.template_type or 'General' }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if queue_item.user %}
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6>Recipient Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>User:</strong> {{ queue_item.user.get_full_name() }}</p>
+                                <p><strong>Email:</strong> {{ queue_item.user.email }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if queue_item.email_metadata %}
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6>Metadata</h6>
+                            </div>
+                            <div class="card-body">
+                                <pre style="font-size: 0.8em;">{{ queue_item.email_metadata | tojson(indent=2) }}</pre>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6>Actions</h6>
+                            </div>
+                            <div class="card-body">
+                                {% if queue_item.status.value == 'failed' and queue_item.can_retry() %}
+                                <button class="btn btn-warning btn-sm mb-2" 
+                                        onclick="retryEmail({{ queue_item.id }})">Retry Email</button>
+                                {% endif %}
+                                <button class="btn btn-outline-danger btn-sm" 
+                                        onclick="deleteEmail({{ queue_item.id }})">Delete from Queue</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fullscreen Modal -->
+<div class="modal fade" id="fullscreenModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Email Content - ID {{ queue_item.id }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="p-3 border-bottom bg-light">
+                    <div class="row">
+                        <div class="col-md-1"><strong>Subject:</strong></div>
+                        <div class="col-md-11">{{ queue_item.subject }}</div>
+                    </div>
+                </div>
+                <div class="p-4" style="background: white; height: calc(100vh - 200px);">
+                    <iframe srcdoc="{{ queue_item.html_body | escape }}" 
+                            style="width: 100%; height: 100%; border: none; background: white;">
+                    </iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.email-preview iframe {
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+}
+
+#emailContent {
+    background: #f8f9fa;
+}
+
+@media (max-width: 768px) {
+    #emailContent iframe {
+        min-height: 400px !important;
+    }
+}
+</style>
+
+<script>
+function toggleFullscreen() {
+    const modal = new bootstrap.Modal(document.getElementById('fullscreenModal'));
+    modal.show();
+}
+
+// Auto-resize iframe based on content
+document.addEventListener('DOMContentLoaded', function() {
+    const iframe = document.querySelector('#emailContent iframe');
+    if (iframe) {
+        iframe.onload = function() {
+            // Add some padding to prevent scrollbars
+            this.style.height = (this.contentWindow.document.body.scrollHeight + 40) + 'px';
+        };
+    }
+});
+
+function retryEmail(emailId) {
+    fetch(`{{ url_for('email_admin.retry_email', email_id=0) }}`.replace('0', emailId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Email queued for retry.');
+            location.reload();
+        } else {
+            alert('Error retrying email: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error retrying email: ' + error);
+    });
+}
+
+function deleteEmail(emailId) {
+    if (confirm('Delete this email from the queue?')) {
+        fetch(`{{ url_for('email_admin.delete_queue_item', email_id=0) }}`.replace('0', emailId), {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '{{ url_for("email_admin.queue") }}';
+            } else {
+                alert('Error deleting email: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error deleting email: ' + error);
+        });
+    }
+}
+</script>
+{% endblock %}

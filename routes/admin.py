@@ -221,13 +221,13 @@ def approve_partner_subscription(subscription_id):
     try:
         subscription.approve(current_user)
         
-        # Send approval email to partner's owner
+        # Send approval email to partner's owner using enhanced email system
         try:
-            from email_utils import send_partner_subscription_approved_email
+            from email_utils import send_partner_subscription_approved_email_enhanced
             from extensions import logger
             # Get the partner owner user
             partner_owner = subscription.partner.owner
-            send_partner_subscription_approved_email(partner_owner, subscription)
+            send_partner_subscription_approved_email_enhanced(partner_owner, subscription)
         except Exception as email_error:
             from extensions import logger
             logger.error(f"Error sending approval email: {email_error}")

@@ -50,11 +50,15 @@ def create_app(config_name=None):
     app.register_blueprint(admin)
     app.register_blueprint(settings)
     
+    # Register email admin blueprint
+    from routes.email_admin import email_admin
+    app.register_blueprint(email_admin)
+    
     # Import models to ensure they are registered with SQLAlchemy
     from models.models import (
         User, Role, Tag, Pet, Subscription, SearchLog, 
         NotificationPreference, SystemSetting, PaymentGateway, 
-        PricingPlan, Payment
+        PricingPlan, Payment, EmailQueue, EmailLog, EmailTemplate, EmailCampaign
     )
     from models.partner.partner import Partner, PartnerAccessRequest, PartnerSubscription
     

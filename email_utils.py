@@ -1,6 +1,7 @@
 """
 Email utility functions for LTFPQRR system
 """
+
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -14,95 +15,122 @@ def get_smtp_config():
     """Get SMTP configuration from database settings"""
     try:
         from models.models import SystemSetting
-        
+
         smtp_settings = {}
         settings = SystemSetting.query.filter(
-            SystemSetting.key.in_([
-                'smtp_enabled', 'smtp_server', 'smtp_port', 'smtp_username', 'smtp_password',
-                'smtp_use_tls', 'smtp_use_ssl', 'smtp_from_email', 'smtp_from_name'
-            ])
+            SystemSetting.key.in_(
+                [
+                    "smtp_enabled",
+                    "smtp_server",
+                    "smtp_port",
+                    "smtp_username",
+                    "smtp_password",
+                    "smtp_use_tls",
+                    "smtp_use_ssl",
+                    "smtp_from_email",
+                    "smtp_from_name",
+                ]
+            )
         ).all()
-        
+
         for setting in settings:
-            if setting.key in ['smtp_use_tls', 'smtp_use_ssl', 'smtp_enabled']:
+            if setting.key in ["smtp_use_tls", "smtp_use_ssl", "smtp_enabled"]:
                 # Handle both boolean and string values
                 if isinstance(setting.value, bool):
                     smtp_settings[setting.key] = setting.value
                 else:
-                    smtp_settings[setting.key] = str(setting.value).lower() == 'true'
-            elif setting.key == 'smtp_port':
-                smtp_settings[setting.key] = int(setting.value) if setting.value else 587
+                    smtp_settings[setting.key] = str(setting.value).lower() == "true"
+            elif setting.key == "smtp_port":
+                smtp_settings[setting.key] = (
+                    int(setting.value) if setting.value else 587
+                )
             else:
                 smtp_settings[setting.key] = setting.value
-        
+
         return smtp_settings
     except Exception as e:
         logger.error(f"Error getting SMTP configuration: {e}")
         return {}
 
 
-def send_email(to_email, subject, html_body, text_body=None, from_email=None, from_name=None):
+def send_email(
+    to_email, subject, html_body, text_body=None, from_email=None, from_name=None
+):
     """Send an email using configured SMTP settings"""
     try:
         smtp_config = get_smtp_config()
-        
+
         # Check if SMTP is enabled
-        if not smtp_config.get('smtp_enabled', False):
+        if not smtp_config.get("smtp_enabled", False):
             logger.warning("SMTP is disabled, cannot send email")
             return False
-        
-        if not smtp_config.get('smtp_server'):
+
+        if not smtp_config.get("smtp_server"):
             logger.warning("SMTP not configured, cannot send email")
             return False
-        
+
         # Create message
-        msg = MIMEMultipart('related')
-        msg['Subject'] = subject
-        msg['From'] = from_email or f"{from_name or smtp_config.get('smtp_from_name', 'LTFPQRR')} <{smtp_config.get('smtp_from_email', 'noreply@ltfpqrr.com')}>"
-        msg['To'] = to_email
-        
+        msg = MIMEMultipart("related")
+        msg["Subject"] = subject
+        msg["From"] = (
+            from_email
+            or f"{from_name or smtp_config.get('smtp_from_name', 'LTFPQRR')} <{smtp_config.get('smtp_from_email', 'noreply@ltfpqrr.com')}>"
+        )
+        msg["To"] = to_email
+
         # Create a multipart/alternative container
-        msg_alternative = MIMEMultipart('alternative')
+        msg_alternative = MIMEMultipart("alternative")
         msg.attach(msg_alternative)
-        
+
         # Add text and HTML parts
         if text_body:
-            text_part = MIMEText(text_body, 'plain', 'utf-8')
+            text_part = MIMEText(text_body, "plain", "utf-8")
             msg_alternative.attach(text_part)
-        
-        html_part = MIMEText(html_body, 'html', 'utf-8')
+
+        html_part = MIMEText(html_body, "html", "utf-8")
         msg_alternative.attach(html_part)
-        
+
         # Attach logo image
         try:
             import os
-            logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'assets', 'logo', 'logo.png')
+
+            logo_path = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "static",
+                "assets",
+                "logo",
+                "logo.png",
+            )
             if os.path.exists(logo_path):
-                with open(logo_path, 'rb') as f:
+                with open(logo_path, "rb") as f:
                     logo_data = f.read()
-                
-                logo_attachment = MIMEBase('image', 'png')
+
+                logo_attachment = MIMEBase("image", "png")
                 logo_attachment.set_payload(logo_data)
                 encoders.encode_base64(logo_attachment)
-                logo_attachment.add_header('Content-ID', '<logo>')
-                logo_attachment.add_header('Content-Disposition', 'inline', filename='logo.png')
+                logo_attachment.add_header("Content-ID", "<logo>")
+                logo_attachment.add_header(
+                    "Content-Disposition", "inline", filename="logo.png"
+                )
                 msg.attach(logo_attachment)
         except Exception as e:
             logger.warning(f"Could not attach logo: {e}")
-        
+
         # Send email
-        with smtplib.SMTP(smtp_config['smtp_server'], smtp_config.get('smtp_port', 587)) as server:
-            if smtp_config.get('smtp_use_tls', True):
+        with smtplib.SMTP(
+            smtp_config["smtp_server"], smtp_config.get("smtp_port", 587)
+        ) as server:
+            if smtp_config.get("smtp_use_tls", True):
                 server.starttls()
-            
-            if smtp_config.get('smtp_username') and smtp_config.get('smtp_password'):
-                server.login(smtp_config['smtp_username'], smtp_config['smtp_password'])
-            
+
+            if smtp_config.get("smtp_username") and smtp_config.get("smtp_password"):
+                server.login(smtp_config["smtp_username"], smtp_config["smtp_password"])
+
             server.send_message(msg)
-        
+
         logger.info(f"Email sent successfully to {to_email}")
         return True
-        
+
     except Exception as e:
         logger.error(f"Error sending email to {to_email}: {e}")
         return False
@@ -451,9 +479,13 @@ def send_subscription_confirmation_email(user, subscription):
     """Send subscription confirmation email to customer"""
     try:
         # Determine subscription type details
-        if subscription.subscription_type == 'partner':
+        if subscription.subscription_type == "partner":
             subject = "Partner Subscription Confirmed - Pending Approval"
-            plan_name = subscription.pricing_plan.name if subscription.pricing_plan else "Partner Plan"
+            plan_name = (
+                subscription.pricing_plan.name
+                if subscription.pricing_plan
+                else "Partner Plan"
+            )
             status_color = "#ffc107"
             status_bg = "#fff3cd"
             status_message = "Your subscription is pending admin approval. You will receive another email once approved."
@@ -461,29 +493,37 @@ def send_subscription_confirmation_email(user, subscription):
             cta_text = "Access Partner Dashboard"
         else:
             subject = "Tag Subscription Confirmed - Active"
-            plan_name = subscription.pricing_plan.name if subscription.pricing_plan else "Tag Plan"
+            plan_name = (
+                subscription.pricing_plan.name
+                if subscription.pricing_plan
+                else "Tag Plan"
+            )
             status_color = "#28a745"
             status_bg = "#d4edda"
             status_message = "Your subscription is now active!"
             cta_url = "http://localhost:8000/dashboard"
             cta_text = "Access Your Dashboard"
-        
+
         # Build the subscription details table
         details_rows = [
             f"<tr><td>Plan:</td><td><strong>{plan_name}</strong></td></tr>",
             f"<tr><td>Amount:</td><td><strong>${subscription.amount}</strong></td></tr>",
             f"<tr><td>Billing:</td><td>{subscription.pricing_plan.billing_period.title() if subscription.pricing_plan else 'One-time'}</td></tr>",
-            f"<tr><td>Start Date:</td><td>{subscription.start_date.strftime('%B %d, %Y')}</td></tr>"
+            f"<tr><td>Start Date:</td><td>{subscription.start_date.strftime('%B %d, %Y')}</td></tr>",
         ]
-        
+
         if subscription.end_date:
-            details_rows.append(f"<tr><td>End Date:</td><td>{subscription.end_date.strftime('%B %d, %Y')}</td></tr>")
-        
-        if hasattr(subscription, 'max_tags') and subscription.max_tags:
-            details_rows.append(f"<tr><td>Max Tags:</td><td>{subscription.max_tags}</td></tr>")
-        
+            details_rows.append(
+                f"<tr><td>End Date:</td><td>{subscription.end_date.strftime('%B %d, %Y')}</td></tr>"
+            )
+
+        if hasattr(subscription, "max_tags") and subscription.max_tags:
+            details_rows.append(
+                f"<tr><td>Max Tags:</td><td>{subscription.max_tags}</td></tr>"
+            )
+
         details_table = "\n".join(details_rows)
-        
+
         html_body = f"""
         <!DOCTYPE html>
         <html>
@@ -533,11 +573,13 @@ def send_subscription_confirmation_email(user, subscription):
         </body>
         </html>
         """
-        
+
         # Add CSS for table styling
-        html_body = html_body.replace('<table style="width: 100%; border-collapse: collapse; margin: 20px 0;">', 
-                                     '<table style="width: 100%; border-collapse: collapse; margin: 20px 0;"><style>table td { padding: 15px 12px; border-bottom: 1px solid #f1f3f4; } table tr:last-child td { border-bottom: none; } table td:first-child { font-weight: 600; color: #495057; width: 35%; background: #f8f9fa; } table td:last-child { color: #212529; }</style>')
-        
+        html_body = html_body.replace(
+            '<table style="width: 100%; border-collapse: collapse; margin: 20px 0;">',
+            '<table style="width: 100%; border-collapse: collapse; margin: 20px 0;"><style>table td { padding: 15px 12px; border-bottom: 1px solid #f1f3f4; } table tr:last-child td { border-bottom: none; } table td:first-child { font-weight: 600; color: #495057; width: 35%; background: #f8f9fa; } table td:last-child { color: #212529; }</style>',
+        )
+
         text_body = f"""
         Hello {user.get_full_name()},
         
@@ -556,12 +598,12 @@ def send_subscription_confirmation_email(user, subscription):
         Best regards,
         The LTFPQRR Team
         """
-        
+
         success = send_email(user.email, subject, html_body, text_body)
         if success:
             logger.info("Subscription confirmation email sent to %s", user.email)
         return success
-        
+
     except Exception as e:
         logger.error("Error sending subscription confirmation email: %s", e)
         return False
@@ -581,34 +623,55 @@ def send_partner_subscription_confirmation_email(user, partner_subscription):
             status_color = "#ffc107"
             status_bg = "#fff3cd"
             status_message = "Your subscription is pending admin approval. You will receive another email once approved."
-        
-        plan_name = partner_subscription.pricing_plan.name if hasattr(partner_subscription, 'pricing_plan') and partner_subscription.pricing_plan else "Partner Plan"
-        partner_name = partner_subscription.partner.company_name if hasattr(partner_subscription, 'partner') and partner_subscription.partner else "Your Partner"
+
+        plan_name = (
+            partner_subscription.pricing_plan.name
+            if hasattr(partner_subscription, "pricing_plan")
+            and partner_subscription.pricing_plan
+            else "Partner Plan"
+        )
+        partner_name = (
+            partner_subscription.partner.company_name
+            if hasattr(partner_subscription, "partner") and partner_subscription.partner
+            else "Your Partner"
+        )
         cta_url = "http://localhost:8000/partner"
         cta_text = "Access Partner Dashboard"
-        
+
         # Build the subscription details table
         details_rows = [
             f"<tr><td style='padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;'>Partner:</td><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'><strong>{partner_name}</strong></td></tr>",
             f"<tr><td style='padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;'>Plan:</td><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'><strong>{plan_name}</strong></td></tr>",
             f"<tr><td style='padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;'>Amount:</td><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'><strong>${partner_subscription.amount}</strong></td></tr>",
-            f"<tr><td style='padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;'>Start Date:</td><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'>{partner_subscription.start_date.strftime('%B %d, %Y')}</td></tr>"
+            f"<tr><td style='padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;'>Start Date:</td><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'>{partner_subscription.start_date.strftime('%B %d, %Y')}</td></tr>",
         ]
-        
+
         if partner_subscription.pricing_plan:
-            details_rows.append(f"<tr><td style='padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;'>Billing:</td><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'>{partner_subscription.pricing_plan.billing_period.title()}</td></tr>")
-        
+            details_rows.append(
+                f"<tr><td style='padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;'>Billing:</td><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'>{partner_subscription.pricing_plan.billing_period.title()}</td></tr>"
+            )
+
         if partner_subscription.end_date:
-            details_rows.append(f"<tr><td style='padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;'>End Date:</td><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'>{partner_subscription.end_date.strftime('%B %d, %Y')}</td></tr>")
-        
+            details_rows.append(
+                f"<tr><td style='padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;'>End Date:</td><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'>{partner_subscription.end_date.strftime('%B %d, %Y')}</td></tr>"
+            )
+
         if partner_subscription.max_tags:
-            max_tags_text = str(partner_subscription.max_tags) if partner_subscription.max_tags > 0 else "Unlimited"
-            details_rows.append(f"<tr><td style='padding: 8px; color: #666;'>Max Tags:</td><td style='padding: 8px;'>{max_tags_text}</td></tr>")
+            max_tags_text = (
+                str(partner_subscription.max_tags)
+                if partner_subscription.max_tags > 0
+                else "Unlimited"
+            )
+            details_rows.append(
+                f"<tr><td style='padding: 8px; color: #666;'>Max Tags:</td><td style='padding: 8px;'>{max_tags_text}</td></tr>"
+            )
         else:
-            details_rows.append("<tr><td style='padding: 8px; color: #666;'>Max Tags:</td><td style='padding: 8px;'>Unlimited</td></tr>")
-        
+            details_rows.append(
+                "<tr><td style='padding: 8px; color: #666;'>Max Tags:</td><td style='padding: 8px;'>Unlimited</td></tr>"
+            )
+
         details_table = "\n".join(details_rows)
-        
+
         html_body = f"""
         <!DOCTYPE html>
         <html>
@@ -652,7 +715,7 @@ def send_partner_subscription_confirmation_email(user, partner_subscription):
         </body>
         </html>
         """
-        
+
         # Plain text version
         plain_body = f"""
         LTFPQRR - Partner Subscription Confirmation
@@ -675,9 +738,9 @@ def send_partner_subscription_confirmation_email(user, partner_subscription):
         
         Thank you for choosing LTFPQRR!
         """
-        
+
         return send_email(user.email, subject, html_body, plain_body)
-        
+
     except Exception as e:
         logger.error(f"Error sending partner subscription confirmation email: {e}")
         return False
@@ -687,23 +750,31 @@ def send_admin_approval_notification(subscription):
     """Send notification to admins when a partner subscription needs approval"""
     try:
         from models.models import User, Role
-        
+
         # Get all admin users
-        admin_role = Role.query.filter_by(name='admin').first()
+        admin_role = Role.query.filter_by(name="admin").first()
         if not admin_role:
             logger.warning("No admin role found")
             return False
-            
+
         admin_users = admin_role.users
         if not admin_users:
             logger.warning("No admin users found")
             return False
-        
+
         subject = "New Partner Subscription Requires Approval"
-        partner_name = subscription.partner.company_name if subscription.partner else "Unknown Partner"
+        partner_name = (
+            subscription.partner.company_name
+            if subscription.partner
+            else "Unknown Partner"
+        )
         user_name = subscription.user.get_full_name()
-        plan_name = subscription.pricing_plan.name if subscription.pricing_plan else "Partner Plan"
-        
+        plan_name = (
+            subscription.pricing_plan.name
+            if subscription.pricing_plan
+            else "Partner Plan"
+        )
+
         content = f"""
         <div class="greeting">Hello Admin,</div>
         
@@ -746,10 +817,10 @@ def send_admin_approval_notification(subscription):
         
         <p>This is an automated notification from the LTFPQRR system.</p>
         """
-        
+
         template = get_email_template_base()
         html_body = template.format(content=content)
-        
+
         text_body = f"""
         Hello Admin,
         
@@ -767,16 +838,18 @@ def send_admin_approval_notification(subscription):
         
         This is an automated notification from the LTFPQRR system.
         """
-        
+
         # Send to all admin users
         success_count = 0
         for admin_user in admin_users:
             if send_email(admin_user.email, subject, html_body, text_body):
                 success_count += 1
-        
-        logger.info(f"Admin approval notification sent to {success_count}/{len(admin_users)} admin users")
+
+        logger.info(
+            f"Admin approval notification sent to {success_count}/{len(admin_users)} admin users"
+        )
         return success_count > 0
-        
+
     except Exception as e:
         logger.error(f"Error sending admin approval notification: {e}")
         return False
@@ -786,10 +859,18 @@ def send_subscription_approved_email(user, subscription):
     """Send email to customer when subscription is approved"""
     try:
         subject = "Partner Subscription Approved - Welcome to LTFPQRR!"
-        
-        plan_name = subscription.pricing_plan.name if subscription.pricing_plan else "Partner Plan"
-        partner_name = subscription.partner.company_name if subscription.partner else "Your Partner Account"
-        
+
+        plan_name = (
+            subscription.pricing_plan.name
+            if subscription.pricing_plan
+            else "Partner Plan"
+        )
+        partner_name = (
+            subscription.partner.company_name
+            if subscription.partner
+            else "Your Partner Account"
+        )
+
         content = f"""
         <div class="greeting">Hello {user.get_full_name()},</div>
         
@@ -846,10 +927,10 @@ def send_subscription_approved_email(user, subscription):
         
         <p>Best regards,<br>The LTFPQRR Team</p>
         """
-        
+
         template = get_email_template_base()
         html_body = template.format(content=content)
-        
+
         text_body = f"""
         Hello {user.get_full_name()},
         
@@ -868,12 +949,12 @@ def send_subscription_approved_email(user, subscription):
         Best regards,
         The LTFPQRR Team
         """
-        
+
         success = send_email(user.email, subject, html_body, text_body)
         if success:
             logger.info(f"Subscription approved email sent to {user.email}")
         return success
-        
+
     except Exception as e:
         logger.error(f"Error sending subscription approved email: {e}")
         return False
@@ -883,19 +964,31 @@ def send_subscription_cancelled_email(user, subscription, refunded=False):
     """Send email to customer when subscription is cancelled"""
     try:
         subject = "Subscription Cancelled - LTFPQRR"
-        
+
         # Handle both regular subscriptions and partner subscriptions
-        if hasattr(subscription, 'pricing_plan') and subscription.pricing_plan:
+        if hasattr(subscription, "pricing_plan") and subscription.pricing_plan:
             plan_name = subscription.pricing_plan.name
         else:
             plan_name = "Subscription Plan"
-        
+
         amount = str(subscription.amount) if subscription.amount else "N/A"
-        start_date = subscription.start_date.strftime('%B %d, %Y') if subscription.start_date else "N/A"
-        end_date = subscription.end_date.strftime('%B %d, %Y') if subscription.end_date else 'Today'
-        
-        refund_message = "A refund has been processed and should appear in your account within 5-10 business days." if refunded else "No refund was processed for this cancellation."
-        
+        start_date = (
+            subscription.start_date.strftime("%B %d, %Y")
+            if subscription.start_date
+            else "N/A"
+        )
+        end_date = (
+            subscription.end_date.strftime("%B %d, %Y")
+            if subscription.end_date
+            else "Today"
+        )
+
+        refund_message = (
+            "A refund has been processed and should appear in your account within 5-10 business days."
+            if refunded
+            else "No refund was processed for this cancellation."
+        )
+
         content = f"""
         <div class="greeting">Hello {user.get_full_name()},</div>
         
@@ -939,10 +1032,10 @@ def send_subscription_cancelled_email(user, subscription, refunded=False):
         
         <p>Best regards,<br>The LTFPQRR Team</p>
         """
-        
+
         template = get_email_template_base()
         html_body = template.format(content=content)
-        
+
         text_body = f"""
         Hello {user.get_full_name()},
         
@@ -960,21 +1053,21 @@ def send_subscription_cancelled_email(user, subscription, refunded=False):
         Best regards,
         The LTFPQRR Team
         """
-        
+
         return send_email(
             to_email=user.email,
             subject=subject,
             html_body=html_body,
-            text_body=text_body
+            text_body=text_body,
         )
-        
+
         return send_email(
             to_email=user.email,
             subject=subject,
             html_body=html_body,
-            text_body=text_body
+            text_body=text_body,
         )
-        
+
     except Exception as e:
         logger.error(f"Error sending subscription cancelled email: {e}")
         return False
@@ -984,9 +1077,13 @@ def send_subscription_renewal_email(user, subscription):
     """Send email to customer when subscription is renewed"""
     try:
         subject = "Subscription Renewed - LTFPQRR"
-        
-        plan_name = subscription.pricing_plan.name if subscription.pricing_plan else "Subscription Plan"
-        
+
+        plan_name = (
+            subscription.pricing_plan.name
+            if subscription.pricing_plan
+            else "Subscription Plan"
+        )
+
         content = f"""
         <div class="greeting">Hello {user.get_full_name()},</div>
         
@@ -1032,10 +1129,10 @@ def send_subscription_renewal_email(user, subscription):
         
         <p>Best regards,<br>The LTFPQRR Team</p>
         """
-        
+
         template = get_email_template_base()
         html_body = template.format(content=content)
-        
+
         text_body = f"""
         Hello {user.get_full_name()},
         
@@ -1052,12 +1149,12 @@ def send_subscription_renewal_email(user, subscription):
         Best regards,
         The LTFPQRR Team
         """
-        
+
         success = send_email(user.email, subject, html_body, text_body)
         if success:
             logger.info(f"Subscription renewal email sent to {user.email}")
         return success
-        
+
     except Exception as e:
         logger.error(f"Error sending subscription renewal email: {e}")
         return False
@@ -1067,7 +1164,7 @@ def send_test_email(to_email, test_type="basic"):
     """Send a test email to verify SMTP configuration"""
     try:
         subject = "LTFPQRR - Test Email"
-        
+
         # Simple HTML template without complex formatting
         html_body = f"""
         <!DOCTYPE html>
@@ -1122,7 +1219,7 @@ def send_test_email(to_email, test_type="basic"):
         </body>
         </html>
         """
-        
+
         text_body = """
         LTFPQRR - Email Test
         
@@ -1138,12 +1235,12 @@ def send_test_email(to_email, test_type="basic"):
         Best regards,
         The LTFPQRR Team
         """
-        
+
         success = send_email(to_email, subject, html_body, text_body)
         if success:
             logger.info("Test email sent successfully to %s", to_email)
         return success
-        
+
     except Exception as e:
         logger.error("Error sending test email: %s", e)
         return False
@@ -1153,9 +1250,9 @@ def send_subscription_rejected_email(user, subscription):
     """Send email to customer when subscription is rejected"""
     try:
         subject = "Subscription Request Rejected - LTFPQRR"
-        
+
         html_template = get_email_template_base()
-        
+
         html_body = html_template.format(
             content=f"""
         <div class="title">Subscription Request Rejected</div>
@@ -1187,8 +1284,9 @@ def send_subscription_rejected_email(user, subscription):
                 <p>Thank you for your interest in LTFPQRR.</p>
             </div>
         </div>
-        """)
-        
+        """
+        )
+
         text_body = f"""
         Your subscription request has been rejected.
         
@@ -1202,13 +1300,13 @@ def send_subscription_rejected_email(user, subscription):
         
         Thank you for your interest in LTFPQRR.
         """
-        
+
         success = send_email(user.email, subject, html_body, text_body)
-        
+
         if success:
             logger.info(f"Subscription rejected email sent to {user.email}")
         return success
-        
+
     except Exception as e:
         logger.error(f"Error sending subscription rejected email: {e}")
         return False
@@ -1218,34 +1316,52 @@ def send_partner_admin_approval_notification(partner_subscription):
     """Send notification to admins when a partner subscription needs approval"""
     try:
         from models.models import User, Role
-        
+
         # Get all admin users
-        admin_role = Role.query.filter_by(name='admin').first()
+        admin_role = Role.query.filter_by(name="admin").first()
         if not admin_role:
             logger.warning("No admin role found")
             return False
-            
+
         admin_users = admin_role.users
         if not admin_users:
             logger.warning("No admin users found")
             return False
-        
+
         subject = "New Partner Subscription Requires Approval"
-        
+
         # Safely get partner and user information
         try:
-            partner_name = partner_subscription.partner.company_name if hasattr(partner_subscription, 'partner') and partner_subscription.partner else "Unknown Partner"
-            user_name = partner_subscription.partner.owner.get_full_name() if (hasattr(partner_subscription, 'partner') 
-                                                                               and partner_subscription.partner 
-                                                                               and hasattr(partner_subscription.partner, 'owner')
-                                                                               and partner_subscription.partner.owner) else "Unknown User"
-            plan_name = partner_subscription.pricing_plan.name if hasattr(partner_subscription, 'pricing_plan') and partner_subscription.pricing_plan else "Partner Plan"
+            partner_name = (
+                partner_subscription.partner.company_name
+                if hasattr(partner_subscription, "partner")
+                and partner_subscription.partner
+                else "Unknown Partner"
+            )
+            user_name = (
+                partner_subscription.partner.owner.get_full_name()
+                if (
+                    hasattr(partner_subscription, "partner")
+                    and partner_subscription.partner
+                    and hasattr(partner_subscription.partner, "owner")
+                    and partner_subscription.partner.owner
+                )
+                else "Unknown User"
+            )
+            plan_name = (
+                partner_subscription.pricing_plan.name
+                if hasattr(partner_subscription, "pricing_plan")
+                and partner_subscription.pricing_plan
+                else "Partner Plan"
+            )
         except Exception as attr_error:
-            logger.error(f"Error accessing partner subscription attributes: {attr_error}")
+            logger.error(
+                f"Error accessing partner subscription attributes: {attr_error}"
+            )
             partner_name = "Unknown Partner"
-            user_name = "Unknown User"  
+            user_name = "Unknown User"
             plan_name = "Partner Plan"
-        
+
         content = f"""
         <div style="margin-bottom: 30px;">
             <h2 style="color: #333; margin: 0 0 10px 0; font-size: 1.8rem;">Hello Admin,</h2>
@@ -1276,7 +1392,7 @@ def send_partner_admin_approval_notification(partner_subscription):
             <p>Please review and approve this subscription in the admin panel.</p>
         </div>
         """
-        
+
         html_body = f"""
         <!DOCTYPE html>
         <html>
@@ -1300,7 +1416,7 @@ def send_partner_admin_approval_notification(partner_subscription):
         </body>
         </html>
         """
-        
+
         plain_body = f"""
         LTFPQRR - Partner Subscription Approval Needed
         
@@ -1321,15 +1437,15 @@ def send_partner_admin_approval_notification(partner_subscription):
         Thank you,
         LTFPQRR Team
         """
-        
+
         # Send to all admin users
         success = True
         for admin in admin_users:
             if not send_email(admin.email, subject, html_body, plain_body):
                 success = False
-                
+
         return success
-        
+
     except Exception as e:
         logger.error(f"Error sending admin approval notification: {e}")
         return False
@@ -1339,10 +1455,19 @@ def send_partner_subscription_approved_email(user, partner_subscription):
     """Send approval notification email to partner customer"""
     try:
         subject = "Partner Subscription Approved - Welcome!"
-        
-        plan_name = partner_subscription.pricing_plan.name if hasattr(partner_subscription, 'pricing_plan') and partner_subscription.pricing_plan else "Partner Plan"
-        partner_name = partner_subscription.partner.company_name if hasattr(partner_subscription, 'partner') and partner_subscription.partner else "Your Partner"
-        
+
+        plan_name = (
+            partner_subscription.pricing_plan.name
+            if hasattr(partner_subscription, "pricing_plan")
+            and partner_subscription.pricing_plan
+            else "Partner Plan"
+        )
+        partner_name = (
+            partner_subscription.partner.company_name
+            if hasattr(partner_subscription, "partner") and partner_subscription.partner
+            else "Your Partner"
+        )
+
         content = f"""
         <div style="margin-bottom: 30px;">
             <h2 style="color: #333; margin: 0 0 10px 0; font-size: 1.8rem;">Hi {user.get_full_name()},</h2>
@@ -1372,7 +1497,7 @@ def send_partner_subscription_approved_email(user, partner_subscription):
             <p>You can now start creating and managing QR tags for your partner business!</p>
         </div>
         """
-        
+
         html_body = f"""
         <!DOCTYPE html>
         <html>
@@ -1396,7 +1521,7 @@ def send_partner_subscription_approved_email(user, partner_subscription):
         </body>
         </html>
         """
-        
+
         plain_body = f"""
         LTFPQRR - Partner Subscription Approved
         
@@ -1417,22 +1542,33 @@ def send_partner_subscription_approved_email(user, partner_subscription):
         
         Thank you for choosing LTFPQRR!
         """
-        
+
         return send_email(user.email, subject, html_body, plain_body)
-        
+
     except Exception as e:
         logger.error(f"Error sending partner subscription approved email: {e}")
         return False
 
 
-def send_partner_subscription_rejected_email(user, partner_subscription, refund_processed=False):
+def send_partner_subscription_rejected_email(
+    user, partner_subscription, refund_processed=False
+):
     """Send rejection notification email to partner customer"""
     try:
         subject = "Partner Subscription Update - Request Rejected"
-        
-        plan_name = partner_subscription.pricing_plan.name if hasattr(partner_subscription, 'pricing_plan') and partner_subscription.pricing_plan else "Partner Plan"
-        partner_name = partner_subscription.partner.company_name if hasattr(partner_subscription, 'partner') and partner_subscription.partner else "Your Partner"
-        
+
+        plan_name = (
+            partner_subscription.pricing_plan.name
+            if hasattr(partner_subscription, "pricing_plan")
+            and partner_subscription.pricing_plan
+            else "Partner Plan"
+        )
+        partner_name = (
+            partner_subscription.partner.company_name
+            if hasattr(partner_subscription, "partner") and partner_subscription.partner
+            else "Your Partner"
+        )
+
         refund_message = ""
         if refund_processed:
             refund_message = """
@@ -1445,7 +1581,7 @@ def send_partner_subscription_rejected_email(user, partner_subscription, refund_
                 </p>
             </div>
             """
-        
+
         content = f"""
         <div style="margin-bottom: 30px;">
             <h2 style="color: #333; margin: 0 0 10px 0; font-size: 1.8rem;">Hi {user.get_full_name()},</h2>
@@ -1476,7 +1612,7 @@ def send_partner_subscription_rejected_email(user, partner_subscription, refund_
             <p>If you have questions about this decision or would like to reapply, please contact our support team at support@ltfpqrr.com.</p>
         </div>
         """
-        
+
         html_body = f"""
         <!DOCTYPE html>
         <html>
@@ -1500,7 +1636,7 @@ def send_partner_subscription_rejected_email(user, partner_subscription, refund_
         </body>
         </html>
         """
-        
+
         plain_body = f"""
         LTFPQRR - Partner Subscription Update
         
@@ -1519,9 +1655,224 @@ def send_partner_subscription_rejected_email(user, partner_subscription, refund_
         
         Thank you for your interest in LTFPQRR.
         """
-        
+
         return send_email(user.email, subject, html_body, plain_body)
-        
+
     except Exception as e:
         logger.error(f"Error sending partner subscription rejected email: {e}")
         return False
+
+
+# Enhanced Email Functions with Queue Management
+def send_email_with_queue(
+    to_email, 
+    subject, 
+    html_body, 
+    text_body=None, 
+    priority='normal',
+    email_type=None,
+    user_id=None,
+    template_name=None,
+    variables=None,
+    **kwargs
+):
+    """
+    Send email with queue management and retry logic
+    Falls back to direct sending if queue is not available
+    """
+    try:
+        # Try to use the queue system
+        from services.email_service import EmailManager, EmailPriority
+        from models.email.email_models import EmailStatus
+        
+        # Convert priority string to enum
+        priority_map = {
+            'low': EmailPriority.LOW,
+            'normal': EmailPriority.NORMAL,
+            'high': EmailPriority.HIGH,
+            'critical': EmailPriority.CRITICAL
+        }
+        priority_enum = priority_map.get(priority.lower(), EmailPriority.NORMAL)
+        
+        # Queue the email
+        queue_item = EmailManager.queue_email(
+            to_email=to_email,
+            subject=subject,
+            html_body=html_body,
+            text_body=text_body,
+            priority=priority_enum,
+            user_id=user_id,
+            email_type=email_type,
+            metadata={
+                'template_name': template_name,
+                'variables': variables
+            } if template_name or variables else None,
+            **kwargs
+        )
+        
+        # Return True if sent successfully
+        return queue_item.status == EmailStatus.SENT
+        
+    except ImportError:
+        # Queue system not available, fall back to direct sending
+        logger.warning("Email queue system not available, sending directly")
+        return send_email(to_email, subject, html_body, text_body, **kwargs)
+    except Exception as e:
+        logger.error(f"Error using email queue system: {e}")
+        # Fall back to direct sending
+        return send_email(to_email, subject, html_body, text_body, **kwargs)
+
+
+def send_template_email(template_name, to_email, variables=None, **kwargs):
+    """
+    Send email using a template
+    """
+    try:
+        from services.email_service import EmailTemplateManager
+        
+        return EmailTemplateManager.send_from_template(
+            template_name=template_name,
+            to_email=to_email,
+            variables=variables or {},
+            **kwargs
+        )
+        
+    except ImportError:
+        logger.error("Email template system not available")
+        return False
+    except Exception as e:
+        logger.error(f"Error sending template email: {e}")
+        return False
+
+
+# Update existing email functions to use queue system
+def send_partner_subscription_confirmation_email_enhanced(user, partner_subscription):
+    """Enhanced partner subscription confirmation email with queue system"""
+    try:
+        # Prepare template variables
+        variables = {
+            'user_name': user.get_full_name(),
+            'first_name': user.first_name or 'there',
+            'partner_name': partner_subscription.partner.company_name if hasattr(partner_subscription, 'partner') and partner_subscription.partner else "Your Partner",
+            'plan_name': partner_subscription.pricing_plan.name if hasattr(partner_subscription, 'pricing_plan') and partner_subscription.pricing_plan else "Partner Plan",
+            'amount': str(partner_subscription.amount),
+            'start_date': partner_subscription.start_date.strftime('%B %d, %Y'),
+            'max_tags': 'Unlimited' if partner_subscription.max_tags == 0 else str(partner_subscription.max_tags),
+            'status': 'Approved' if partner_subscription.admin_approved else 'Pending Approval'
+        }
+        
+        # Try to use template system first
+        template_name = 'partner_subscription_confirmation'
+        success = send_template_email(
+            template_name=template_name,
+            to_email=user.email,
+            variables=variables,
+            user_id=user.id,
+            email_type='partner_subscription_confirmation',
+            priority='high'
+        )
+        
+        if success:
+            return True
+        
+        # Fall back to existing function
+        logger.info("Template not found, using existing email function")
+        return send_partner_subscription_confirmation_email(user, partner_subscription)
+        
+    except Exception as e:
+        logger.error(f"Error sending enhanced partner subscription confirmation: {e}")
+        # Fall back to existing function
+        return send_partner_subscription_confirmation_email(user, partner_subscription)
+
+
+def send_partner_subscription_approved_email_enhanced(user, partner_subscription):
+    """Enhanced partner subscription approval email with queue system"""
+    try:
+        # Prepare template variables
+        variables = {
+            'user_name': user.get_full_name(),
+            'first_name': user.first_name or 'there',
+            'partner_name': partner_subscription.partner.company_name if hasattr(partner_subscription, 'partner') and partner_subscription.partner else "Your Partner",
+            'plan_name': partner_subscription.pricing_plan.name if hasattr(partner_subscription, 'pricing_plan') and partner_subscription.pricing_plan else "Partner Plan",
+            'amount': str(partner_subscription.amount),
+            'start_date': partner_subscription.start_date.strftime('%B %d, %Y'),
+            'max_tags': 'Unlimited' if partner_subscription.max_tags == 0 else str(partner_subscription.max_tags)
+        }
+        
+        # Try to use template system first
+        template_name = 'partner_subscription_approved'
+        success = send_template_email(
+            template_name=template_name,
+            to_email=user.email,
+            variables=variables,
+            user_id=user.id,
+            email_type='partner_subscription_approved',
+            priority='high'
+        )
+        
+        if success:
+            return True
+        
+        # Fall back to existing function
+        logger.info("Template not found, using existing email function")
+        return send_partner_subscription_approved_email(user, partner_subscription)
+        
+    except Exception as e:
+        logger.error(f"Error sending enhanced partner subscription approval: {e}")
+        # Fall back to existing function
+        return send_partner_subscription_approved_email(user, partner_subscription)
+
+
+def send_partner_subscription_rejected_email_enhanced(user, partner_subscription, refund_processed=False):
+    """Enhanced partner subscription rejection email with queue system"""
+    try:
+        # Prepare template variables
+        variables = {
+            'user_name': user.get_full_name(),
+            'first_name': user.first_name or 'there',
+            'partner_name': partner_subscription.partner.company_name if hasattr(partner_subscription, 'partner') and partner_subscription.partner else "Your Partner",
+            'plan_name': partner_subscription.pricing_plan.name if hasattr(partner_subscription, 'pricing_plan') and partner_subscription.pricing_plan else "Partner Plan",
+            'amount': str(partner_subscription.amount),
+            'start_date': partner_subscription.start_date.strftime('%B %d, %Y'),
+            'refund_processed': 'Yes' if refund_processed else 'No',
+            'refund_message': 'Your payment has been fully refunded and should appear in your account within 5-10 business days.' if refund_processed else 'No refund was processed for this request.'
+        }
+        
+        # Try to use template system first
+        template_name = 'partner_subscription_rejected'
+        success = send_template_email(
+            template_name=template_name,
+            to_email=user.email,
+            variables=variables,
+            user_id=user.id,
+            email_type='partner_subscription_rejected',
+            priority='high'
+        )
+        
+        if success:
+            return True
+        
+        # Fall back to existing function
+        logger.info("Template not found, using existing email function")
+        return send_partner_subscription_rejected_email(user, partner_subscription, refund_processed)
+        
+    except Exception as e:
+        logger.error(f"Error sending enhanced partner subscription rejection: {e}")
+        # Fall back to existing function
+        return send_partner_subscription_rejected_email(user, partner_subscription, refund_processed)
+
+
+# Backward compatibility - update existing functions to use enhanced versions
+def send_partner_subscription_confirmation_email_original(user, partner_subscription):
+    """Original function - keeping for compatibility"""
+    return send_partner_subscription_confirmation_email_enhanced(user, partner_subscription)
+
+
+def send_partner_subscription_approved_email_original(user, partner_subscription):
+    """Original function - keeping for compatibility"""
+    return send_partner_subscription_approved_email_enhanced(user, partner_subscription)
+
+
+def send_partner_subscription_rejected_email_original(user, partner_subscription, refund_processed=False):
+    """Original function - keeping for compatibility"""
+    return send_partner_subscription_rejected_email_enhanced(user, partner_subscription, refund_processed)
