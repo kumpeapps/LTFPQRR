@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}View Campaign - {{ campaign.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% set sidebar_context = 'admin' %}
+        {% include 'includes/dashboard_sidebar.html' %}
+        
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Campaign: {{ campaign.name }}</h2>
+                    <div>
+                        <a href="{{ url_for('email_admin.campaigns') }}" class="btn btn-secondary">Back to Campaigns</a>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Campaign Details</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Name:</strong> {{ campaign.name }}</p>
+                                        <p><strong>Status:</strong> 
+                                            {% if campaign.status == 'draft' %}
+                                                <span class="badge bg-secondary">Draft</span>
+                                            {% elif campaign.status == 'scheduled' %}
+                                                <span class="badge bg-warning">Scheduled</span>
+                                            {% elif campaign.status == 'sending' %}
+                                                <span class="badge bg-primary">Sending</span>
+                                            {% elif campaign.status == 'completed' %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% elif campaign.status == 'failed' %}
+                                                <span class="badge bg-danger">Failed</span>
+                                            {% endif %}
+                                        </p>
+                                        <p><strong>Target Audience:</strong> 
+                                            <span class="badge bg-info">{{ campaign.target_audience }}</span>
+                                        </p>
+                                        {% if campaign.template %}
+                                        <p><strong>Template:</strong> {{ campaign.template.name }}</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Created:</strong> {{ campaign.created_at.strftime('%Y-%m-%d %H:%M') if campaign.created_at else 'N/A' }}</p>
+                                        {% if campaign.scheduled_at %}
+                                        <p><strong>Scheduled:</strong> {{ campaign.scheduled_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                                        {% endif %}
+                                        {% if campaign.sent_at %}
+                                        <p><strong>Sent:</strong> {{ campaign.sent_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                                        {% endif %}
+                                        <p><strong>Created By:</strong> {{ campaign.created_by.get_full_name() if campaign.created_by else 'N/A' }}</p>
+                                    </div>
+                                </div>
+                                
+                                {% if campaign.description %}
+                                <div class="mt-3">
+                                    <strong>Description:</strong>
+                                    <p>{{ campaign.description }}</p>
+                                </div>
+                                {% endif %}
+
+                                {% if campaign.subject %}
+                                <div class="mt-3">
+                                    <strong>Subject:</strong>
+                                    <p>{{ campaign.subject }}</p>
+                                </div>
+                                {% endif %}
+
+                                {% if campaign.content %}
+                                <div class="mt-3">
+                                    <strong>Custom Content:</strong>
+                                    <div class="mt-2 p-3" style="background: #f8f9fa; border-radius: 5px; max-height: 400px; overflow-y: auto;">
+                                        <iframe srcdoc="{{ campaign.content | escape }}" 
+                                                style="width: 100%; min-height: 300px; border: 1px solid #dee2e6; border-radius: 3px; background: white;"
+                                                onload="this.style.height=(this.contentWindow.document.body.scrollHeight+20)+'px'">
+                                        </iframe>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6>Campaign Statistics</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <h4 class="text-primary">{{ campaign.total_recipients }}</h4>
+                                    <small class="text-muted">Total Recipients</small>
+                                </div>
+                                <div class="mb-3">
+                                    <h4 class="text-success">{{ sent_emails }}</h4>
+                                    <small class="text-muted">Emails Sent</small>
+                                </div>
+                                <div class="mb-3">
+                                    <h4 class="text-danger">{{ failed_emails }}</h4>
+                                    <small class="text-muted">Failed Emails</small>
+                                </div>
+                                {% if campaign.total_recipients > 0 %}
+                                <div class="mb-3">
+                                    <h4 class="text-info">{{ ((sent_emails / campaign.total_recipients) * 100) | round(1) }}%</h4>
+                                    <small class="text-muted">Success Rate</small>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if campaign.status == 'draft' %}
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6>Actions</h6>
+                            </div>
+                            <div class="card-body">
+                                <button class="btn btn-primary btn-sm mb-2" 
+                                        onclick="sendCampaign({{ campaign.id }})">Send Campaign</button>
+                                <button class="btn btn-outline-danger btn-sm" 
+                                        onclick="deleteCampaign({{ campaign.id }}, '{{ campaign.name }}')">Delete Campaign</button>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if campaign.target_criteria %}
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6>Target Criteria</h6>
+                            </div>
+                            <div class="card-body">
+                                <pre>{{ campaign.target_criteria | tojson(indent=2) }}</pre>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function sendCampaign(campaignId) {
+    if (confirm('Are you sure you want to send this campaign? This action cannot be undone.')) {
+        fetch(`{{ url_for('email_admin.send_campaign', campaign_id=0) }}`.replace('0', campaignId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error sending campaign: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error sending campaign: ' + error);
+        });
+    }
+}
+
+function deleteCampaign(campaignId, campaignName) {
+    if (confirm(`Are you sure you want to delete the campaign "${campaignName}"?`)) {
+        fetch(`{{ url_for('email_admin.delete_campaign', campaign_id=0) }}`.replace('0', campaignId), {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '{{ url_for("email_admin.campaigns") }}';
+            } else {
+                alert('Error deleting campaign: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error deleting campaign: ' + error);
+        });
+    }
+}
+</script>
+{% endblock %}

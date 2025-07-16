@@ -14,6 +14,7 @@ from models.pet.pet import Pet, Tag, SearchLog
 from models.payment.payment import Subscription, PaymentGateway, PricingPlan, Payment
 from models.system.system import NotificationPreference, SystemSetting
 from models.partner.partner import Partner, PartnerAccessRequest, PartnerSubscription
+from models.email.email_models import EmailQueue, EmailLog, EmailTemplate, EmailCampaign
 
 # Export all models for backward compatibility
 __all__ = [
@@ -22,5 +23,6 @@ __all__ = [
     'Pet', 'Tag', 'SearchLog',
     'Subscription', 'PaymentGateway', 'PricingPlan', 'Payment',
     'NotificationPreference', 'SystemSetting',
-    'Partner', 'PartnerAccessRequest', 'PartnerSubscription'
+    'Partner', 'PartnerAccessRequest', 'PartnerSubscription',
+    'EmailQueue', 'EmailLog', 'EmailTemplate', 'EmailCampaign'
 ]

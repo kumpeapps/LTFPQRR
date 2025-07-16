@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Email Logs - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% set sidebar_context = 'admin' %}
+        {% include 'includes/dashboard_sidebar.html' %}
+        
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Email Logs</h2>
+                <a href="{{ url_for('email_admin.dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+            </div>
+
+            <!-- Filters -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="status" class="form-label">Status</label>
+                            <select id="status" name="status" class="form-select">
+                                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
+                                {% for status in EmailStatus %}
+                                    <option value="{{ status.value }}" {% if status_filter == status.value %}selected{% endif %}>
+                                        {{ status.value.title() }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="email_type" class="form-label">Email Type</label>
+                            <select id="email_type" name="email_type" class="form-select">
+                                <option value="all" {% if email_type_filter == 'all' %}selected{% endif %}>All Types</option>
+                                {% for email_type in email_types %}
+                                    <option value="{{ email_type }}" {% if email_type_filter == email_type %}selected{% endif %}>
+                                        {{ email_type.replace('_', ' ').title() }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary">Filter</button>
+                            <a href="{{ url_for('email_admin.logs') }}" class="btn btn-outline-secondary ms-2">Clear</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Email Logs Table -->
+            <div class="card">
+                <div class="card-body">
+                    {% if logs.items %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Status</th>
+                                        <th>To</th>
+                                        <th>Subject</th>
+                                        <th>Type</th>
+                                        <th>Sent At</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in logs.items %}
+                                        <tr>
+                                            <td>
+                                                {% if log.status == EmailStatus.SENT %}
+                                                    <span class="badge bg-success">{{ log.status.value.title() }}</span>
+                                                {% elif log.status == EmailStatus.FAILED %}
+                                                    <span class="badge bg-danger">{{ log.status.value.title() }}</span>
+                                                {% elif log.status == EmailStatus.PENDING %}
+                                                    <span class="badge bg-warning">{{ log.status.value.title() }}</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ log.status.value.title() }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ log.to_email }}</td>
+                                            <td>
+                                                <div class="text-truncate" style="max-width: 200px;" title="{{ log.subject }}">
+                                                    {{ log.subject }}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {% if log.email_type %}
+                                                    <span class="badge bg-info">{{ log.email_type.replace('_', ' ').title() }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button type="button" class="btn btn-outline-primary" 
+                                                            onclick="viewLogDetails({{ log.id }})">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    {% if log.status == EmailStatus.FAILED and log.queue_item_id %}
+                                                        <a href="{{ url_for('email_admin.retry_email', email_id=log.queue_item_id) }}" 
+                                                           class="btn btn-outline-warning">
+                                                            <i class="fas fa-redo"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if logs.pages > 1 %}
+                            <nav aria-label="Email logs pagination">
+                                <ul class="pagination justify-content-center">
+                                    {% if logs.has_prev %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('email_admin.logs', page=logs.prev_num, status=status_filter, email_type=email_type_filter) }}">
+                                                Previous
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% for page_num in logs.iter_pages() %}
+                                        {% if page_num %}
+                                            {% if page_num != logs.page %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="{{ url_for('email_admin.logs', page=page_num, status=status_filter, email_type=email_type_filter) }}">
+                                                        {{ page_num }}
+                                                    </a>
+                                                </li>
+                                            {% else %}
+                                                <li class="page-item active">
+                                                    <span class="page-link">{{ page_num }}</span>
+                                                </li>
+                                            {% endif %}
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link">...</span>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if logs.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('email_admin.logs', page=logs.next_num, status=status_filter, email_type=email_type_filter) }}">
+                                                Next
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No email logs found</h5>
+                            <p class="text-muted">No emails match the current filters.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Details Modal -->
+<div class="modal fade" id="logDetailsModal" tabindex="-1" aria-labelledby="logDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="logDetailsModalLabel">Email Log Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="logDetailsContent">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewLogDetails(logId) {
+    const modal = new bootstrap.Modal(document.getElementById('logDetailsModal'));
+    const content = document.getElementById('logDetailsContent');
+    
+    content.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+    modal.show();
+    
+    fetch(`/admin/email/logs/${logId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                content.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Basic Information</h6>
+                            <table class="table table-sm">
+                                <tr><td><strong>Status:</strong></td><td><span class="badge bg-${data.log.status === 'sent' ? 'success' : data.log.status === 'failed' ? 'danger' : 'warning'}">${data.log.status}</span></td></tr>
+                                <tr><td><strong>To:</strong></td><td>${data.log.to_email}</td></tr>
+                                <tr><td><strong>Subject:</strong></td><td>${data.log.subject}</td></tr>
+                                <tr><td><strong>Type:</strong></td><td>${data.log.email_type || '-'}</td></tr>
+                                <tr><td><strong>Created:</strong></td><td>${data.log.created_at}</td></tr>
+                                <tr><td><strong>Sent:</strong></td><td>${data.log.sent_at || '-'}</td></tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Technical Details</h6>
+                            <table class="table table-sm">
+                                <tr><td><strong>Message ID:</strong></td><td>${data.log.message_id || '-'}</td></tr>
+                                <tr><td><strong>Template:</strong></td><td>${data.log.template_name || '-'}</td></tr>
+                                <tr><td><strong>Error:</strong></td><td>${data.log.error_message || '-'}</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                    ${data.log.html_content ? `
+                        <div class="mt-3">
+                            <h6>Email Content Preview</h6>
+                            <div class="border p-3" style="max-height: 300px; overflow-y: auto;">
+                                ${data.log.html_content}
+                            </div>
+                        </div>
+                    ` : ''}
+                `;
+            } else {
+                content.innerHTML = `<div class="alert alert-danger">Error loading log details: ${data.message}</div>`;
+            }
+        })
+        .catch(error => {
+            content.innerHTML = `<div class="alert alert-danger">Error loading log details: ${error.message}</div>`;
+        });
+}
+</script>
+{% endblock %}

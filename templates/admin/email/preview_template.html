@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Preview Template - {{ template.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% set sidebar_context = 'admin' %}
+        {% include 'includes/dashboard_sidebar.html' %}
+        
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Preview: {{ template.name }}</h2>
+                    <div>
+                        <a href="{{ url_for('email_admin.templates') }}" class="btn btn-secondary me-2">Back to Templates</a>
+                        <a href="{{ url_for('email_admin.edit_template', template_id=template.id) }}" 
+                           class="btn btn-primary">Edit Template</a>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Email Preview</h5>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="toggleFullscreen()">
+                                    <i class="fas fa-expand"></i> Fullscreen
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="email-preview">
+                                    <div class="p-3 border-bottom bg-light">
+                                        <div class="row">
+                                            <div class="col-md-2"><strong>Subject:</strong></div>
+                                            <div class="col-md-10">{{ rendered.subject }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="p-4" style="min-height: 500px; background: white;" id="emailContent">
+                                        <iframe srcdoc="{{ rendered.html_content | escape }}" 
+                                                style="width: 100%; min-height: 500px; border: none; background: white;"
+                                                onload="this.style.height=(this.contentWindow.document.body.scrollHeight+20)+'px'">
+                                        </iframe>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if rendered.text_content %}
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6>Text Version</h6>
+                            </div>
+                            <div class="card-body">
+                                <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; white-space: pre-wrap; line-height: 1.4;">{{ rendered.text_content }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6>Template Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Name:</strong> {{ template.name }}</p>
+                                <p><strong>Type:</strong> {{ template.template_type or 'General' }}</p>
+                                <p><strong>Status:</strong> 
+                                    <span class="badge bg-{{ 'success' if template.is_active else 'secondary' }}">
+                                        {{ 'Active' if template.is_active else 'Inactive' }}
+                                    </span>
+                                </p>
+                                {% if template.description %}
+                                <p><strong>Description:</strong> {{ template.description }}</p>
+                                {% endif %}
+                                <p><strong>Created:</strong> {{ template.created_at.strftime('%Y-%m-%d %H:%M') if template.created_at else 'N/A' }}</p>
+                                {% if template.updated_at %}
+                                <p><strong>Updated:</strong> {{ template.updated_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6>Sample Variables Used</h6>
+                            </div>
+                            <div class="card-body">
+                                {% for key, value in sample_variables.items() %}
+                                <p><code>{{ key }}</code>: {{ value }}</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        {% if template.variables %}
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6>Available Variables</h6>
+                            </div>
+                            <div class="card-body">
+                                {% for variable in template.variables %}
+                                <span class="badge bg-info me-1 mb-1">{{ variable }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fullscreen Modal -->
+<div class="modal fade" id="fullscreenModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Email Preview - {{ template.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="p-3 border-bottom bg-light">
+                    <div class="row">
+                        <div class="col-md-1"><strong>Subject:</strong></div>
+                        <div class="col-md-11">{{ rendered.subject }}</div>
+                    </div>
+                </div>
+                <div class="p-4" style="background: white; height: calc(100vh - 200px);">
+                    <iframe srcdoc="{{ rendered.html_content | escape }}" 
+                            style="width: 100%; height: 100%; border: none; background: white;">
+                    </iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.email-preview iframe {
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+}
+
+.email-preview .p-4 {
+    background: #f8f9fa;
+}
+
+@media (max-width: 768px) {
+    .email-preview iframe {
+        min-height: 400px !important;
+    }
+}
+</style>
+
+<script>
+function toggleFullscreen() {
+    const modal = new bootstrap.Modal(document.getElementById('fullscreenModal'));
+    modal.show();
+}
+
+// Auto-resize iframe based on content
+document.addEventListener('DOMContentLoaded', function() {
+    const iframe = document.querySelector('#emailContent iframe');
+    if (iframe) {
+        iframe.onload = function() {
+            // Add some padding to prevent scrollbars
+            this.style.height = (this.contentWindow.document.body.scrollHeight + 40) + 'px';
+        };
+    }
+});
+</script>
+{% endblock %}
