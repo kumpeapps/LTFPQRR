@@ -58,10 +58,11 @@ def partner_dashboard():
     # Check if user has pending partner subscription
     if current_user.has_pending_partner_subscription():
         # Show pending subscription status
-        pending_subscription = current_user.subscriptions.filter_by(
-            subscription_type='partner',
-            status='pending'
-        ).first()
+        from models.models import Partner
+        pending_subscription = PartnerSubscription.query.join(Partner)\
+            .filter(Partner.owner_id == current_user.id)\
+            .filter(PartnerSubscription.status == 'pending')\
+            .first()
         
         return render_template('partner/dashboard.html', 
                              pending_subscription=pending_subscription,

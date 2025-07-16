@@ -34,22 +34,17 @@ class Partner(db.Model):
     
     def get_active_subscription(self):
         """Get the current active subscription for this partner"""
-        from models.payment.payment import Subscription
-        return Subscription.query.filter_by(
-            partner_id=self.id,
-            subscription_type='partner',
+        return self.subscriptions.filter_by(
             status='active',
             admin_approved=True
         ).first()
     
     def get_pending_subscription(self):
         """Get any pending subscription for this partner"""
-        from models.payment.payment import Subscription
-        return Subscription.query.filter_by(
-            partner_id=self.id,
-            subscription_type='partner',
-            admin_approved=False
-        ).filter(Subscription.status.in_(['pending', 'active'])).first()
+        return self.subscriptions.filter_by(
+            admin_approved=False,
+            status='pending'
+        ).first()
     
     def get_any_subscription(self):
         """Get any subscription (active or pending) for this partner"""
@@ -211,6 +206,11 @@ class PartnerSubscription(db.Model):
     # Relationships
     pricing_plan = db.relationship('PricingPlan', backref='partner_subscriptions')
     approver = db.relationship('User', foreign_keys=[approved_by], backref='approved_partner_subscriptions')
+    
+    @property
+    def user(self):
+        """Get the user who owns this partner subscription (through partner.owner)"""
+        return self.partner.owner if self.partner else None
     
     def is_active(self):
         """Check if subscription is active"""

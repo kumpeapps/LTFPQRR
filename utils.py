@@ -303,59 +303,83 @@ def process_successful_payment(
         elif payment_type == "partner":
             logger.info(f"Processing partner subscription for user {user_id}")
             
-            # Find appropriate pricing plan
-            pricing_plan = PricingPlan.query.filter_by(
-                plan_type="partner",
-                billing_period=subscription_type,
-                is_active=True,
-            ).first()
+            # Import Flask session to access session data
+            from flask import session
             
-            logger.info(f"Found pricing plan: {pricing_plan.id if pricing_plan else 'None'}")
-
-            # Get or create partner
-            from models.models import Partner
-            partner = Partner.query.filter_by(owner_id=user_id).first()
-            if not partner:
-                # Create a basic partner record if none exists
-                partner = Partner(
-                    company_name=f"{user.get_full_name()}'s Company",
-                    email=user.email,
-                    owner_id=user_id,
-                    status='active'
-                )
-                db.session.add(partner)
-                db.session.flush()
-                logger.info(f"Created partner record with ID: {partner.id}")
-
-            # Create unified subscription record for partner
-            subscription = Subscription(
-                user_id=user_id,
-                partner_id=partner.id,
-                pricing_plan_id=pricing_plan.id if pricing_plan else None,
-                subscription_type="partner",
-                status="pending",  # Partner subscriptions need admin approval
+            # Get partner and pricing plan from session
+            partner_id = session.get("partner_id")
+            pricing_plan_id = session.get("pricing_plan_id")
+            
+            logger.info(f"Partner ID from session: {partner_id}")
+            logger.info(f"Pricing plan ID from session: {pricing_plan_id}")
+            
+            if not partner_id or not pricing_plan_id:
+                logger.error("Missing partner_id or pricing_plan_id in session")
+                return False
+            
+            # Get the partner and pricing plan
+            from models.models import Partner, PartnerSubscription
+            partner = Partner.query.get(partner_id)
+            pricing_plan = PricingPlan.query.get(pricing_plan_id)
+            
+            if not partner or not pricing_plan:
+                logger.error(f"Partner ({partner_id}) or pricing plan ({pricing_plan_id}) not found")
+                return False
+                
+            logger.info(f"Found partner: {partner.company_name}")
+            logger.info(f"Found pricing plan: {pricing_plan.name}, requires_approval: {pricing_plan.requires_approval}")
+            
+            # Check if approval is required
+            requires_approval = pricing_plan.requires_approval if pricing_plan else False
+            
+            # Create partner subscription record
+            start_date = datetime.utcnow()
+            end_date = None
+            if pricing_plan and hasattr(pricing_plan, 'duration_months') and pricing_plan.duration_months > 0:
+                end_date = start_date + timedelta(days=pricing_plan.duration_months * 30)
+            elif subscription_type == "yearly":
+                end_date = start_date + timedelta(days=365)
+            elif subscription_type == "monthly":
+                end_date = start_date + timedelta(days=30)
+            
+            partner_subscription = PartnerSubscription(
+                partner_id=partner_id,
+                pricing_plan_id=pricing_plan_id,
+                status="pending" if requires_approval else "active",
+                admin_approved=not requires_approval,
+                max_tags=pricing_plan.max_tags if pricing_plan else 0,
                 payment_method=payment_method,
                 payment_id=payment_intent_id,
                 amount=amount,
-                start_date=datetime.utcnow(),
-                auto_renew=True,
-                max_tags=pricing_plan.max_tags if pricing_plan else 0,
-                admin_approved=False,  # Still needs admin approval
+                start_date=start_date,
+                end_date=end_date,
+                auto_renew=True
             )
-
-            # Set end date
-            if subscription_type == "yearly":
-                subscription.end_date = datetime.utcnow() + timedelta(days=365)
-            else:  # monthly
-                subscription.end_date = datetime.utcnow() + timedelta(days=30)
-
-            db.session.add(subscription)
-            db.session.flush()  # Get subscription ID
             
-            # Link payment to subscription
-            payment.subscription_id = subscription.id
+            db.session.add(partner_subscription)
+            db.session.flush()
             
-            logger.info(f"Created partner subscription with ID: {subscription.id}")
+            # Link payment to partner subscription
+            payment.partner_subscription_id = partner_subscription.id
+            logger.info(f"Linked payment {payment.id} to partner subscription {partner_subscription.id}")
+            
+            logger.info(f"Created partner subscription with ID: {partner_subscription.id}")
+            logger.info(f"Status: {partner_subscription.status}, Admin approved: {partner_subscription.admin_approved}")
+            
+            # Send email notifications
+            try:
+                if requires_approval:
+                    logger.info("Sending approval notification emails")
+                    from email_utils import send_partner_subscription_confirmation_email, send_partner_admin_approval_notification
+                    send_partner_subscription_confirmation_email(user, partner_subscription)
+                    send_partner_admin_approval_notification(partner_subscription)
+                else:
+                    logger.info("Sending confirmation email for auto-approved subscription")
+                    from email_utils import send_partner_subscription_confirmation_email
+                    send_partner_subscription_confirmation_email(user, partner_subscription)
+            except Exception as email_error:
+                logger.error(f"Error sending partner subscription emails: {email_error}")
+                # Don't fail the payment for email issues
 
             # Add partner role if not already present
             partner_role = Role.query.filter_by(name="partner").first()
@@ -365,18 +389,12 @@ def process_successful_payment(
 
         db.session.commit()
         
-        # Send appropriate emails after successful commit
+        # Send appropriate emails after successful commit (for tag subscriptions only)
         try:
-            from email_utils import send_subscription_confirmation_email, send_admin_approval_notification
-            
-            # Send confirmation email to customer
-            send_subscription_confirmation_email(user, subscription)
-            logger.info(f"Sent confirmation email to {user.email}")
-            
-            # Send admin notification for partner subscriptions
-            if payment_type == "partner":
-                send_admin_approval_notification(subscription)
-                logger.info(f"Sent admin approval notification for subscription {subscription.id}")
+            if payment_type == "tag" and 'subscription' in locals():
+                from email_utils import send_subscription_confirmation_email
+                send_subscription_confirmation_email(user, subscription)
+                logger.info(f"Sent tag subscription confirmation email to {user.email}")
                 
         except Exception as email_error:
             logger.error(f"Error sending emails: {email_error}")

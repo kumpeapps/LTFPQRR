@@ -60,9 +60,13 @@ class User(UserMixin, db.Model):
 
     def has_pending_partner_subscription(self):
         """Check if user has a pending partner subscription"""
-        pending_subscription = self.subscriptions.filter_by(
-            subscription_type="partner", status="pending"
-        ).first()
+        from models.models import PartnerSubscription, Partner
+        
+        # Find pending subscriptions for partners owned by this user
+        pending_subscription = PartnerSubscription.query.join(Partner)\
+            .filter(Partner.owner_id == self.id)\
+            .filter(PartnerSubscription.status == "pending")\
+            .first()
         return pending_subscription is not None
 
     def can_access_partner_dashboard(self):
