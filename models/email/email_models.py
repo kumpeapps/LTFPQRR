@@ -26,7 +26,7 @@ class EmailPriority(enum.Enum):
 
 
 class EmailTemplate(db.Model):
-    """Email template model for reusable email templates"""
+    """Email template model for reusable email templates with category system"""
     __tablename__ = 'email_templates'
     
     id = Column(Integer, primary_key=True)
@@ -35,7 +35,9 @@ class EmailTemplate(db.Model):
     html_content = Column(Text, nullable=False)
     text_content = Column(Text)
     description = Column(String(500))
-    variables = Column(JSON)  # Store template variables as JSON
+    category = Column(String(50), nullable=False, default='user_notification')  # Template category
+    variables = Column(JSON)  # Store template variables as JSON (legacy)
+    required_inputs = Column(JSON)  # Store required input parameters
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -46,28 +48,104 @@ class EmailTemplate(db.Model):
     email_logs = relationship("EmailLog", back_populates="template")
     
     def __repr__(self):
-        return f'<EmailTemplate {self.name}>'
+        return f'<EmailTemplate {self.name}:{self.category}>'
+    
+    def get_category_enum(self):
+        """Get the category as enum"""
+        try:
+            from models.email.template_categories import TemplateCategory
+            return TemplateCategory(self.category)
+        except (ValueError, ImportError):
+            from models.email.template_categories import TemplateCategory
+            return TemplateCategory.USER_NOTIFICATION  # Default fallback
+    
+    def get_category_config(self):
+        """Get the configuration for this template's category"""
+        try:
+            from models.email.template_categories import TemplateCategoryConfig
+            return TemplateCategoryConfig.get_category_config(self.get_category_enum())
+        except ImportError:
+            return {}
+    
+    def get_required_inputs(self):
+        """Get required inputs for this template category"""
+        config = self.get_category_config()
+        return config.get('required_inputs', [])
+    
+    def get_available_models(self):
+        """Get available models for this template category"""
+        config = self.get_category_config()
+        return config.get('available_models', ['user', 'system'])
+    
+    def get_target_email_field(self):
+        """Get the target email field for this template category"""
+        config = self.get_category_config()
+        return config.get('target_field', 'user.email')
+    
+    def validate_inputs(self, inputs):
+        """Validate inputs for this template category"""
+        try:
+            from models.email.template_categories import TemplateCategoryConfig
+            return TemplateCategoryConfig.validate_inputs_for_category(
+                self.get_category_enum(), 
+                inputs
+            )
+        except ImportError:
+            return {'valid': True, 'missing_inputs': [], 'required_inputs': []}
     
     def get_variables(self):
-        """Get template variables as list"""
+        """Get template variables as list (legacy support)"""
         return self.variables or []
     
-    def render_content(self, variables=None):
-        """Render template content with variables"""
+    def render_content(self, variables=None, model_instances=None):
+        """Render template content with variables and model instances"""
         if not variables:
             variables = {}
+        if not model_instances:
+            model_instances = {}
         
         try:
             html_content = self.html_content
             text_content = self.text_content or ""
             subject = self.subject
             
-            # Replace variables in content
-            for key, value in variables.items():
-                placeholder = f"{{{key}}}"
-                html_content = html_content.replace(placeholder, str(value))
-                text_content = text_content.replace(placeholder, str(value))
-                subject = subject.replace(placeholder, str(value))
+            # Get system variables
+            system_variables = self.get_system_variables()
+            
+            # Merge system variables with provided variables
+            all_variables = {**system_variables, **variables}
+            
+            # Replace simple variables in content (backward compatibility)
+            for key, value in all_variables.items():
+                if isinstance(value, str):
+                    placeholder = f"{{{key}}}"
+                    html_content = html_content.replace(placeholder, str(value))
+                    text_content = text_content.replace(placeholder, str(value))
+                    subject = subject.replace(placeholder, str(value))
+            
+            # Replace model-based variables {{model.field}} using category-aware models
+            available_models = self.get_available_models()
+            filtered_instances = {k: v for k, v in model_instances.items() if k in available_models}
+            
+            # Always ensure system is available as a model instance
+            if 'system' in available_models and 'system' not in filtered_instances:
+                # Create a system object from system variables
+                class SystemObject:
+                    def __init__(self, vars_dict):
+                        # Add both direct access and prefixed access
+                        for key, value in vars_dict.items():
+                            if key.startswith('system.'):
+                                # Remove 'system.' prefix for direct access
+                                setattr(self, key.replace('system.', ''), value)
+                            elif not '.' in key:
+                                # Add direct properties for non-prefixed vars
+                                setattr(self, key, value)
+                
+                filtered_instances['system'] = SystemObject(system_variables)
+            
+            html_content = self.replace_model_variables(html_content, filtered_instances)
+            text_content = self.replace_model_variables(text_content, filtered_instances)
+            subject = self.replace_model_variables(subject, filtered_instances)
             
             return {
                 'subject': subject,
@@ -76,6 +154,212 @@ class EmailTemplate(db.Model):
             }
         except Exception as e:
             raise ValueError(f"Error rendering template: {e}")
+    
+    def resolve_target_email(self, model_instances):
+        """Resolve the target email address based on category configuration"""
+        target_field = self.get_target_email_field()
+        
+        try:
+            # Handle direct email field (for admin emails)
+            if target_field == 'admin_email' and 'admin_email' in model_instances:
+                return model_instances['admin_email']
+            
+            if target_field == 'target_email' and 'target_email' in model_instances:
+                return model_instances['target_email']
+            
+            # Handle model.field syntax
+            if '.' in target_field:
+                model_name, field_path = target_field.split('.', 1)
+                model_instance = model_instances.get(model_name)
+                
+                if model_instance:
+                    # Navigate through field path (e.g., partner.owner.email)
+                    current_obj = model_instance
+                    for field in field_path.split('.'):
+                        if hasattr(current_obj, field):
+                            current_obj = getattr(current_obj, field)
+                            
+                            # Handle callable methods
+                            if callable(current_obj):
+                                try:
+                                    current_obj = current_obj()
+                                except:
+                                    return None
+                        else:
+                            return None
+                    
+                    return str(current_obj) if current_obj else None
+            
+            return None
+            
+        except Exception as e:
+            from extensions import logger
+            logger.error(f"Error resolving target email for template {self.id}: {e}")
+            return None
+    
+    def get_system_variables(self):
+        """Get system-wide variables from settings"""
+        from models.models import SystemSetting
+        
+        variables = {}
+        
+        # Get site URL
+        site_url = SystemSetting.get_value('site_url', 'http://localhost:5000')
+        variables['site_url'] = site_url
+        variables['system.site_url'] = site_url
+        
+        # Get company/app name
+        app_name = SystemSetting.get_value('app_name', 'LTFPQRR')
+        variables['app_name'] = app_name
+        variables['system.app_name'] = app_name
+        
+        # Get support email
+        support_email = SystemSetting.get_value('support_email', 'support@example.com')
+        variables['support_email'] = support_email
+        variables['system.support_email'] = support_email
+        
+        return variables
+    
+    def replace_model_variables(self, content, variables):
+        """Replace model-based variables like {{user.first_name}}"""
+        import re
+        
+        # Pattern to match {{model.field}} syntax with optional spaces and method calls
+        pattern = r'\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_().]*)\s*\}\}'
+        
+        def replace_match(match):
+            var_path = match.group(1)  # e.g., "user.first_name" or "partner.owner.get_full_name()"
+            
+            try:
+                # Split into model and field path
+                parts = var_path.split('.')
+                model_name = parts[0]
+                field_path = parts[1:]
+                
+                # Get the model instance from variables
+                model_instance = variables.get(model_name)
+                if model_instance is None:
+                    return match.group(0)  # Return original if model not found
+                
+                # Navigate through the field path
+                current_obj = model_instance
+                for i, field in enumerate(field_path):
+                    if field.endswith('()'):
+                        # Handle method calls
+                        method_name = field[:-2]  # Remove ()
+                        if hasattr(current_obj, method_name):
+                            method = getattr(current_obj, method_name)
+                            if callable(method):
+                                try:
+                                    current_obj = method()
+                                except:
+                                    return match.group(0)  # Return original on error
+                            else:
+                                current_obj = method
+                        else:
+                            return match.group(0)  # Return original if method not found
+                    else:
+                        # Handle regular fields
+                        if hasattr(current_obj, field):
+                            current_obj = getattr(current_obj, field)
+                            
+                            # Handle callable fields (but don't call methods without () explicitly)
+                            if callable(current_obj) and not field.startswith('_'):
+                                # Only auto-call simple property-like methods if this is the last field
+                                if i == len(field_path) - 1:
+                                    try:
+                                        if hasattr(current_obj, '__name__') and not current_obj.__name__.startswith('_'):
+                                            current_obj = current_obj()
+                                    except:
+                                        pass  # Keep original value if call fails
+                        else:
+                            return match.group(0)  # Return original if field not found
+                
+                return str(current_obj) if current_obj is not None else ''
+                    
+            except Exception:
+                return match.group(0)  # Return original on any error
+        
+        return re.sub(pattern, replace_match, content)
+    
+    @staticmethod
+    def get_available_models_for_category(category_name):
+        """Get available models and their fields for a specific template category"""
+        try:
+            from models.email.template_categories import TemplateCategory, ModelFieldConfig
+            
+            # Convert string to enum
+            if isinstance(category_name, str):
+                category = TemplateCategory(category_name)
+            else:
+                category = category_name
+            
+            return ModelFieldConfig.get_available_fields_for_category(category)
+            
+        except (ImportError, ValueError) as e:
+            # Fallback to basic model info
+            return {
+                'user': {
+                    'name': 'User',
+                    'description': 'User account information',
+                    'fields': {
+                        'email': {'type': 'str', 'description': 'Email address'},
+                        'first_name': {'type': 'str', 'description': 'First name'},
+                        'last_name': {'type': 'str', 'description': 'Last name'},
+                        'get_full_name()': {'type': 'method', 'description': 'Full name'}
+                    }
+                },
+                'system': {
+                    'name': 'System Settings',
+                    'description': 'System-wide settings',
+                    'fields': {
+                        'site_url': {'type': 'str', 'description': 'Site URL'},
+                        'app_name': {'type': 'str', 'description': 'Application name'},
+                        'support_email': {'type': 'str', 'description': 'Support email'}
+                    }
+                }
+            }
+    
+    @staticmethod
+    def get_template_categories():
+        """Get all available template categories"""
+        try:
+            from models.email.template_categories import TemplateCategory, TemplateCategoryConfig
+            
+            categories = []
+            for category in TemplateCategory:
+                config = TemplateCategoryConfig.get_category_config(category)
+                categories.append({
+                    'value': category.value,
+                    'name': config.get('name', category.value),
+                    'description': config.get('description', ''),
+                    'required_inputs': config.get('required_inputs', []),
+                    'available_models': config.get('available_models', []),
+                    'examples': config.get('examples', [])
+                })
+            
+            return categories
+            
+        except ImportError:
+            # Fallback categories
+            return [
+                {
+                    'value': 'user_account',
+                    'name': 'User Account',
+                    'description': 'User account-related emails',
+                    'required_inputs': ['user_id'],
+                    'available_models': ['user', 'system'],
+                    'examples': ['Welcome email', 'Password reset']
+                },
+                {
+                    'value': 'user_notification',
+                    'name': 'User Notification',
+                    'description': 'General notifications to users',
+                    'required_inputs': ['user_id'],
+                    'available_models': ['user', 'system'],
+                    'examples': ['Service updates', 'Feature announcements']
+                }
+            ]
 
 
 class EmailQueue(db.Model):

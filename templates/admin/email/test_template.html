@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Test Email Template - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% set sidebar_context = 'admin' %}
+        {% include 'includes/dashboard_sidebar.html' %}
+        
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Test Email Template: {{ template.name }}</h2>
+                    <div>
+                        <a href="{{ url_for('email_admin.edit_template', template_id=template.id) }}" class="btn btn-secondary me-2">Back to Edit</a>
+                        <a href="{{ url_for('email_admin.templates') }}" class="btn btn-outline-secondary">All Templates</a>
+                    </div>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Send Test Email</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <div class="mb-3">
+                                <label for="test_email" class="form-label">Test Email Address</label>
+                                <input type="email" class="form-control" id="test_email" name="test_email" 
+                                       placeholder="Enter email address to receive test" required>
+                            </div>
+
+                            {% if template.variables %}
+                                <div class="mb-3">
+                                    <h6>Template Variables</h6>
+                                    <small class="text-muted">Customize the variables used in the test email:</small>
+                                    <div class="row mt-2">
+                                        {% for variable in template.variables %}
+                                            <div class="col-md-6 mb-2">
+                                                <label for="var_{{ variable }}" class="form-label small">{{ variable }}</label>
+                                                <input type="text" class="form-control form-control-sm" 
+                                                       id="var_{{ variable }}" name="var_{{ variable }}" 
+                                                       placeholder="Value for {{ variable }}">
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Send Test Email
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Template Preview</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Subject:</h6>
+                                <p class="text-muted">{{ template.subject }}</p>
+                            </div>
+                            {% if template.description %}
+                                <div class="col-md-6">
+                                    <h6>Description:</h6>
+                                    <p class="text-muted">{{ template.description }}</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <h6>HTML Content Preview:</h6>
+                        <div class="border p-3" style="max-height: 400px; overflow-y: auto; background: #f8f9fa;">
+                            <pre style="white-space: pre-wrap; font-size: 0.85rem;">{{ template.html_content }}</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

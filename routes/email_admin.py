@@ -231,7 +231,7 @@ def templates():
 @email_admin.route('/templates/create', methods=['GET', 'POST'])
 @admin_required
 def create_template():
-    """Create new email template"""
+    """Create new email template with category support"""
     if request.method == 'POST':
         try:
             name = request.form.get('name', '').strip()
@@ -239,26 +239,48 @@ def create_template():
             html_content = request.form.get('html_content', '').strip()
             text_content = request.form.get('text_content', '').strip()
             description = request.form.get('description', '').strip()
-            variables_str = request.form.get('variables', '').strip()
+            category = request.form.get('category', 'user_notification').strip()
             
             # Validate required fields
             if not name or not subject or not html_content:
                 flash("Name, subject, and HTML content are required", "error")
-                return render_template('admin/email/create_template.html')
+                categories = EmailTemplate.get_template_categories()
+                all_models_data = {}
+                for category in categories:
+                    try:
+                        models = EmailTemplate.get_available_models_for_category(category['value'])
+                        all_models_data[category['value']] = models
+                    except Exception as e:
+                        all_models_data[category['value']] = {}
+                return render_template('admin/email/create_template_enhanced.html', 
+                                     categories=categories, 
+                                     all_models_data=all_models_data)
             
-            # Parse variables
-            variables = []
-            if variables_str:
-                variables = [v.strip() for v in variables_str.split(',') if v.strip()]
+            # Validate category
+            valid_categories = [cat['value'] for cat in EmailTemplate.get_template_categories()]
+            if category not in valid_categories:
+                flash(f"Invalid category: {category}", "error")
+                categories = EmailTemplate.get_template_categories()
+                all_models_data = {}
+                for category in categories:
+                    try:
+                        models = EmailTemplate.get_available_models_for_category(category['value'])
+                        all_models_data[category['value']] = models
+                    except Exception as e:
+                        all_models_data[category['value']] = {}
+                return render_template('admin/email/create_template_enhanced.html', 
+                                     categories=categories, 
+                                     all_models_data=all_models_data)
             
-            # Create template
+            # Create template using enhanced service
+            from services.enhanced_email_service import EmailTemplateManager
             template = EmailTemplateManager.create_template(
                 name=name,
                 subject=subject,
                 html_content=html_content,
                 text_content=text_content or None,
                 description=description or None,
-                variables=variables,
+                category=category,
                 created_by_id=current_user.id
             )
             
@@ -269,13 +291,28 @@ def create_template():
             logger.error(f"Error creating email template: {e}")
             flash(f"Error creating email template: {e}", "error")
     
-    return render_template('admin/email/create_template.html')
+    # Get template categories for form
+    categories = EmailTemplate.get_template_categories()
+    
+    # Pre-load model data for all categories to avoid AJAX issues
+    all_models_data = {}
+    for category in categories:
+        try:
+            models = EmailTemplate.get_available_models_for_category(category['value'])
+            all_models_data[category['value']] = models
+        except Exception as e:
+            logger.error(f"Error loading models for category {category['value']}: {e}")
+            all_models_data[category['value']] = {}
+    
+    return render_template('admin/email/create_template_enhanced.html', 
+                         categories=categories, 
+                         all_models_data=all_models_data)
 
 
 @email_admin.route('/templates/<int:template_id>/edit', methods=['GET', 'POST'])
 @admin_required
 def edit_template(template_id):
-    """Edit email template"""
+    """Edit email template with category support"""
     template = EmailTemplate.query.get_or_404(template_id)
     
     if request.method == 'POST':
@@ -285,19 +322,42 @@ def edit_template(template_id):
             template.html_content = request.form.get('html_content', '').strip()
             template.text_content = request.form.get('text_content', '').strip()
             template.description = request.form.get('description', '').strip()
-            variables_str = request.form.get('variables', '').strip()
+            category = request.form.get('category', template.category).strip()
             
             # Validate required fields
             if not template.name or not template.subject or not template.html_content:
                 flash("Name, subject, and HTML content are required", "error")
-                return render_template('admin/email/edit_template.html', template=template)
+                categories = EmailTemplate.get_template_categories()
+                all_models_data = {}
+                for category in categories:
+                    try:
+                        models = EmailTemplate.get_available_models_for_category(category['value'])
+                        all_models_data[category['value']] = models
+                    except Exception as e:
+                        all_models_data[category['value']] = {}
+                return render_template('admin/email/edit_template_enhanced.html', 
+                                     template=template, 
+                                     categories=categories,
+                                     all_models_data=all_models_data)
             
-            # Parse variables
-            variables = []
-            if variables_str:
-                variables = [v.strip() for v in variables_str.split(',') if v.strip()]
+            # Validate category
+            valid_categories = [cat['value'] for cat in EmailTemplate.get_template_categories()]
+            if category not in valid_categories:
+                flash(f"Invalid category: {category}", "error")
+                categories = EmailTemplate.get_template_categories()
+                all_models_data = {}
+                for category in categories:
+                    try:
+                        models = EmailTemplate.get_available_models_for_category(category['value'])
+                        all_models_data[category['value']] = models
+                    except Exception as e:
+                        all_models_data[category['value']] = {}
+                return render_template('admin/email/edit_template_enhanced.html', 
+                                     template=template, 
+                                     categories=categories,
+                                     all_models_data=all_models_data)
             
-            template.variables = variables
+            template.category = category
             template.updated_at = datetime.utcnow()
             
             db.session.commit()
@@ -310,13 +370,29 @@ def edit_template(template_id):
             flash(f"Error updating email template: {e}", "error")
             db.session.rollback()
     
-    return render_template('admin/email/edit_template.html', template=template)
+    # Get template categories for form
+    categories = EmailTemplate.get_template_categories()
+    
+    # Pre-load model data for all categories to avoid AJAX issues
+    all_models_data = {}
+    for category in categories:
+        try:
+            models = EmailTemplate.get_available_models_for_category(category['value'])
+            all_models_data[category['value']] = models
+        except Exception as e:
+            logger.error(f"Error loading models for category {category['value']}: {e}")
+            all_models_data[category['value']] = {}
+    
+    return render_template('admin/email/edit_template_enhanced.html', 
+                         template=template, 
+                         categories=categories,
+                         all_models_data=all_models_data)
 
 
 @email_admin.route('/templates/<int:template_id>/test', methods=['GET', 'POST'])
 @admin_required
 def test_template(template_id):
-    """Test email template"""
+    """Test email template with category-based input validation"""
     template = EmailTemplate.query.get_or_404(template_id)
     
     if request.method == 'POST':
@@ -324,43 +400,65 @@ def test_template(template_id):
             test_email = request.form.get('test_email', '').strip()
             if not test_email:
                 flash("Test email address is required", "error")
-                return render_template('admin/email/test_template.html', template=template)
+                return render_template('admin/email/test_template_enhanced.html', template=template)
             
-            # Prepare test variables
-            test_variables = {
-                'user_name': 'Test User',
-                'first_name': 'Test',
-                'user_email': test_email,
-                'company_name': 'Test Company',
-                'plan_name': 'Test Plan',
-                'amount': '10.00',
-                'start_date': datetime.now().strftime('%B %d, %Y')
-            }
+            # Collect inputs based on form data
+            inputs = {'target_email': test_email}
             
-            # Add any custom variables from form
-            for key in request.form:
-                if key.startswith('var_'):
-                    var_name = key[4:]  # Remove 'var_' prefix
-                    test_variables[var_name] = request.form[key]
+            # Get category-specific inputs
+            required_inputs = template.get_required_inputs()
+            for input_name in required_inputs:
+                form_value = request.form.get(f'input_{input_name}')
+                if form_value:
+                    try:
+                        # Try to convert to int for ID fields
+                        if input_name.endswith('_id'):
+                            inputs[input_name] = int(form_value)
+                        else:
+                            inputs[input_name] = form_value
+                    except ValueError:
+                        inputs[input_name] = form_value
             
-            # Send test email
-            success = EmailTemplateManager.send_from_template(
+            # Add sample data for testing if not provided
+            if not inputs.get('user_id') and 'user_id' in required_inputs:
+                # Use current user as sample
+                inputs['user_id'] = current_user.id
+            
+            # Send test email using enhanced service
+            from services.enhanced_email_service import EmailTemplateManager
+            
+            queue_item = EmailTemplateManager.send_from_template(
                 template_name=template.name,
-                to_email=test_email,
-                variables=test_variables,
-                email_type='template_test'
+                inputs=inputs,
+                email_type='template_test',
+                send_immediately=True
             )
             
-            if success:
-                flash(f"Test email sent to {test_email}!", "success")
+            if queue_item.status == EmailStatus.SENT:
+                flash(f"Test email sent successfully to {test_email}!", "success")
             else:
-                flash("Failed to send test email", "error")
+                flash(f"Test email queued for sending to {test_email}", "info")
             
         except Exception as e:
             logger.error(f"Error sending test email: {e}")
             flash(f"Error sending test email: {e}", "error")
     
-    return render_template('admin/email/test_template.html', template=template)
+    # Get category info for the form
+    category_config = template.get_category_config()
+    
+    # Get available users and partners for dropdowns
+    users = User.query.order_by(User.first_name, User.last_name).limit(20).all()
+    partners = Partner.query.filter_by(status='active').order_by(Partner.company_name).limit(20).all()
+    subscriptions = PartnerSubscription.query.order_by(PartnerSubscription.created_at.desc()).limit(20).all()
+    
+    return render_template(
+        'admin/email/test_template_enhanced.html', 
+        template=template,
+        category_config=category_config,
+        users=users,
+        partners=partners,
+        subscriptions=subscriptions
+    )
 
 
 @email_admin.route('/campaigns')
@@ -509,8 +607,15 @@ def send_individual():
                 **custom_variables
             }
             
+            # Add model instances for template rendering
+            template_variables = {**variables}
+            template_variables['user'] = recipient
+            
+            if recipient_type == 'partner':
+                template_variables['partner'] = partner
+            
             # Render content
-            rendered = template.render_content(variables)
+            rendered = template.render_content(template_variables)
             
             # Use custom subject if provided
             if custom_subject:
@@ -632,27 +737,115 @@ def delete_template(template_id):
 @email_admin.route('/templates/<int:template_id>/preview')
 @admin_required
 def preview_template(template_id):
-    """Preview email template"""
+    """Preview email template with category-based sample data"""
     try:
         template = EmailTemplate.query.get_or_404(template_id)
         
-        # Use sample variables for preview
-        sample_variables = {
-            'user_name': 'John Doe',
-            'first_name': 'John',
-            'user_email': 'john.doe@example.com',
-            'company_name': 'Sample Company',
-            'subscription_plan': 'Professional Plan',
-            'expiry_date': '2025-12-31'
-        }
+        # Get category-specific sample data
+        sample_data = {}
+        model_instances = {}
         
-        rendered = template.render_content(sample_variables)
+        if template.category:
+            # Get category configuration
+            config = template.get_category_config()
+            required_inputs = config.get('required_inputs', [])
+            available_models = config.get('available_models', [])
+            
+            # Create sample inputs based on category requirements
+            for input_name in required_inputs:
+                if input_name == 'user_id':
+                    sample_data['user_id'] = 1
+                elif input_name == 'partner_id':
+                    sample_data['partner_id'] = 1
+                elif input_name == 'subscription_id':
+                    sample_data['subscription_id'] = 1
+                elif input_name == 'admin_email':
+                    sample_data['admin_email'] = 'admin@example.com'
+            
+            # Load sample model instances for preview
+            try:
+                from services.enhanced_email_service import EmailTemplateManager
+                
+                # Use the enhanced service to get sample model data
+                if 'user' in available_models:
+                    from models.models import User
+                    sample_user = User.query.first()
+                    if sample_user:
+                        model_instances['user'] = sample_user
+                        sample_data['user_id'] = sample_user.id
+                    else:
+                        # Create sample user data for preview
+                        model_instances['user'] = {
+                            'id': 1,
+                            'username': 'john_doe',
+                            'email': 'john.doe@example.com',
+                            'first_name': 'John',
+                            'last_name': 'Doe',
+                            'get_full_name': lambda: 'John Doe',
+                            'created_at': datetime.now(),
+                            'is_active': True,
+                            'phone': '+1-555-0123',
+                            'timezone': 'UTC'
+                        }
+                
+                if 'partner' in available_models:
+                    from models.models import Partner
+                    sample_partner = Partner.query.first()
+                    if sample_partner:
+                        model_instances['partner'] = sample_partner
+                        sample_data['partner_id'] = sample_partner.id
+                    else:
+                        model_instances['partner'] = {
+                            'id': 1,
+                            'company_name': 'Sample Company Inc.',
+                            'email': 'contact@samplecompany.com',
+                            'status': 'active',
+                            'created_at': datetime.now()
+                        }
+                
+                if 'subscription' in available_models:
+                    from models.models import PartnerSubscription
+                    sample_subscription = PartnerSubscription.query.first()
+                    if sample_subscription:
+                        model_instances['subscription'] = sample_subscription
+                        sample_data['subscription_id'] = sample_subscription.id
+                    else:
+                        model_instances['subscription'] = {
+                            'id': 1,
+                            'plan_name': 'Professional Plan',
+                            'amount': 99.99,
+                            'status': 'active',
+                            'next_billing_date': '2025-12-31'
+                        }
+                
+                # Always include system variables - these will be handled automatically by render_content
+                # No need to manually add system instance here since render_content creates it
+                pass
+                
+            except Exception as e:
+                logger.warning(f"Could not load sample model data: {e}")
+        
+        else:
+            # Fallback to legacy sample variables for templates without categories
+            sample_data = {
+                'user_name': 'John Doe',
+                'first_name': 'John',
+                'user_email': 'john.doe@example.com',
+                'company_name': 'Sample Company',
+                'subscription_plan': 'Professional Plan',
+                'expiry_date': '2025-12-31'
+            }
+        
+        # Render template with sample data
+        rendered = template.render_content(sample_data, model_instances)
         
         return render_template(
             'admin/email/preview_template.html',
             template=template,
             rendered=rendered,
-            sample_variables=sample_variables
+            sample_data=sample_data,
+            model_instances=model_instances,
+            category_config=template.get_category_config() if template.category else None
         )
         
     except Exception as e:
@@ -835,4 +1028,35 @@ def view_log_details(log_id):
         
     except Exception as e:
         logger.error(f"Error getting log details: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@email_admin.route('/api/template-variables')
+@admin_required
+def api_template_variables():
+    """API endpoint for available template variables"""
+    try:
+        category = request.args.get('category', 'user_notification')
+        models = EmailTemplate.get_available_models_for_category(category)
+        return jsonify({
+            'success': True,
+            'models': models
+        })
+    except Exception as e:
+        logger.error(f"Error getting template variables: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@email_admin.route('/api/template-categories')
+@admin_required
+def api_template_categories():
+    """API endpoint for available template categories"""
+    try:
+        categories = EmailTemplate.get_template_categories()
+        return jsonify({
+            'success': True,
+            'categories': categories
+        })
+    except Exception as e:
+        logger.error(f"Error getting template categories: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500

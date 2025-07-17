@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Edit Email Template - Admin{% endblock %}
+{% block title %}Create Email Template - Admin{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -11,12 +11,8 @@
         <div class="col-md-9 col-lg-10 main-content">
             <div class="py-3 px-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2>Edit Email Template</h2>
-                    <div>
-                        <a href="{{ url_for('email_admin.templates') }}" class="btn btn-secondary me-2">Back to Templates</a>
-                        <a href="{{ url_for('email_admin.preview_template', template_id=template.id) }}" 
-                           class="btn btn-outline-info" target="_blank">Preview</a>
-                    </div>
+                    <h2>Create Email Template</h2>
+                    <a href="{{ url_for('email_admin.templates') }}" class="btn btn-secondary">Back to Templates</a>
                 </div>
 
                 {% with messages = get_flashed_messages(with_categories=true) %}
@@ -43,19 +39,18 @@
                                         <div class="col-md-6">
                                             <div class="mb-3">
                                                 <label for="name" class="form-label">Template Name</label>
-                                                <input type="text" class="form-control" id="name" name="name" 
-                                                       value="{{ template.name }}" required>
+                                                <input type="text" class="form-control" id="name" name="name" required>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-3">
                                                 <label for="template_type" class="form-label">Template Type</label>
                                                 <select class="form-control" id="template_type" name="template_type">
-                                                    <option value="" {{ 'selected' if not template.template_type }}>General</option>
-                                                    <option value="notification" {{ 'selected' if template.template_type == 'notification' }}>Notification</option>
-                                                    <option value="marketing" {{ 'selected' if template.template_type == 'marketing' }}>Marketing</option>
-                                                    <option value="transactional" {{ 'selected' if template.template_type == 'transactional' }}>Transactional</option>
-                                                    <option value="system" {{ 'selected' if template.template_type == 'system' }}>System</option>
+                                                    <option value="">General</option>
+                                                    <option value="notification">Notification</option>
+                                                    <option value="marketing">Marketing</option>
+                                                    <option value="transactional">Transactional</option>
+                                                    <option value="system">System</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -63,26 +58,24 @@
 
                                     <div class="mb-3">
                                         <label for="subject" class="form-label">Email Subject</label>
-                                        <input type="text" class="form-control" id="subject" name="subject" 
-                                               value="{{ template.subject }}" required>
+                                        <input type="text" class="form-control" id="subject" name="subject" required>
                                     </div>
 
                                     <div class="mb-3">
                                         <label for="description" class="form-label">Description</label>
-                                        <textarea class="form-control" id="description" name="description" rows="2">{{ template.description or '' }}</textarea>
+                                        <textarea class="form-control" id="description" name="description" rows="2"></textarea>
                                     </div>
 
                                     <div class="mb-3">
                                         <label for="variables" class="form-label">Legacy Variables (Backward Compatibility)</label>
                                         <input type="text" class="form-control" id="variables" name="variables" 
-                                               value="{{ template.variables | join(', ') if template.variables else '' }}"
                                                placeholder="user_name, first_name, company_name (comma-separated)">
                                         <small class="form-text text-muted">Simple variables using {variable} syntax (for backward compatibility)</small>
                                     </div>
 
                                     <div class="mb-3">
                                         <label for="html_content" class="form-label">HTML Content</label>
-                                        <textarea class="form-control" id="html_content" name="html_content" rows="12" required>{{ template.html_content }}</textarea>
+                                        <textarea class="form-control" id="html_content" name="html_content" rows="12" required></textarea>
                                         <small class="form-text text-muted">
                                             Use <code>{% raw %}{{model.field}}{% endraw %}</code> for model variables or <code>{% raw %}{variable}{% endraw %}</code> for simple variables
                                         </small>
@@ -90,25 +83,16 @@
 
                                     <div class="mb-3">
                                         <label for="text_content" class="form-label">Text Content (Optional)</label>
-                                        <textarea class="form-control" id="text_content" name="text_content" rows="8">{{ template.text_content or '' }}</textarea>
+                                        <textarea class="form-control" id="text_content" name="text_content" rows="8"></textarea>
                                         <small class="form-text text-muted">Plain text version of the email</small>
                                     </div>
 
                                     <div class="mb-3 form-check">
-                                        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" 
-                                               {{ 'checked' if template.is_active }}>
+                                        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
                                         <label class="form-check-label" for="is_active">Active</label>
                                     </div>
 
-                                    <div class="d-flex justify-content-between">
-                                        <button type="submit" class="btn btn-primary">Update Template</button>
-                                        <div>
-                                            <a href="{{ url_for('email_admin.test_template', template_id=template.id) }}" 
-                                               class="btn btn-outline-warning me-2">Test Template</a>
-                                            <button type="button" class="btn btn-outline-danger" 
-                                                    onclick="deleteTemplate({{ template.id }}, '{{ template.name }}')">Delete Template</button>
-                                        </div>
-                                    </div>
+                                    <button type="submit" class="btn btn-primary">Create Template</button>
                                 </form>
                             </div>
                         </div>
@@ -244,28 +228,6 @@ function insertVariable(variableName) {
         code.style.backgroundColor = originalBg;
         code.style.color = '';
     }, 300);
-}
-
-function deleteTemplate(templateId, templateName) {
-    if (confirm(`Are you sure you want to delete the template "${templateName}"? This action cannot be undone.`)) {
-        fetch(`{{ url_for('email_admin.delete_template', template_id=0) }}`.replace('0', templateId), {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                window.location.href = '{{ url_for("email_admin.templates") }}';
-            } else {
-                alert('Error deleting template: ' + data.message);
-            }
-        })
-        .catch(error => {
-            alert('Error deleting template: ' + error);
-        });
-    }
 }
 
 // Add some custom CSS for better variable display

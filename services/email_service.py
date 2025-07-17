@@ -354,6 +354,8 @@ class EmailTemplateManager:
         to_email: str,
         variables: Dict[str, Any] = None,
         user_id: int = None,
+        partner_id: int = None,
+        subscription_id: int = None,
         priority: EmailPriority = EmailPriority.NORMAL,
         email_type: str = None
     ) -> bool:
@@ -363,8 +365,20 @@ class EmailTemplateManager:
             if not template:
                 raise ValueError(f"Template not found: {template_name}")
             
+            # Prepare template variables with model instances
+            template_variables = variables or {}
+            
+            # Add model instances to variables
+            template_variables.update(
+                EmailTemplateManager.get_model_instances(
+                    user_id=user_id,
+                    partner_id=partner_id,
+                    subscription_id=subscription_id
+                )
+            )
+            
             # Render content with variables
-            rendered = template.render_content(variables or {})
+            rendered = template.render_content(template_variables)
             
             # Queue the email
             queue_item = EmailManager.queue_email(
@@ -375,7 +389,8 @@ class EmailTemplateManager:
                 priority=priority,
                 template_id=template.id,
                 user_id=user_id,
-                email_type=email_type or f'template_{template_name}',                        metadata={'template_name': template_name, 'variables': variables}
+                email_type=email_type or f'template_{template_name}',
+                metadata={'template_name': template_name, 'variables': variables}
             )
             
             return queue_item.status == EmailStatus.SENT
@@ -383,6 +398,41 @@ class EmailTemplateManager:
         except Exception as e:
             logger.error(f"Error sending email from template: {e}")
             return False
+    
+    @staticmethod
+    def get_model_instances(user_id=None, partner_id=None, subscription_id=None):
+        """Get model instances for template variables"""
+        from models.models import User, Partner, PartnerSubscription
+        
+        instances = {}
+        
+        # Get user instance
+        if user_id:
+            user = User.query.get(user_id)
+            if user:
+                instances['user'] = user
+        
+        # Get partner instance
+        if partner_id:
+            partner = Partner.query.get(partner_id)
+            if partner:
+                instances['partner'] = partner
+                # Also add the partner owner as user if not already set
+                if 'user' not in instances and partner.owner:
+                    instances['user'] = partner.owner
+        
+        # Get subscription instance
+        if subscription_id:
+            subscription = PartnerSubscription.query.get(subscription_id)
+            if subscription:
+                instances['subscription'] = subscription
+                # Also add related partner and user if not already set
+                if 'partner' not in instances and subscription.partner:
+                    instances['partner'] = subscription.partner
+                if 'user' not in instances and subscription.partner and subscription.partner.owner:
+                    instances['user'] = subscription.partner.owner
+        
+        return instances
 
 
 class EmailCampaignManager:

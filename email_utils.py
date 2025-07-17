@@ -1451,22 +1451,41 @@ def send_partner_admin_approval_notification(partner_subscription):
         return False
 
 
-def send_partner_subscription_approved_email(user, partner_subscription):
-    """Send approval notification email to partner customer"""
-    try:
-        subject = "Partner Subscription Approved - Welcome!"
+def send_partner_subscription_approved_email_enhanced(user, partner_subscription):
+    """Enhanced version of partner subscription approved email"""
+    return send_partner_subscription_approved_email(user, partner_subscription)
 
-        plan_name = (
-            partner_subscription.pricing_plan.name
-            if hasattr(partner_subscription, "pricing_plan")
-            and partner_subscription.pricing_plan
-            else "Partner Plan"
+
+def send_partner_subscription_approved_email(user, partner_subscription):
+    """Send approval notification email to partner customer using enhanced template system"""
+    try:
+        from services.enhanced_email_service import EmailTemplateManager
+        
+        # Use the enhanced email system with model instances
+        inputs = {
+            'user_id': user.id,
+            'subscription_id': partner_subscription.id,
+            'partner_id': partner_subscription.partner.id if partner_subscription.partner else None,
+            'target_email': user.email  # Explicit email targeting
+        }
+        
+        # Send using enhanced template system
+        result = EmailTemplateManager.send_from_template(
+            template_name='partner_subscription_approved',
+            inputs=inputs,
+            email_type='partner_subscription_approved'
         )
-        partner_name = (
-            partner_subscription.partner.company_name
-            if hasattr(partner_subscription, "partner") and partner_subscription.partner
-            else "Your Partner"
-        )
+        
+        if result:
+            logger.info(f"Partner subscription approved email sent to {user.email}")
+            return True
+        else:
+            logger.error(f"Failed to send partner subscription approved email to {user.email}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Error sending partner subscription approved email: {e}")
+        return False
 
         content = f"""
         <div style="margin-bottom: 30px;">
@@ -1553,21 +1572,37 @@ def send_partner_subscription_approved_email(user, partner_subscription):
 def send_partner_subscription_rejected_email(
     user, partner_subscription, refund_processed=False
 ):
-    """Send rejection notification email to partner customer"""
+    """Send rejection notification email to partner customer using enhanced template system"""
     try:
-        subject = "Partner Subscription Update - Request Rejected"
-
-        plan_name = (
-            partner_subscription.pricing_plan.name
-            if hasattr(partner_subscription, "pricing_plan")
-            and partner_subscription.pricing_plan
-            else "Partner Plan"
+        from services.enhanced_email_service import EmailTemplateManager
+        
+        # Use the enhanced email system with model instances
+        inputs = {
+            'user_id': user.id,
+            'subscription_id': partner_subscription.id,
+            'partner_id': partner_subscription.partner.id if partner_subscription.partner else None,
+            'target_email': user.email,  # Explicit email targeting
+            'refund_processed': 'Yes' if refund_processed else 'No',
+            'refund_message': 'A full refund has been processed and will appear in your account within 3-5 business days.' if refund_processed else 'No refund was processed.'
+        }
+        
+        # Send using enhanced template system
+        result = EmailTemplateManager.send_from_template(
+            template_name='partner_subscription_rejected',
+            inputs=inputs,
+            email_type='partner_subscription_rejected'
         )
-        partner_name = (
-            partner_subscription.partner.company_name
-            if hasattr(partner_subscription, "partner") and partner_subscription.partner
-            else "Your Partner"
-        )
+        
+        if result:
+            logger.info(f"Partner subscription rejected email sent to {user.email}")
+            return True
+        else:
+            logger.error(f"Failed to send partner subscription rejected email to {user.email}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Error sending partner subscription rejected email: {e}")
+        return False
 
         refund_message = ""
         if refund_processed:
@@ -1749,7 +1784,40 @@ def send_template_email(template_name, to_email, variables=None, **kwargs):
 def send_partner_subscription_confirmation_email_enhanced(user, partner_subscription):
     """Enhanced partner subscription confirmation email with queue system"""
     try:
-        # Prepare template variables
+        from services.enhanced_email_service import EmailTemplateManager
+        
+        # Use the enhanced email system with model instances
+        inputs = {
+            'user_id': user.id,
+            'subscription_id': partner_subscription.id,
+            'partner_id': partner_subscription.partner.id if partner_subscription.partner else None,
+            'target_email': user.email  # Explicit email targeting
+        }
+        
+        # Send using enhanced template system
+        result = EmailTemplateManager.send_from_template(
+            template_name='partner_subscription_confirmation',
+            inputs=inputs,
+            email_type='partner_subscription_confirmation'
+        )
+        
+        if result:
+            logger.info(f"Enhanced partner subscription confirmation email sent to {user.email}")
+            return True
+        else:
+            logger.error(f"Failed to send enhanced partner subscription confirmation email to {user.email}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Error sending enhanced partner subscription confirmation email: {e}")
+        # Fallback to old system
+        return send_partner_subscription_confirmation_email_fallback(user, partner_subscription)
+
+
+def send_partner_subscription_confirmation_email_fallback(user, partner_subscription):
+    """Fallback partner subscription confirmation email"""
+    try:
+        # Prepare template variables (legacy format)
         variables = {
             'user_name': user.get_full_name(),
             'first_name': user.first_name or 'there',
