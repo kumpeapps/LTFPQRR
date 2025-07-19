@@ -198,7 +198,7 @@ def super_admin_required(f):
     return decorated_function
 
 
-def send_notification_email(owner, tag, pet):
+def send_notification_email(owner, tag, pet, expired_subscription=False):
     """Queue notification email to pet owner when someone views their pet."""
     try:
         from extensions import logger
@@ -206,7 +206,12 @@ def send_notification_email(owner, tag, pet):
         from models.email.email_models import EmailPriority
         from datetime import datetime
         
-        subject = f"🐾 Someone Found Your Pet {pet.name}!"
+        if expired_subscription:
+            subject = f"� URGENT: Someone Found Your Pet {pet.name} - Subscription Expired!"
+            email_type = "pet_search_subscription_expired"
+        else:
+            subject = f"�🐾 Someone Found Your Pet {pet.name}!"
+            email_type = "pet_search_notification"
         
         # Queue the email for background processing
         queue_item = EmailManager.queue_email(
@@ -216,18 +221,19 @@ def send_notification_email(owner, tag, pet):
             text_body="",  # Will be populated by template
             priority=EmailPriority.HIGH,
             user_id=owner.id,
-            email_type="pet_search_notification",
+            email_type=email_type,
             metadata={
                 'pet_id': pet.id,
                 'pet_name': pet.name,
                 'tag_id': tag.tag_id,
                 'owner_name': owner.first_name,
-                'search_timestamp': datetime.utcnow().isoformat()
+                'search_timestamp': datetime.utcnow().isoformat(),
+                'expired_subscription': expired_subscription
             },
             send_immediately=False  # Queue for background processing
         )
         
-        logger.info(f"Pet search notification email queued for {owner.email} for pet {pet.name}")
+        logger.info(f"Pet search notification email queued for {owner.email} for pet {pet.name} (expired_subscription: {expired_subscription})")
         return True
         
     except Exception as e:
