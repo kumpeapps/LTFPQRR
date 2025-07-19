@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
 from flask_login import login_required, current_user
-from forms import TagForm, ClaimTagForm, TransferTagForm, ContactOwnerForm
+from forms import TagForm, ClaimTagForm, TransferTagForm, ContactOwnerForm, PurchaseSubscriptionForm
 
 tag = Blueprint('tag', __name__, url_prefix='/tag')
 
@@ -223,12 +223,12 @@ def transfer_tag(tag_id):
     return render_template("tag/transfer.html", form=form, tag=tag_obj)
 
 
-@tag.route("/purchase-subscription/<int:tag_id>", methods=["GET", "POST"])
+@tag.route("/purchase_subscription/<int:tag_id>", methods=["GET", "POST"])
 @login_required
 def purchase_subscription(tag_id):
-    """Purchase subscription for an existing tag."""
+    """Purchase a subscription for an existing owned tag."""
     from models.models import Tag
-    from forms import ClaimTagForm
+    from forms import PurchaseSubscriptionForm
     
     tag_obj = Tag.query.get_or_404(tag_id)
 
@@ -243,14 +243,8 @@ def purchase_subscription(tag_id):
         flash("This tag already has an active subscription.", "info")
         return redirect(url_for("customer.manage_subscription", subscription_id=active_subscriptions[0].id))
 
-    # Use the same form as tag claiming but only show subscription options
-    form = ClaimTagForm()
-    # Pre-populate the tag_id and make it readonly since they're purchasing for a specific tag
-    form.tag_id.data = tag_obj.tag_id
-    
-    if request.method == 'GET':
-        # For GET requests, render the subscription selection form
-        return render_template("tag/purchase_subscription.html", form=form, tag=tag_obj)
+    # Use the purchase subscription form
+    form = PurchaseSubscriptionForm()
     
     if form.validate_on_submit():
         # Store tag_id and subscription_type in session for payment

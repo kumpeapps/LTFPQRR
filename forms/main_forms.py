@@ -85,6 +85,14 @@ class ClaimTagForm(FlaskForm):
         if tag.status != 'available':
             raise ValidationError('Tag is not available for claiming.')
 
+class PurchaseSubscriptionForm(FlaskForm):
+    """Form for purchasing subscriptions on existing owned tags"""
+    subscription_type = SelectField('Subscription Type', 
+                                  choices=[('monthly', 'Monthly ($9.99/month)'), 
+                                          ('yearly', 'Yearly ($99.99/year)'), 
+                                          ('lifetime', 'Lifetime ($199.99)')], 
+                                  validators=[DataRequired()])
+
 class TransferTagForm(FlaskForm):
     new_owner_username = StringField('New Owner Username', validators=[DataRequired(), Length(min=3, max=80)])
     
