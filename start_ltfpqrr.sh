@@ -28,6 +28,7 @@ echo "Database is ready!"
 # Initialize database and run migrations
 echo "Initializing database..."
 python -c "
+import sys
 from app import app, db
 from models.models import *
 
