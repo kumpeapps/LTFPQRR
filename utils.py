@@ -1,6 +1,7 @@
 """
 Utility functions and decorators.
 """
+
 import os
 import logging
 from functools import wraps
@@ -46,7 +47,7 @@ def configure_payment_gateways():
     """Configure payment gateways from database settings."""
     try:
         from models.models import PaymentGateway
-        
+
         # Configure Stripe
         stripe_gateway = PaymentGateway.query.filter_by(
             name="stripe", enabled=True
@@ -83,7 +84,7 @@ def get_enabled_payment_gateways():
     """Get a list of enabled payment gateways with configuration from the database."""
     try:
         from models.models import PaymentGateway
-        
+
         gateways = PaymentGateway.query.filter_by(enabled=True).all()
         enabled_gateways = []
         gateway_config = {}
@@ -135,7 +136,7 @@ def update_payment_gateway_settings(
         from models.models import PaymentGateway
         from extensions import db
         from datetime import datetime
-        
+
         gateway = PaymentGateway.query.filter_by(name=name).first()
         if not gateway:
             gateway = PaymentGateway(name=name)
@@ -167,6 +168,7 @@ def update_payment_gateway_settings(
     except Exception as e:
         logger.error("Error updating payment gateway %s: %s", name, str(e))
         from extensions import db
+
         db.session.rollback()
         return False
 
@@ -174,6 +176,7 @@ def update_payment_gateway_settings(
 # Decorators
 def admin_required(f):
     """Decorator to require admin role."""
+
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated or not current_user.has_role("admin"):
@@ -186,6 +189,7 @@ def admin_required(f):
 
 def super_admin_required(f):
     """Decorator to require super-admin role."""
+
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated or not current_user.has_role(
@@ -205,14 +209,16 @@ def send_notification_email(owner, tag, pet, expired_subscription=False):
         from services.email_service import EmailManager
         from models.email.email_models import EmailPriority
         from datetime import datetime
-        
+
         if expired_subscription:
-            subject = f" URGENT: Someone Found Your Pet {pet.name} - Subscription Expired!"
+            subject = (
+                f" URGENT: Someone Found Your Pet {pet.name} - Subscription Expired!"
+            )
             email_type = "pet_search_subscription_expired"
         else:
             subject = f"🐾 Someone Found Your Pet {pet.name}!"
             email_type = "pet_search_notification"
-        
+
         # Queue the email for background processing
         queue_item = EmailManager.queue_email(
             to_email=owner.email,
@@ -223,19 +229,21 @@ def send_notification_email(owner, tag, pet, expired_subscription=False):
             user_id=owner.id,
             email_type=email_type,
             metadata={
-                'pet_id': pet.id,
-                'pet_name': pet.name,
-                'tag_id': tag.tag_id,
-                'owner_name': owner.first_name,
-                'search_timestamp': datetime.utcnow().isoformat(),
-                'expired_subscription': expired_subscription
+                "pet_id": pet.id,
+                "pet_name": pet.name,
+                "tag_id": tag.tag_id,
+                "owner_name": owner.first_name,
+                "search_timestamp": datetime.utcnow().isoformat(),
+                "expired_subscription": expired_subscription,
             },
-            send_immediately=False  # Queue for background processing
+            send_immediately=False,  # Queue for background processing
         )
-        
-        logger.info(f"Pet search notification email queued for {owner.email} for pet {pet.name} (expired_subscription: {expired_subscription})")
+
+        logger.info(
+            f"Pet search notification email queued for {owner.email} for pet {pet.name} (expired_subscription: {expired_subscription})"
+        )
         return True
-        
+
     except Exception as e:
         logger.error(f"Error queueing pet search notification email: {e}")
         return False
@@ -247,9 +255,9 @@ def send_contact_email(owner, pet, finder_name, finder_email, message):
         from extensions import logger
         from services.email_service import EmailManager
         from models.email.email_models import EmailPriority
-        
+
         subject = f"🐾 Message About Your Pet {pet.name} from {finder_name}"
-        
+
         # Queue the email for background processing
         queue_item = EmailManager.queue_email(
             to_email=owner.email,
@@ -261,19 +269,21 @@ def send_contact_email(owner, pet, finder_name, finder_email, message):
             user_id=owner.id,
             email_type="pet_found_contact",
             metadata={
-                'pet_id': pet.id,
-                'pet_name': pet.name,
-                'owner_name': owner.first_name,
-                'finder_name': finder_name,
-                'finder_email': finder_email,
-                'message': message
+                "pet_id": pet.id,
+                "pet_name": pet.name,
+                "owner_name": owner.first_name,
+                "finder_name": finder_name,
+                "finder_email": finder_email,
+                "message": message,
             },
-            send_immediately=False  # Queue for background processing
+            send_immediately=False,  # Queue for background processing
         )
-        
-        logger.info(f"Pet found contact email queued for {owner.email} from {finder_name} about pet {pet.name}")
+
+        logger.info(
+            f"Pet found contact email queued for {owner.email} from {finder_name} about pet {pet.name}"
+        )
         return True
-        
+
     except Exception as e:
         logger.error(f"Error queueing pet found contact email: {e}")
         return False
@@ -292,9 +302,11 @@ def process_successful_payment(
     from models.models import User, Tag, Subscription, Payment, PricingPlan, Role
     from extensions import db, logger
     from datetime import datetime, timedelta
-    
-    logger.info(f"Processing payment: user_id={user_id}, payment_type={payment_type}, amount=${amount}, payment_intent_id={payment_intent_id}")
-    
+
+    logger.info(
+        f"Processing payment: user_id={user_id}, payment_type={payment_type}, amount=${amount}, payment_intent_id={payment_intent_id}"
+    )
+
     try:
         user = User.query.get(user_id)
         if not user:
@@ -320,25 +332,40 @@ def process_successful_payment(
         payment.mark_completed()
         db.session.add(payment)
         db.session.flush()  # Get payment ID
-        
-        logger.info(f"Created payment record with ID: {payment.id}, transaction_id: {payment.transaction_id}")
+
+        logger.info(
+            f"Created payment record with ID: {payment.id}, transaction_id: {payment.transaction_id}"
+        )
 
         if payment_type == "tag" and claiming_tag_id:
             logger.info(f"Processing tag subscription for tag {claiming_tag_id}")
+            
+            # Check if this payment intent has already been processed
+            existing_payment = Payment.query.filter_by(
+                payment_intent_id=payment_intent_id,
+                status="completed"
+            ).first()
+            
+            if existing_payment and existing_payment.id != payment.id:
+                logger.warning(f"Payment intent {payment_intent_id} already processed")
+                db.session.rollback()
+                return True  # Already processed, not an error
+            
             # Process tag subscription
             tag = Tag.query.filter_by(tag_id=claiming_tag_id).first()
             if tag:
                 # Check for existing active subscription to prevent duplicates
                 existing_subscription = Subscription.query.filter_by(
-                    user_id=user_id,
-                    tag_id=tag.id,
-                    status='active'
+                    user_id=user_id, tag_id=tag.id, status="active"
                 ).first()
-                
+
                 if existing_subscription:
-                    logger.warning(f"Active subscription already exists for user {user_id} and tag {tag.id}")
-                    return  # Exit early to prevent duplicate
-                
+                    logger.warning(
+                        f"Active subscription already exists for user {user_id} and tag {tag.id}"
+                    )
+                    db.session.rollback()
+                    return True  # Exit early to prevent duplicate
+
                 tag.owner_id = user_id
                 tag.status = "claimed"
 
@@ -383,45 +410,69 @@ def process_successful_payment(
         elif payment_type == "partner":
             logger.info(f"Processing partner subscription for user {user_id}")
             
+            # Check if this payment intent has already been processed
+            existing_payment = Payment.query.filter_by(
+                payment_intent_id=payment_intent_id,
+                status="completed"
+            ).first()
+            
+            if existing_payment and existing_payment.id != payment.id:
+                logger.warning(f"Payment intent {payment_intent_id} already processed for partner subscription")
+                db.session.rollback()
+                return True  # Already processed, not an error
+
             # Import Flask session to access session data
             from flask import session
-            
+
             # Get partner and pricing plan from session
             partner_id = session.get("partner_id")
             pricing_plan_id = session.get("pricing_plan_id")
-            
+
             logger.info(f"Partner ID from session: {partner_id}")
             logger.info(f"Pricing plan ID from session: {pricing_plan_id}")
-            
+
             if not partner_id or not pricing_plan_id:
                 logger.error("Missing partner_id or pricing_plan_id in session")
                 return False
-            
+
             # Get the partner and pricing plan
             from models.models import Partner, PartnerSubscription
+
             partner = Partner.query.get(partner_id)
             pricing_plan = PricingPlan.query.get(pricing_plan_id)
-            
+
             if not partner or not pricing_plan:
-                logger.error(f"Partner ({partner_id}) or pricing plan ({pricing_plan_id}) not found")
+                logger.error(
+                    f"Partner ({partner_id}) or pricing plan ({pricing_plan_id}) not found"
+                )
                 return False
-                
+
             logger.info(f"Found partner: {partner.company_name}")
-            logger.info(f"Found pricing plan: {pricing_plan.name}, requires_approval: {pricing_plan.requires_approval}")
-            
+            logger.info(
+                f"Found pricing plan: {pricing_plan.name}, requires_approval: {pricing_plan.requires_approval}"
+            )
+
             # Check if approval is required
-            requires_approval = pricing_plan.requires_approval if pricing_plan else False
-            
+            requires_approval = (
+                pricing_plan.requires_approval if pricing_plan else False
+            )
+
             # Create partner subscription record
             start_date = datetime.utcnow()
             end_date = None
-            if pricing_plan and hasattr(pricing_plan, 'duration_months') and pricing_plan.duration_months > 0:
-                end_date = start_date + timedelta(days=pricing_plan.duration_months * 30)
+            if (
+                pricing_plan
+                and hasattr(pricing_plan, "duration_months")
+                and pricing_plan.duration_months > 0
+            ):
+                end_date = start_date + timedelta(
+                    days=pricing_plan.duration_months * 30
+                )
             elif subscription_type == "yearly":
                 end_date = start_date + timedelta(days=365)
             elif subscription_type == "monthly":
                 end_date = start_date + timedelta(days=30)
-            
+
             partner_subscription = PartnerSubscription(
                 partner_id=partner_id,
                 pricing_plan_id=pricing_plan_id,
@@ -433,32 +484,51 @@ def process_successful_payment(
                 amount=amount,
                 start_date=start_date,
                 end_date=end_date,
-                auto_renew=True
+                auto_renew=True,
             )
-            
+
             db.session.add(partner_subscription)
             db.session.flush()
-            
+
             # Link payment to partner subscription
             payment.partner_subscription_id = partner_subscription.id
-            logger.info(f"Linked payment {payment.id} to partner subscription {partner_subscription.id}")
-            
-            logger.info(f"Created partner subscription with ID: {partner_subscription.id}")
-            logger.info(f"Status: {partner_subscription.status}, Admin approved: {partner_subscription.admin_approved}")
-            
+            logger.info(
+                f"Linked payment {payment.id} to partner subscription {partner_subscription.id}"
+            )
+
+            logger.info(
+                f"Created partner subscription with ID: {partner_subscription.id}"
+            )
+            logger.info(
+                f"Status: {partner_subscription.status}, Admin approved: {partner_subscription.admin_approved}"
+            )
+
             # Send email notifications
             try:
                 if requires_approval:
                     logger.info("Sending approval notification emails")
-                    from email_utils import send_partner_subscription_confirmation_email, send_partner_admin_approval_notification
-                    send_partner_subscription_confirmation_email(user, partner_subscription)
+                    from email_utils import (
+                        send_partner_subscription_confirmation_email,
+                        send_partner_admin_approval_notification,
+                    )
+
+                    send_partner_subscription_confirmation_email(
+                        user, partner_subscription
+                    )
                     send_partner_admin_approval_notification(partner_subscription)
                 else:
-                    logger.info("Sending confirmation email for auto-approved subscription")
+                    logger.info(
+                        "Sending confirmation email for auto-approved subscription"
+                    )
                     from email_utils import send_partner_subscription_confirmation_email
-                    send_partner_subscription_confirmation_email(user, partner_subscription)
+
+                    send_partner_subscription_confirmation_email(
+                        user, partner_subscription
+                    )
             except Exception as email_error:
-                logger.error(f"Error sending partner subscription emails: {email_error}")
+                logger.error(
+                    f"Error sending partner subscription emails: {email_error}"
+                )
                 # Don't fail the payment for email issues
 
             # Add partner role if not already present
@@ -468,18 +538,19 @@ def process_successful_payment(
                 logger.info(f"Added partner role to user {user.username}")
 
         db.session.commit()
-        
+
         # Send appropriate emails after successful commit (for tag subscriptions only)
         try:
-            if payment_type == "tag" and 'subscription' in locals():
+            if payment_type == "tag" and "subscription" in locals():
                 from email_utils import send_subscription_confirmation_email
+
                 send_subscription_confirmation_email(user, subscription)
                 logger.info(f"Sent tag subscription confirmation email to {user.email}")
-                
+
         except Exception as email_error:
             logger.error(f"Error sending emails: {email_error}")
             # Don't fail the payment processing if email fails
-        
+
         logger.info(
             f"Payment processed successfully for user {user_id}, type {payment_type}, amount ${amount}, transaction_id: {payment.transaction_id}"
         )
@@ -490,14 +561,17 @@ def process_successful_payment(
         logger.error(f"Error processing payment: {str(e)}")
         logger.error(f"Exception details: {type(e).__name__}: {e}")
         import traceback
+
         logger.error(f"Traceback: {traceback.format_exc()}")
         raise  # Re-raise the exception so it's not ignored
 
 
-def process_payment_refund(payment_intent_id, refund_reason, refund_amount, webhook_event_type):
+def process_payment_refund(
+    payment_intent_id, refund_reason, refund_amount, webhook_event_type
+):
     """
     Process payment refunds and update subscription status accordingly
-    
+
     Args:
         payment_intent_id (str): Stripe payment intent ID
         refund_reason (str): Reason for refund (chargeback, merchant_refund, etc.)
@@ -508,66 +582,91 @@ def process_payment_refund(payment_intent_id, refund_reason, refund_amount, webh
     from extensions import db
     from models.models import Payment, Subscription, Tag
     from datetime import datetime
-    
+
     logger = logging.getLogger(__name__)
-    
+
     try:
-        # Find the payment record
-        payment = Payment.query.filter_by(transaction_id=payment_intent_id).first()
+        # Find the payment record by payment_intent_id first, then fallback to transaction_id
+        payment = Payment.query.filter_by(payment_intent_id=payment_intent_id).first()
         
+        if not payment:
+            # Fallback to transaction_id lookup for older records
+            payment = Payment.query.filter_by(transaction_id=payment_intent_id).first()
+
         if not payment:
             logger.warning(f"No payment found for intent ID: {payment_intent_id}")
             return False
-        
-        logger.info(f"Processing refund for payment {payment.id}: {refund_reason}, amount: ${refund_amount}")
-        
+
+        logger.info(
+            f"Processing refund for payment {payment.id}: {refund_reason}, amount: ${refund_amount}"
+        )
+
         # Update payment status
-        payment.status = 'refunded'
+        payment.status = "refunded"
         payment.updated_at = datetime.utcnow()
-        
+
         # Find and update related subscription
         if payment.subscription_id:
             subscription = Subscription.query.get(payment.subscription_id)
             if subscription:
-                logger.info(f"Cancelling subscription {subscription.id} due to refund")
-                
-                # Cancel the subscription
-                subscription.status = 'cancelled'
+                logger.info(f"Cancelling and expiring subscription {subscription.id} due to refund")
+
+                # Cancel and expire the subscription
+                subscription.status = "cancelled"
                 subscription.cancellation_requested = True
+                subscription.auto_renew = False  # Disable auto-renewal
                 subscription.updated_at = datetime.utcnow()
                 
-                # If it's a tag subscription, update tag status
+                # Also set end_date to now to ensure it's considered expired
+                subscription.end_date = datetime.utcnow()
+
+                # If it's a tag subscription, update tag status to make it available again
                 if subscription.tag_id:
                     tag = Tag.query.get(subscription.tag_id)
                     if tag:
-                        logger.info(f"Updating tag {tag.tag_id} status due to refund")
-                        tag.status = 'available'
+                        logger.info(f"Releasing tag {tag.tag_id} due to refund - setting to available")
+                        tag.status = "available"
                         tag.owner_id = None
-        
+
+                # If it's a partner subscription, handle partner subscription refund
+                elif hasattr(payment, 'partner_subscription_id') and payment.partner_subscription_id:
+                    from models.models import PartnerSubscription
+                    partner_subscription = PartnerSubscription.query.get(payment.partner_subscription_id)
+                    if partner_subscription:
+                        logger.info(f"Cancelling partner subscription {partner_subscription.id} due to refund")
+                        partner_subscription.status = "cancelled"
+                        partner_subscription.auto_renew = False
+                        partner_subscription.updated_at = datetime.utcnow()
+
         # Create refund record (you might want a separate Refund model)
         # For now, we'll update the payment record with refund information
-        
+
         db.session.commit()
-        
+
         # Send refund notification email
         try:
             if payment.user_id:
                 from models.models import User
+
                 user = User.query.get(payment.user_id)
                 if user:
                     from email_utils import send_refund_notification_email
-                    send_refund_notification_email(user, payment, refund_amount, refund_reason)
+
+                    send_refund_notification_email(
+                        user, payment, refund_amount, refund_reason
+                    )
                     logger.info(f"Sent refund notification email to {user.email}")
         except Exception as email_error:
             logger.error(f"Error sending refund notification email: {email_error}")
-        
+
         logger.info(f"Refund processed successfully for payment {payment.id}")
         return True
-        
+
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error processing refund: {str(e)}")
         import traceback
+
         logger.error(f"Traceback: {traceback.format_exc()}")
         return False
 
@@ -575,10 +674,177 @@ def process_payment_refund(payment_intent_id, refund_reason, refund_amount, webh
 def process_payment_failure(payment_intent_id, failure_reason, webhook_event_type):
     """
     Process payment failures and update subscription status accordingly
-    
+
     Args:
         payment_intent_id (str): Stripe payment intent ID
         failure_reason (str): Reason for failure
+        webhook_event_type (str): The webhook event type that triggered this
+    """
+    import logging
+    from extensions import db
+    from models.models import Payment, Subscription
+    from datetime import datetime
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        # Find the payment record by payment_intent_id first, then fallback to transaction_id
+        payment = Payment.query.filter_by(payment_intent_id=payment_intent_id).first()
+        
+        if not payment:
+            # Fallback to transaction_id lookup for older records
+            payment = Payment.query.filter_by(transaction_id=payment_intent_id).first()
+
+        if not payment:
+            logger.warning(f"No payment found for intent ID: {payment_intent_id}")
+            return False
+
+        logger.info(
+            f"Processing payment failure for payment {payment.id}: {failure_reason}"
+        )
+
+        # Update payment status
+        payment.status = "failed"
+        payment.updated_at = datetime.utcnow()
+
+        # For subscription renewals, mark subscription as expired or cancelled
+        if payment.subscription_id:
+            subscription = Subscription.query.get(payment.subscription_id)
+            if subscription and subscription.status == "active":
+                logger.info(
+                    f"Marking subscription {subscription.id} as expired due to payment failure"
+                )
+                subscription.status = "expired"
+                subscription.updated_at = datetime.utcnow()
+
+        db.session.commit()
+
+        # Send payment failure notification
+        try:
+            if payment.user_id:
+                from models.models import User
+
+                user = User.query.get(payment.user_id)
+                if user:
+                    from email_utils import send_payment_failure_notification_email
+
+                    send_payment_failure_notification_email(
+                        user, payment, failure_reason
+                    )
+                    logger.info(
+                        f"Sent payment failure notification email to {user.email}"
+                    )
+        except Exception as email_error:
+            logger.error(
+                f"Error sending payment failure notification email: {email_error}"
+            )
+
+        logger.info(f"Payment failure processed successfully for payment {payment.id}")
+        return True
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error processing payment failure: {str(e)}")
+        import traceback
+
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return False
+
+
+def process_subscription_cancellation(payment_intent_id, webhook_event_type):
+    """
+    Process subscription cancellation from Stripe dashboard
+    
+    Args:
+        payment_intent_id (str): Stripe payment intent ID
+        webhook_event_type (str): The webhook event type that triggered this
+    """
+    import logging
+    from extensions import db
+    from models.models import Payment, Subscription, Tag
+    from datetime import datetime
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Find the payment record by payment_intent_id first, then fallback to transaction_id
+        payment = Payment.query.filter_by(payment_intent_id=payment_intent_id).first()
+        
+        if not payment:
+            # Fallback to transaction_id lookup for older records
+            payment = Payment.query.filter_by(transaction_id=payment_intent_id).first()
+
+        if not payment:
+            logger.warning(f"No payment found for intent ID: {payment_intent_id}")
+            return False
+            
+        logger.info(f"Processing subscription cancellation for payment {payment.id}")
+        
+        # Find and update related subscription
+        if payment.subscription_id:
+            subscription = Subscription.query.get(payment.subscription_id)
+            if subscription and subscription.status == "active":
+                logger.info(f"Cancelling and expiring subscription {subscription.id} due to Stripe cancellation")
+                
+                # Cancel and expire the subscription
+                subscription.status = "cancelled"
+                subscription.cancellation_requested = True
+                subscription.auto_renew = False  # Disable auto-renewal
+                subscription.end_date = datetime.utcnow()  # Set end date to now
+                subscription.updated_at = datetime.utcnow()
+                
+                # If it's a tag subscription, update tag status to make it available
+                if subscription.tag_id:
+                    tag = Tag.query.get(subscription.tag_id)
+                    if tag:
+                        logger.info(f"Releasing tag {tag.tag_id} due to cancellation - setting to available")
+                        tag.status = "available"
+                        tag.owner_id = None
+
+                # If it's a partner subscription, handle partner subscription cancellation
+                elif hasattr(payment, 'partner_subscription_id') and payment.partner_subscription_id:
+                    from models.models import PartnerSubscription
+                    partner_subscription = PartnerSubscription.query.get(payment.partner_subscription_id)
+                    if partner_subscription:
+                        logger.info(f"Cancelling partner subscription {partner_subscription.id} due to Stripe cancellation")
+                        partner_subscription.status = "cancelled"
+                        partner_subscription.auto_renew = False
+                        partner_subscription.end_date = datetime.utcnow()
+                        partner_subscription.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        # Send cancellation notification email
+        try:
+            if payment.user_id:
+                from models.models import User
+                user = User.query.get(payment.user_id)
+                if user and payment.subscription_id:
+                    subscription = Subscription.query.get(payment.subscription_id)
+                    if subscription:
+                        from email_utils import send_subscription_cancelled_email
+                        send_subscription_cancelled_email(user, subscription, refunded=False)
+                        logger.info(f"Sent subscription cancellation email to {user.email}")
+        except Exception as email_error:
+            logger.error(f"Error sending cancellation notification email: {email_error}")
+        
+        logger.info(f"Subscription cancellation processed successfully for payment {payment.id}")
+        return True
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error processing subscription cancellation: {str(e)}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return False
+
+
+def process_payment_cancellation(payment_intent_id, webhook_event_type):
+    """
+    Process payment intent cancellation
+    
+    Args:
+        payment_intent_id (str): Stripe payment intent ID
         webhook_event_type (str): The webhook event type that triggered this
     """
     import logging
@@ -589,47 +855,39 @@ def process_payment_failure(payment_intent_id, failure_reason, webhook_event_typ
     logger = logging.getLogger(__name__)
     
     try:
-        # Find the payment record
-        payment = Payment.query.filter_by(transaction_id=payment_intent_id).first()
+        # Find the payment record by payment_intent_id first, then fallback to transaction_id
+        payment = Payment.query.filter_by(payment_intent_id=payment_intent_id).first()
         
+        if not payment:
+            # Fallback to transaction_id lookup for older records
+            payment = Payment.query.filter_by(transaction_id=payment_intent_id).first()
+
         if not payment:
             logger.warning(f"No payment found for intent ID: {payment_intent_id}")
             return False
-        
-        logger.info(f"Processing payment failure for payment {payment.id}: {failure_reason}")
+            
+        logger.info(f"Processing payment cancellation for payment {payment.id}")
         
         # Update payment status
-        payment.status = 'failed'
+        payment.status = "cancelled"
         payment.updated_at = datetime.utcnow()
         
-        # For subscription renewals, mark subscription as expired or cancelled
+        # If there's an associated subscription that hasn't been activated, cancel it
         if payment.subscription_id:
             subscription = Subscription.query.get(payment.subscription_id)
-            if subscription and subscription.status == 'active':
-                logger.info(f"Marking subscription {subscription.id} as expired due to payment failure")
-                subscription.status = 'expired'
+            if subscription and subscription.status in ["pending", "active"]:
+                logger.info(f"Cancelling subscription {subscription.id} due to payment cancellation")
+                subscription.status = "cancelled"
                 subscription.updated_at = datetime.utcnow()
         
         db.session.commit()
         
-        # Send payment failure notification
-        try:
-            if payment.user_id:
-                from models.models import User
-                user = User.query.get(payment.user_id)
-                if user:
-                    from email_utils import send_payment_failure_notification_email
-                    send_payment_failure_notification_email(user, payment, failure_reason)
-                    logger.info(f"Sent payment failure notification email to {user.email}")
-        except Exception as email_error:
-            logger.error(f"Error sending payment failure notification email: {email_error}")
-        
-        logger.info(f"Payment failure processed successfully for payment {payment.id}")
+        logger.info(f"Payment cancellation processed successfully for payment {payment.id}")
         return True
         
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error processing payment failure: {str(e)}")
+        logger.error(f"Error processing payment cancellation: {str(e)}")
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
         return False

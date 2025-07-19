@@ -522,6 +522,98 @@ def stripe_webhook():
                     webhook_event_type="charge.refunded"
                 )
 
+        elif event["type"] == "refund.created":
+            # Handle individual refund creation
+            refund = event["data"]["object"]
+            charge_id = refund.get("charge")
+            
+            # Get the charge to find the payment intent
+            if charge_id:
+                try:
+                    import stripe
+                    charge = stripe.Charge.retrieve(charge_id)
+                    payment_intent_id = charge.get("payment_intent")
+                    
+                    if payment_intent_id:
+                        from utils import process_payment_refund
+                        process_payment_refund(
+                            payment_intent_id=payment_intent_id,
+                            refund_reason=refund.get("reason", "requested_by_customer"),
+                            refund_amount=refund["amount"] / 100,
+                            webhook_event_type="refund.created"
+                        )
+                except Exception as e:
+                    logger.error(f"Error processing refund.created event: {str(e)}")
+
+        elif event["type"] == "refund.updated":
+            # Handle refund status updates (succeeded, failed, etc.)
+            refund = event["data"]["object"]
+            
+            if refund["status"] == "succeeded":
+                charge_id = refund.get("charge")
+                
+                if charge_id:
+                    try:
+                        import stripe
+                        charge = stripe.Charge.retrieve(charge_id)
+                        payment_intent_id = charge.get("payment_intent")
+                        
+                        if payment_intent_id:
+                            from utils import process_payment_refund
+                            process_payment_refund(
+                                payment_intent_id=payment_intent_id,
+                                refund_reason=refund.get("reason", "requested_by_customer"),
+                                refund_amount=refund["amount"] / 100,
+                                webhook_event_type="refund.updated"
+                            )
+                    except Exception as e:
+                        logger.error(f"Error processing refund.updated event: {str(e)}")
+
+        elif event["type"] == "customer.subscription.deleted":
+            # Handle subscription cancellation in Stripe dashboard
+            subscription_obj = event["data"]["object"]
+            payment_intent_id = subscription_obj.get("latest_invoice", {}).get("payment_intent")
+            
+            if payment_intent_id:
+                from utils import process_subscription_cancellation
+                process_subscription_cancellation(
+                    payment_intent_id=payment_intent_id,
+                    webhook_event_type="customer.subscription.deleted"
+                )
+
+        elif event["type"] == "payment_intent.canceled":
+            # Handle payment intent cancellation
+            payment_intent = event["data"]["object"]
+            payment_intent_id = payment_intent.get("id")
+            
+            if payment_intent_id:
+                from utils import process_payment_cancellation
+                process_payment_cancellation(
+                    payment_intent_id=payment_intent_id,
+                    webhook_event_type="payment_intent.canceled"
+                )
+
+        elif event["type"] == "invoice.payment_action_required":
+            # Handle payment authentication required
+            invoice = event["data"]["object"]
+            payment_intent_id = invoice.get("payment_intent")
+            
+            if payment_intent_id:
+                logger.info(f"Payment action required for intent {payment_intent_id}")
+                # For now, just log. In the future, we could email the customer
+
+        elif event["type"] == "payment_method.attached":
+            # Handle payment method attachment for future use
+            payment_method = event["data"]["object"]
+            customer_id = payment_method.get("customer")
+            logger.info(f"Payment method attached to customer {customer_id}")
+
+        elif event["type"] == "customer.subscription.updated":
+            # Handle subscription updates (like plan changes)
+            subscription_obj = event["data"]["object"]
+            logger.info(f"Subscription updated: {subscription_obj.get('id')}")
+            # Could implement subscription modification logic here in the future
+
         else:
             logger.info(f"Unhandled Stripe webhook event type: {event['type']}")
 
