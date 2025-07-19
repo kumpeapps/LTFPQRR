@@ -158,7 +158,7 @@ def process_queue():
             return redirect(url_for('email_admin.queue'))
 
 
-@email_admin.route('/queue/<int:email_id>/retry')
+@email_admin.route('/queue/<int:email_id>/retry', methods=['GET', 'POST'])
 @admin_required
 def retry_email(email_id):
     """Retry a failed email"""
@@ -166,8 +166,12 @@ def retry_email(email_id):
         email = EmailQueue.query.get_or_404(email_id)
         
         if email.status not in [EmailStatus.FAILED, EmailStatus.EXPIRED]:
-            flash("Email is not in a failed or expired state", "warning")
-            return redirect(url_for('email_admin.queue'))
+            message = "Email is not in a failed or expired state"
+            if request.method == 'POST':
+                return jsonify({'success': False, 'message': message})
+            else:
+                flash(message, "warning")
+                return redirect(url_for('email_admin.queue'))
         
         # Reset email for retry
         email.status = EmailStatus.RETRY
@@ -181,17 +185,30 @@ def retry_email(email_id):
         # Try to process immediately
         success = EmailManager.process_queue_item(email)
         
-        if success:
-            flash("Email retried successfully!", "success")
+        if request.method == 'POST':
+            # JSON response for AJAX calls
+            if success:
+                return jsonify({'success': True, 'message': 'Email retried successfully!'})
+            else:
+                return jsonify({'success': True, 'message': 'Email queued for retry'})
         else:
-            flash("Email queued for retry", "info")
-        
-        return redirect(url_for('email_admin.queue'))
+            # Traditional redirect for GET requests
+            if success:
+                flash("Email retried successfully!", "success")
+            else:
+                flash("Email queued for retry", "info")
+            
+            return redirect(url_for('email_admin.queue'))
         
     except Exception as e:
         logger.error(f"Error retrying email: {e}")
-        flash(f"Error retrying email: {e}", "error")
-        return redirect(url_for('email_admin.queue'))
+        error_message = f"Error retrying email: {e}"
+        
+        if request.method == 'POST':
+            return jsonify({'success': False, 'message': error_message})
+        else:
+            flash(error_message, "error")
+            return redirect(url_for('email_admin.queue'))
 
 
 @email_admin.route('/logs')
