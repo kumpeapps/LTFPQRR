@@ -77,6 +77,13 @@ class Tag(db.Model):
         # User must have access to the partner and partner must have active subscription
         return self.partner.user_has_access(user) and self.partner.has_active_subscription()
     
+    def has_active_subscription(self):
+        """Check if the tag has an active subscription"""
+        for subscription in self.subscriptions:
+            if subscription.subscription_type == 'tag' and subscription.is_active():
+                return True
+        return False
+    
     def activate_by_partner(self):
         """Activate the tag (mark as available for claiming)"""
         if not self.can_be_activated_by_partner():

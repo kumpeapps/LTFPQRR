@@ -279,6 +279,31 @@ def found_pet(tag_id):
     if not tag_obj.pet_id:
         return render_template("found/not_registered.html", tag_id=tag_id)
 
+    # Check if tag has an active subscription
+    if not tag_obj.has_active_subscription():
+        # Log the search even without active subscription
+        search_log = SearchLog(
+            tag_id=tag_obj.id,
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get("User-Agent"),
+        )
+        db.session.add(search_log)
+        db.session.commit()
+        
+        # Get owner and send notification about expired subscription access
+        pet = Pet.query.get(tag_obj.pet_id)
+        owner = User.query.get(pet.owner_id)
+        
+        # Check if owner wants notifications
+        notification_pref = NotificationPreference.query.filter_by(
+            user_id=owner.id, notification_type="tag_search"
+        ).first()
+
+        if notification_pref and notification_pref.enabled:
+            send_notification_email(owner, tag_obj, pet, expired_subscription=True)
+        
+        return render_template("found/subscription_expired.html", tag_id=tag_id, tag=tag_obj)
+
     pet = Pet.query.get(tag_obj.pet_id)
     owner = User.query.get(pet.owner_id)
 
@@ -317,6 +342,11 @@ def contact_owner(tag_id):
 
     if not tag_obj.pet_id:
         flash("This tag is not registered to a pet.", "error")
+        return redirect(url_for("tag.found_pet", tag_id=tag_id))
+
+    # Check if tag has an active subscription
+    if not tag_obj.has_active_subscription():
+        flash("This tag's subscription has expired and contact information is not available.", "error")
         return redirect(url_for("tag.found_pet", tag_id=tag_id))
 
     pet = Pet.query.get(tag_obj.pet_id)

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Subscription Expired - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card mt-5">
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-clock text-warning" style="font-size: 4rem;"></i>
+                    </div>
+                    
+                    <h2 class="card-title text-warning mb-3">Subscription Expired</h2>
+                    
+                    <div class="alert alert-warning">
+                        <h5>Tag ID: <code>{{ tag_id }}</code></h5>
+                        <p class="mb-0">This pet tag's subscription has expired and information is temporarily unavailable.</p>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h5>What This Means:</h5>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-info-circle text-info me-2"></i>The pet owner has been notified that someone scanned their tag</li>
+                            <li><i class="fas fa-info-circle text-info me-2"></i>Contact information is hidden until subscription is renewed</li>
+                            <li><i class="fas fa-info-circle text-info me-2"></i>The tag is still valid but temporarily inactive</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h5>What You Can Do:</h5>
+                        <div class="d-grid gap-2 d-md-block">
+                            <a href="/" class="btn btn-primary">
+                                <i class="fas fa-home me-2"></i>Return to Home
+                            </a>
+                            <a href="/contact" class="btn btn-outline-secondary">
+                                <i class="fas fa-envelope me-2"></i>Contact Support
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <h6><i class="fas fa-heart text-danger me-2"></i>Found a Lost Pet?</h6>
+                        <p class="small mb-0">
+                            The pet owner has been automatically notified that their pet was found. 
+                            If you found a lost pet, please keep them safe and wait for the owner to contact you. 
+                            You can also try looking for other identification like a collar tag with contact information, 
+                            or contact local animal shelters and veterinarians in the area.
+                        </p>
+                    </div>
+                    
+                    <div class="mt-3 p-3 bg-info bg-opacity-10 rounded">
+                        <h6><i class="fas fa-user text-primary me-2"></i>Are You the Pet Owner?</h6>
+                        <p class="small mb-2">
+                            If this is your pet's tag, please log in to your account and renew your subscription 
+                            to reactivate your pet's profile and contact information.
+                        </p>
+                        <a href="/login" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-sign-in-alt me-1"></i>Login to Account
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
