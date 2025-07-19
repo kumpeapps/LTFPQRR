@@ -567,6 +567,36 @@ def get_email_template_base():
 
 
 def send_subscription_confirmation_email(user, subscription):
+    """Send confirmation email when subscription is created using template system"""
+    try:
+        from services.enhanced_email_service import EmailTemplateManager
+        from models.email.email_models import EmailPriority
+        
+        # Use the enhanced email system with model instances
+        inputs = {
+            'user_id': user.id,
+            'subscription_id': subscription.id,
+            'target_email': user.email
+        }
+        
+        # Send using enhanced template system
+        result = EmailTemplateManager.send_from_template(
+            template_name='subscription_confirmation',
+            inputs=inputs,
+            email_type='subscription_confirmation',
+            priority=EmailPriority.HIGH
+        )
+        
+        if result:
+            logger.info(f"Subscription confirmation email sent to {user.email}")
+            return True
+        else:
+            logger.error(f"Failed to send subscription confirmation email to {user.email}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Error sending subscription confirmation email: {e}")
+        return False
     """Send subscription confirmation email to customer"""
     try:
         # Determine subscription type details
@@ -709,6 +739,37 @@ def send_subscription_confirmation_email(user, subscription):
 
 
 def send_partner_subscription_confirmation_email(user, partner_subscription):
+    """Send confirmation email when partner subscription is created using template system"""
+    try:
+        from services.enhanced_email_service import EmailTemplateManager
+        from models.email.email_models import EmailPriority
+        
+        # Use the enhanced email system with model instances
+        inputs = {
+            'user_id': user.id,
+            'subscription_id': partner_subscription.id,
+            'partner_id': partner_subscription.partner.id if partner_subscription.partner else None,
+            'target_email': user.email
+        }
+        
+        # Send using enhanced template system
+        result = EmailTemplateManager.send_from_template(
+            template_name='partner_subscription_confirmation',
+            inputs=inputs,
+            email_type='partner_subscription_confirmation',
+            priority=EmailPriority.HIGH
+        )
+        
+        if result:
+            logger.info(f"Partner subscription confirmation email sent to {user.email}")
+            return True
+        else:
+            logger.error(f"Failed to send partner subscription confirmation email to {user.email}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Error sending partner subscription confirmation email: {e}")
+        return False
     """Send subscription confirmation email to partner customer"""
     try:
         # Determine approval status
@@ -966,111 +1027,31 @@ def send_admin_approval_notification(subscription):
 def send_subscription_approved_email(user, subscription):
     """Send email to customer when subscription is approved"""
     try:
-        subject = "Partner Subscription Approved - Welcome to LTFPQRR!"
-
-        plan_name = (
-            subscription.pricing_plan.name
-            if subscription.pricing_plan
-            else "Partner Plan"
+        from services.enhanced_email_service import EmailTemplateManager
+        from models.email.email_models import EmailPriority
+        
+        # Use the enhanced email system with model instances
+        inputs = {
+            'user_id': user.id,
+            'subscription_id': subscription.id,
+            'target_email': user.email
+        }
+        
+        # Send using enhanced template system
+        result = EmailTemplateManager.send_from_template(
+            template_name='subscription_approved',
+            inputs=inputs,
+            email_type='subscription_approved',
+            priority=EmailPriority.HIGH
         )
-        partner_name = (
-            subscription.partner.company_name
-            if subscription.partner
-            else "Your Partner Account"
-        )
-
-        # Determine billing period from pricing plan or subscription type
-        if subscription.pricing_plan:
-            billing_period = subscription.pricing_plan.billing_period.title()
-        elif hasattr(subscription, 'subscription_type') and subscription.subscription_type in ['monthly', 'yearly', 'lifetime']:
-            billing_period = subscription.subscription_type.title()
-        else:
-            billing_period = 'One-time'
-
-        content = f"""
-        <div class="greeting">Hello {user.get_full_name()},</div>
         
-        <div class="title">Congratulations! Your Partner Subscription is Approved</div>
-        
-        <div class="subtitle">Great news! Your partner subscription has been approved by our admin team. Welcome to the LTFPQRR partner network!</div>
-        
-        <div class="success-box">
-            <div class="box-title">Your Active Subscription</div>
-            <table class="details-table">
-                <tr>
-                    <td>Company:</td>
-                    <td><strong>{partner_name}</strong></td>
-                </tr>
-                <tr>
-                    <td>Plan:</td>
-                    <td><strong>{plan_name}</strong></td>
-                </tr>
-                <tr>
-                    <td>Status:</td>
-                    <td><span style="color: #28a745; font-weight: 600;">Active</span></td>
-                </tr>
-                <tr>
-                    <td>Start Date:</td>
-                    <td>{subscription.start_date.strftime('%B %d, %Y')}</td>
-                </tr>
-                {f'<tr><td>End Date:</td><td>{subscription.end_date.strftime("%B %d, %Y")}</td></tr>' if subscription.end_date else ''}
-                <tr>
-                    <td>Billing:</td>
-                    <td>{billing_period}</td>
-                </tr>
-                <tr>
-                    <td>Max Tags:</td>
-                    <td>{subscription.max_tags if hasattr(subscription, 'max_tags') else 'Unlimited'}</td>
-                </tr>
-            </table>
-        </div>
-        
-        <div class="info-box">
-            <div class="box-title">What's Next?</div>
-            <ul style="margin: 15px 0; padding-left: 20px;">
-                <li>Access your partner dashboard to manage your tags and services</li>
-                <li>Start creating and managing lost pet tags for your customers</li>
-                <li>Set up your partner profile and contact information</li>
-                <li>Review our partner guidelines and best practices</li>
-            </ul>
-        </div>
-        
-        <a href="{current_app.config.get('BASE_URL', 'http://localhost:5000')}/partner" class="cta-button">Access Partner Dashboard</a>
-        
-        <div class="divider"></div>
-        
-        <p>Thank you for joining LTFPQRR as a partner! We look forward to working with you to help reunite lost pets with their families.</p>
-        
-        <p>Best regards,<br>The LTFPQRR Team</p>
-        """
-
-        template = get_email_template_base()
-        html_body = template.format(content=content)
-
-        text_body = f"""
-        Hello {user.get_full_name()},
-        
-        Congratulations! Your partner subscription has been approved.
-        
-        Active Subscription Details:
-        - Company: {partner_name}
-        - Plan: {plan_name}
-        - Status: Active
-        - Start Date: {subscription.start_date.strftime('%B %d, %Y')}
-        {f'- End Date: {subscription.end_date.strftime("%B %d, %Y")}' if subscription.end_date else ''}
-        - Max Tags: {subscription.max_tags if hasattr(subscription, 'max_tags') else 'Unlimited'}
-        
-        Access Partner Dashboard: {current_app.config.get('BASE_URL', 'http://localhost:5000')}/partner
-        
-        Best regards,
-        The LTFPQRR Team
-        """
-
-        success = send_email(user.email, subject, html_body, text_body)
-        if success:
+        if result:
             logger.info(f"Subscription approved email sent to {user.email}")
-        return success
-
+            return True
+        else:
+            logger.error(f"Failed to send subscription approved email to {user.email}")
+            return False
+            
     except Exception as e:
         logger.error(f"Error sending subscription approved email: {e}")
         return False
@@ -1079,111 +1060,32 @@ def send_subscription_approved_email(user, subscription):
 def send_subscription_cancelled_email(user, subscription, refunded=False):
     """Send email to customer when subscription is cancelled"""
     try:
-        subject = "Subscription Cancelled - LTFPQRR"
-
-        # Handle both regular subscriptions and partner subscriptions
-        if hasattr(subscription, "pricing_plan") and subscription.pricing_plan:
-            plan_name = subscription.pricing_plan.name
+        from services.enhanced_email_service import EmailTemplateManager
+        from models.email.email_models import EmailPriority
+        
+        # Use the enhanced email system with model instances
+        inputs = {
+            'user_id': user.id,
+            'subscription_id': subscription.id,
+            'target_email': user.email,
+            'refunded': refunded
+        }
+        
+        # Send using enhanced template system
+        result = EmailTemplateManager.send_from_template(
+            template_name='subscription_cancelled',
+            inputs=inputs,
+            email_type='subscription_cancelled',
+            priority=EmailPriority.HIGH
+        )
+        
+        if result:
+            logger.info(f"Subscription cancelled email sent to {user.email}")
+            return True
         else:
-            plan_name = "Subscription Plan"
-
-        amount = str(subscription.amount) if subscription.amount else "N/A"
-        start_date = (
-            subscription.start_date.strftime("%B %d, %Y")
-            if subscription.start_date
-            else "N/A"
-        )
-        end_date = (
-            subscription.end_date.strftime("%B %d, %Y")
-            if subscription.end_date
-            else "Today"
-        )
-
-        refund_message = (
-            "A refund has been processed and should appear in your account within 5-10 business days."
-            if refunded
-            else "No refund was processed for this cancellation."
-        )
-
-        content = f"""
-        <div class="greeting">Hello {user.get_full_name()},</div>
-        
-        <div class="title">Subscription Cancelled</div>
-        
-        <div class="subtitle">Your subscription has been cancelled as requested.</div>
-        
-        <div class="error-box">
-            <div class="box-title">Cancelled Subscription</div>
-            <table class="details-table">
-                <tr>
-                    <td>Plan:</td>
-                    <td><strong>{plan_name}</strong></td>
-                </tr>
-                <tr>
-                    <td>Amount:</td>
-                    <td>${amount}</td>
-                </tr>
-                <tr>
-                    <td>Original Start:</td>
-                    <td>{start_date}</td>
-                </tr>
-                <tr>
-                    <td>Cancelled:</td>
-                    <td>{end_date}</td>
-                </tr>
-                <tr>
-                    <td>Refund Status:</td>
-                    <td>{'Processed' if refunded else 'None'}</td>
-                </tr>
-            </table>
-        </div>
-        
-        <div class="info-box">
-            <div class="box-title">Important Information</div>
-            <p>{refund_message}</p>
-            <p>If you have any questions about this cancellation, please contact our support team.</p>
-        </div>
-        
-        <p>We're sorry to see you go. If you decide to return in the future, we'll be here to help you protect your pets.</p>
-        
-        <p>Best regards,<br>The LTFPQRR Team</p>
-        """
-
-        template = get_email_template_base()
-        html_body = template.format(content=content)
-
-        text_body = f"""
-        Hello {user.get_full_name()},
-        
-        Your subscription has been cancelled.
-        
-        Cancelled Subscription:
-        - Plan: {plan_name}
-        - Amount: ${amount}
-        - Original Start: {start_date}
-        - Cancelled: {end_date}
-        - Refund: {'Processed' if refunded else 'None'}
-        
-        {refund_message}
-        
-        Best regards,
-        The LTFPQRR Team
-        """
-
-        return send_email(
-            to_email=user.email,
-            subject=subject,
-            html_body=html_body,
-            text_body=text_body,
-        )
-
-        return send_email(
-            to_email=user.email,
-            subject=subject,
-            html_body=html_body,
-            text_body=text_body,
-        )
-
+            logger.error(f"Failed to send subscription cancelled email to {user.email}")
+            return False
+            
     except Exception as e:
         logger.error(f"Error sending subscription cancelled email: {e}")
         return False
@@ -1192,85 +1094,31 @@ def send_subscription_cancelled_email(user, subscription, refunded=False):
 def send_subscription_renewal_email(user, subscription):
     """Send email to customer when subscription is renewed"""
     try:
-        subject = "Subscription Renewed - LTFPQRR"
-
-        plan_name = (
-            subscription.pricing_plan.name
-            if subscription.pricing_plan
-            else "Subscription Plan"
+        from services.enhanced_email_service import EmailTemplateManager
+        from models.email.email_models import EmailPriority
+        
+        # Use the enhanced email system with model instances
+        inputs = {
+            'user_id': user.id,
+            'subscription_id': subscription.id,
+            'target_email': user.email
+        }
+        
+        # Send using enhanced template system
+        result = EmailTemplateManager.send_from_template(
+            template_name='subscription_renewal',
+            inputs=inputs,
+            email_type='subscription_renewal',
+            priority=EmailPriority.HIGH
         )
-
-        content = f"""
-        <div class="greeting">Hello {user.get_full_name()},</div>
         
-        <div class="title">Subscription Successfully Renewed</div>
-        
-        <div class="subtitle">Your subscription has been automatically renewed. Thank you for continuing with LTFPQRR!</div>
-        
-        <div class="success-box">
-            <div class="box-title">Renewed Subscription</div>
-            <table class="details-table">
-                <tr>
-                    <td>Plan:</td>
-                    <td><strong>{plan_name}</strong></td>
-                </tr>
-                <tr>
-                    <td>Amount:</td>
-                    <td><strong>${subscription.amount}</strong></td>
-                </tr>
-                <tr>
-                    <td>Renewed:</td>
-                    <td>{subscription.start_date.strftime('%B %d, %Y')}</td>
-                </tr>
-                <tr>
-                    <td>Next Renewal:</td>
-                    <td>{subscription.end_date.strftime('%B %d, %Y') if subscription.end_date else 'N/A'}</td>
-                </tr>
-                <tr>
-                    <td>Status:</td>
-                    <td><span style="color: #28a745; font-weight: 600;">Active</span></td>
-                </tr>
-            </table>
-        </div>
-        
-        <div class="info-box">
-            <div class="box-title">Your Service Continues</div>
-            <p>Your pet protection services continue without interruption. All your tags and settings remain active.</p>
-            <p>To manage your subscription or update payment methods, visit your dashboard.</p>
-        </div>
-        
-        <a href="{current_app.config.get('BASE_URL', 'http://localhost:5000')}/dashboard" class="cta-button">Manage Subscription</a>
-        
-        <p>Thank you for your continued trust in LTFPQRR!</p>
-        
-        <p>Best regards,<br>The LTFPQRR Team</p>
-        """
-
-        template = get_email_template_base()
-        html_body = template.format(content=content)
-
-        text_body = f"""
-        Hello {user.get_full_name()},
-        
-        Your subscription has been successfully renewed.
-        
-        Renewed Subscription:
-        - Plan: {plan_name}
-        - Amount: ${subscription.amount}
-        - Renewed: {subscription.start_date.strftime('%B %d, %Y')}
-        - Next Renewal: {subscription.end_date.strftime('%B %d, %Y') if subscription.end_date else 'N/A'}
-        
-        Your pet protection services continue without interruption.
-        
-        Best regards,
-        The LTFPQRR Team
-        """
-
-        success = send_email(user.email, subject, html_body, text_body)
-        if success:
+        if result:
             logger.info(f"Subscription renewal email sent to {user.email}")
-        return success
-
+            return True
+        else:
+            logger.error(f"Failed to send subscription renewal email to {user.email}")
+            return False
+            
     except Exception as e:
         logger.error(f"Error sending subscription renewal email: {e}")
         return False
@@ -1279,150 +1127,62 @@ def send_subscription_renewal_email(user, subscription):
 def send_test_email(to_email, test_type="basic"):
     """Send a test email to verify SMTP configuration"""
     try:
-        subject = "LTFPQRR - Test Email"
-
-        # Simple HTML template without complex formatting
-        html_body = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>LTFPQRR Test Email</title>
-        </head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 12px 12px 0 0;">
-                <h1 style="color: #13c1be; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">LTFPQRR</h1>
-                <p style="margin: 10px 0 0 0; font-size: 1.1rem;">Lost Then Found Pet QR Registry</p>
-            </div>
+        from services.enhanced_email_service import EmailTemplateManager
+        from models.email.email_models import EmailPriority
+        
+        # Use the enhanced email system with basic inputs
+        inputs = {
+            'target_email': to_email
+        }
+        
+        # Send using enhanced template system
+        result = EmailTemplateManager.send_from_template(
+            template_name='test_email',
+            inputs=inputs,
+            email_type='test_email',
+            priority=EmailPriority.NORMAL
+        )
+        
+        if result:
+            logger.info(f"Test email sent successfully to {to_email}")
+            return True
+        else:
+            logger.error(f"Failed to send test email to {to_email}")
+            return False
             
-            <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                <h2 style="color: #212529; margin-bottom: 20px;">SMTP Configuration Test</h2>
-                
-                <p>Hello!</p>
-                
-                <p>This is a test email to verify that your SMTP configuration is working correctly.</p>
-                
-                <div style="background: #d4edda; border-left: 5px solid #28a745; padding: 20px; margin: 20px 0; border-radius: 8px;">
-                    <h3 style="color: #155724; margin-top: 0;">Test Results</h3>
-                    <p style="margin-bottom: 10px;">If you are receiving this email, your SMTP settings are configured correctly!</p>
-                    <ul>
-                        <li>SMTP server connection: ✓ Working</li>
-                        <li>Email formatting: ✓ Working</li>
-                        <li>Template rendering: ✓ Working</li>
-                    </ul>
-                </div>
-                
-                <div style="background: #f8f9fa; border-left: 5px solid #13c1be; padding: 20px; margin: 20px 0; border-radius: 8px;">
-                    <h3 style="color: #495057; margin-top: 0;">Next Steps</h3>
-                    <p>Your email system is ready to send notifications for:</p>
-                    <ul>
-                        <li>Subscription confirmations</li>
-                        <li>Admin notifications</li>
-                        <li>Subscription approvals</li>
-                        <li>Cancellation notices</li>
-                        <li>Renewal reminders</li>
-                    </ul>
-                </div>
-                
-                <p style="margin-top: 30px;">Best regards,<br>The LTFPQRR Team</p>
-            </div>
-            
-            <div style="background: #2c3e50; color: #ecf0f1; padding: 20px; text-align: center; font-size: 0.9rem; margin-top: 20px; border-radius: 8px;">
-                <p style="margin: 0;"><strong>LTFPQRR</strong> - Helping reunite lost pets with their families</p>
-                <p style="margin: 10px 0 0 0;">Need help? Contact us at <a href="mailto:support@ltfpqrr.com" style="color: #13c1be;">support@ltfpqrr.com</a></p>
-                <small style="color: #bdc3c7;">© 2025 LTFPQRR. All rights reserved.</small>
-            </div>
-        </body>
-        </html>
-        """
-
-        text_body = """
-        LTFPQRR - Email Test
-        
-        This is a test email to verify SMTP configuration.
-        
-        If you receive this, your email system is working correctly!
-        
-        Test Results:
-        - SMTP server connection: Working
-        - Email formatting: Working  
-        - Template rendering: Working
-        
-        Best regards,
-        The LTFPQRR Team
-        """
-
-        success = send_email(to_email, subject, html_body, text_body)
-        if success:
-            logger.info("Test email sent successfully to %s", to_email)
-        return success
-
     except Exception as e:
-        logger.error("Error sending test email: %s", e)
+        logger.error(f"Error sending test email: {e}")
         return False
 
 
 def send_subscription_rejected_email(user, subscription):
     """Send email to customer when subscription is rejected"""
     try:
-        subject = "Subscription Request Rejected - LTFPQRR"
-
-        html_template = get_email_template_base()
-
-        html_body = html_template.format(
-            content=f"""
-        <div class="title">Subscription Request Rejected</div>
+        from services.enhanced_email_service import EmailTemplateManager
+        from models.email.email_models import EmailPriority
         
-        <div class="subtitle">We're sorry, but your subscription request has been rejected.</div>
+        # Use the enhanced email system with model instances
+        inputs = {
+            'user_id': user.id,
+            'subscription_id': subscription.id,
+            'target_email': user.email
+        }
         
-        <div class="content-box">
-            <div class="box-title">Rejected Subscription</div>
-            <div class="box-content">
-                <p><strong>Subscription Type:</strong> {subscription.subscription_type.title()}</p>
-                <p><strong>Status:</strong> Rejected</p>
-                <p><strong>Request Date:</strong> {subscription.created_at.strftime('%B %d, %Y')}</p>
-                <p><strong>Rejected Date:</strong> {subscription.updated_at.strftime('%B %d, %Y') if subscription.updated_at else 'Today'}</p>
-            </div>
-        </div>
-        
-        <div class="content-box">
-            <div class="box-title">What's Next?</div>
-            <div class="box-content">
-                <p>If you believe this rejection was made in error, please contact our support team for assistance.</p>
-                <p>You may also review our subscription requirements and submit a new request if appropriate.</p>
-            </div>
-        </div>
-        
-        <div class="content-box">
-            <div class="box-title">Need Help?</div>
-            <div class="box-content">
-                <p>If you have any questions about this rejection or need assistance, please don't hesitate to contact our support team.</p>
-                <p>Thank you for your interest in LTFPQRR.</p>
-            </div>
-        </div>
-        """
+        # Send using enhanced template system
+        result = EmailTemplateManager.send_from_template(
+            template_name='subscription_rejected',
+            inputs=inputs,
+            email_type='subscription_rejected',
+            priority=EmailPriority.HIGH
         )
-
-        text_body = f"""
-        Your subscription request has been rejected.
         
-        Rejected Subscription:
-        - Type: {subscription.subscription_type.title()}
-        - Status: Rejected
-        - Request Date: {subscription.created_at.strftime('%B %d, %Y')}
-        - Rejected Date: {subscription.updated_at.strftime('%B %d, %Y') if subscription.updated_at else 'Today'}
-        
-        If you believe this rejection was made in error, please contact our support team for assistance.
-        
-        Thank you for your interest in LTFPQRR.
-        """
-
-        success = send_email(user.email, subject, html_body, text_body)
-
-        if success:
+        if result:
             logger.info(f"Subscription rejected email sent to {user.email}")
-        return success
-
+            return True
+        else:
+            logger.error(f"Failed to send subscription rejected email to {user.email}")
+            return False
+            
     except Exception as e:
         logger.error(f"Error sending subscription rejected email: {e}")
         return False
@@ -2104,88 +1864,113 @@ def send_partner_subscription_rejected_email_original(user, partner_subscription
 def send_subscription_expiry_reminder(user, subscription):
     """Send subscription expiry reminder email"""
     try:
-        # Determine subscription type and billing period
-        plan_name = "Tag Protection"
-        billing_period = "one-time"
-        
-        if hasattr(subscription, 'pricing_plan') and subscription.pricing_plan:
-            plan_name = subscription.pricing_plan.name
-            billing_period = subscription.pricing_plan.billing_period
-        elif hasattr(subscription, 'subscription_type') and subscription.subscription_type:
-            billing_period = subscription.subscription_type
+        from services.enhanced_email_service import EmailTemplateManager
+        from models.email.email_models import EmailPriority
+        from datetime import datetime
         
         # Calculate days until expiry
-        from datetime import datetime
         days_until_expiry = (subscription.end_date - datetime.utcnow()).days
         
-        subject = f"Your {plan_name} subscription expires soon"
+        # Use the enhanced email system with model instances
+        inputs = {
+            'user_id': user.id,
+            'subscription_id': subscription.id,
+            'target_email': user.email,
+            'days_until_expiry': days_until_expiry
+        }
         
-        # Auto-renewal status message
-        auto_renewal_info = ""
-        if subscription.auto_renew:
-            auto_renewal_info = f"""
-            <p style="background-color: #e7f5e7; padding: 15px; border-radius: 5px; border-left: 4px solid #28a745;">
-                <strong>✓ Auto-Renewal Enabled</strong><br>
-                Your subscription will automatically renew on {subscription.end_date.strftime('%B %d, %Y')}. 
-                No action is needed on your part.
-            </p>
-            """
-        else:
-            auto_renewal_info = f"""
-            <p style="background-color: #fff3cd; padding: 15px; border-radius: 5px; border-left: 4px solid #ffc107;">
-                <strong>⚠ Auto-Renewal Disabled</strong><br>
-                Your subscription will expire on {subscription.end_date.strftime('%B %d, %Y')}. 
-                <a href="#" style="color: #007bff; text-decoration: none;">Renew now</a> to continue your protection.
-            </p>
-            """
+        # Send using enhanced template system
+        result = EmailTemplateManager.send_from_template(
+            template_name='subscription_expiry_reminder',
+            inputs=inputs,
+            email_type='subscription_expiry_reminder',
+            priority=EmailPriority.HIGH
+        )
         
-        content = f"""
-        <h2 style="color: #333; margin-bottom: 20px;">Subscription Expiry Reminder</h2>
-        
-        <p>Hello {user.get_full_name()},</p>
-        
-        <p>Your <strong>{plan_name}</strong> subscription will expire in <strong>{days_until_expiry} day{'s' if days_until_expiry != 1 else ''}</strong>.</p>
-        
-        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
-            <h3 style="color: #333; margin-top: 0;">Subscription Details:</h3>
-            <p><strong>Plan:</strong> {plan_name}</p>
-            <p><strong>Billing:</strong> {billing_period.title()}</p>
-            <p><strong>Amount:</strong> ${subscription.amount}</p>
-            <p><strong>Expires:</strong> {subscription.end_date.strftime('%B %d, %Y')}</p>
-        </div>
-        
-        {auto_renewal_info}
-        
-        <p>Thank you for trusting us with your pet's protection. We're here to help if you have any questions about your subscription.</p>
-        
-        <p>Best regards,<br>The LTFPQRR Team</p>
-        """
-
-        template = get_email_template_base()
-        html_body = template.format(content=content)
-
-        text_body = f"""
-        Hello {user.get_full_name()},
-        
-        Your {plan_name} subscription will expire in {days_until_expiry} day{'s' if days_until_expiry != 1 else ''}.
-        
-        Subscription Details:
-        - Plan: {plan_name}
-        - Billing: {billing_period.title()}
-        - Amount: ${subscription.amount}
-        - Expires: {subscription.end_date.strftime('%B %d, %Y')}
-        
-        Auto-Renewal: {'Enabled' if subscription.auto_renew else 'Disabled'}
-        
-        Best regards,
-        The LTFPQRR Team
-        """
-
-        success = send_email(user.email, subject, html_body, text_body)
-        if success:
+        if result:
             logger.info(f"Subscription expiry reminder email sent to {user.email}")
-        return success
-
+            return True
+        else:
+            logger.error(f"Failed to send subscription expiry reminder email to {user.email}")
+            return False
+            
     except Exception as e:
         logger.error(f"Error sending subscription expiry reminder email: {e}")
+        return False
+
+
+def send_refund_notification_email(user, payment, refund_amount, refund_reason):
+    """Send email notification for payment refunds"""
+    try:
+        from services.enhanced_email_service import EmailTemplateManager
+        from models.email.email_models import EmailPriority
+        
+        # Determine refund reason display text
+        reason_text = {
+            "chargeback": "due to a chargeback or dispute",
+            "merchant_refund": "as requested",
+            "fraud": "due to fraud detection",
+            "duplicate": "due to duplicate payment"
+        }.get(refund_reason, "for administrative reasons")
+        
+        # Use the enhanced email system with model instances
+        inputs = {
+            'user_id': user.id,
+            'payment_id': payment.id,
+            'target_email': user.email,
+            'refund_amount': f"{refund_amount:.2f}",
+            'refund_reason_text': f"Refund processed {reason_text}"
+        }
+        
+        # Send using enhanced template system
+        result = EmailTemplateManager.send_from_template(
+            template_name='payment_refund_notification',
+            inputs=inputs,
+            email_type='payment_refund_notification',
+            priority=EmailPriority.HIGH
+        )
+        
+        if result:
+            logger.info(f"Refund notification email sent to {user.email}")
+            return True
+        else:
+            logger.error(f"Failed to send refund notification email to {user.email}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Error sending refund notification email: {e}")
+        return False
+
+
+def send_payment_failure_notification_email(user, payment, failure_reason):
+    """Send email notification for payment failures"""
+    try:
+        from services.enhanced_email_service import EmailTemplateManager
+        from models.email.email_models import EmailPriority
+        
+        # Use the enhanced email system with model instances
+        inputs = {
+            'user_id': user.id,
+            'payment_id': payment.id,
+            'target_email': user.email,
+            'failure_reason': failure_reason
+        }
+        
+        # Send using enhanced template system
+        result = EmailTemplateManager.send_from_template(
+            template_name='payment_failure_notification',
+            inputs=inputs,
+            email_type='payment_failure_notification',
+            priority=EmailPriority.HIGH
+        )
+        
+        if result:
+            logger.info(f"Payment failure notification email sent to {user.email}")
+            return True
+        else:
+            logger.error(f"Failed to send payment failure notification email to {user.email}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Error sending payment failure notification email: {e}")
         return False

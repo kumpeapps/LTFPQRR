@@ -17,10 +17,13 @@ class TemplateCategory(Enum):
     """Email template categories"""
     USER_ACCOUNT = "user_account"
     USER_NOTIFICATION = "user_notification"
+    SUBSCRIPTION = "subscription"
     PARTNER_ACCOUNT = "partner_account"
     PARTNER_SUBSCRIPTION = "partner_subscription"
     PARTNER_NOTIFICATION = "partner_notification"
+    PAYMENT = "payment"
     SYSTEM_ADMIN = "system_admin"
+    SYSTEM = "system"
     MARKETING = "marketing"
     TRANSACTIONAL = "transactional"
 
@@ -57,6 +60,23 @@ class TemplateCategoryConfig:
                 'Feature announcements',
                 'Maintenance notifications',
                 'Policy updates'
+            ]
+        },
+        
+        TemplateCategory.SUBSCRIPTION: {
+            'name': 'Subscription',
+            'description': 'Regular subscription management emails',
+            'required_inputs': ['subscription_id'],
+            'optional_inputs': ['user_id', 'payment_id'],
+            'available_models': ['subscription', 'user', 'payment', 'system'],
+            'target_field': 'user.email',
+            'examples': [
+                'Subscription confirmation',
+                'Subscription approved',
+                'Subscription cancelled',
+                'Subscription renewal',
+                'Subscription rejected',
+                'Expiry reminder'
             ]
         },
         
@@ -107,6 +127,22 @@ class TemplateCategoryConfig:
             ]
         },
         
+        TemplateCategory.PAYMENT: {
+            'name': 'Payment',
+            'description': 'Payment-related emails',
+            'required_inputs': ['payment_id'],
+            'optional_inputs': ['user_id', 'subscription_id'],
+            'available_models': ['payment', 'user', 'subscription', 'system'],
+            'target_field': 'user.email',
+            'examples': [
+                'Payment confirmation',
+                'Payment failed',
+                'Refund notification',
+                'Payment reminder',
+                'Receipt'
+            ]
+        },
+        
         TemplateCategory.SYSTEM_ADMIN: {
             'name': 'System Admin',
             'description': 'Administrative and internal system emails',
@@ -120,6 +156,21 @@ class TemplateCategoryConfig:
                 'Security alerts',
                 'Backup notifications',
                 'Admin notifications'
+            ]
+        },
+        
+        TemplateCategory.SYSTEM: {
+            'name': 'System',
+            'description': 'System-level emails like test emails',
+            'required_inputs': [],
+            'optional_inputs': ['target_email'],
+            'available_models': ['system'],
+            'target_field': 'target_email',
+            'examples': [
+                'Test email',
+                'SMTP verification',
+                'System status',
+                'Configuration test'
             ]
         },
         

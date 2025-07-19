@@ -262,9 +262,20 @@
                                             <td>
                                                 {% set active_subscription = tag.subscriptions|selectattr('is_active')|first %}
                                                 {% if active_subscription %}
-                                                    <span class="badge bg-primary">
-                                                        {{ active_subscription.subscription_type.title() }}
-                                                    </span>
+                                                    {% if active_subscription.pricing_plan and active_subscription.pricing_plan.billing_period %}
+                                                        <span class="badge 
+                                                            {% if active_subscription.pricing_plan.billing_period == 'lifetime' %}bg-success
+                                                            {% elif active_subscription.pricing_plan.billing_period == 'yearly' %}bg-primary
+                                                            {% elif active_subscription.pricing_plan.billing_period == 'monthly' %}bg-info
+                                                            {% else %}bg-secondary
+                                                            {% endif %}">
+                                                            {{ active_subscription.pricing_plan.billing_period.title() }}
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">
+                                                            {{ active_subscription.subscription_type.title() }}
+                                                        </span>
+                                                    {% endif %}
                                                     <br><small class="text-muted">${{ "%.2f"|format(active_subscription.amount) }}</small>
                                                 {% else %}
                                                     <span class="badge bg-secondary">No Subscription</span>

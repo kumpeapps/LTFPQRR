@@ -17,6 +17,9 @@ Usage:
     python manage_users.py create-role --name moderator --description "Content moderation role"
     python manage_users.py cleanup-subscriptions --dry-run
     python manage_users.py cleanup-subscriptions
+    python manage_users.py manage-subscription --id 123 --action cancel --reason "Customer request"
+    python manage_users.py manage-subscription --id 123 --action refund
+    python manage_users.py manage-subscription --id 123 --action reactivate
 """
 
 import argparse
@@ -347,6 +350,89 @@ class UserManager:
                 print("\n✅ No changes needed")
                 return True
     
+    def manage_subscription_status(self, subscription_id, action, reason=None):
+        """Manage subscription status (cancel, refund, reactivate)"""
+        from models.models import Subscription, Tag
+        
+        with self.app.app_context():
+            subscription = Subscription.query.get(subscription_id)
+            if not subscription:
+                print(f"Error: Subscription with ID {subscription_id} not found.")
+                return False
+            
+            print(f"Subscription ID: {subscription.id}")
+            print(f"User ID: {subscription.user_id}")
+            print(f"Current Status: {subscription.status}")
+            print(f"Amount: ${subscription.amount}")
+            print(f"Start Date: {subscription.start_date}")
+            print(f"End Date: {subscription.end_date}")
+            
+            if action == "cancel":
+                if subscription.status == 'cancelled':
+                    print("Subscription is already cancelled.")
+                    return True
+                
+                subscription.status = 'cancelled'
+                subscription.cancellation_requested = True
+                subscription.updated_at = datetime.utcnow()
+                
+                # If it's a tag subscription, update tag status
+                if subscription.tag_id:
+                    tag = Tag.query.get(subscription.tag_id)
+                    if tag:
+                        tag.status = 'available'
+                        tag.owner_id = None
+                        print(f"Tag {tag.tag_id} status updated to available")
+                
+                print(f"✓ Subscription {subscription_id} cancelled successfully.")
+                
+            elif action == "refund":
+                subscription.status = 'refunded'
+                subscription.cancellation_requested = True
+                subscription.updated_at = datetime.utcnow()
+                
+                # If it's a tag subscription, update tag status
+                if subscription.tag_id:
+                    tag = Tag.query.get(subscription.tag_id)
+                    if tag:
+                        tag.status = 'available'
+                        tag.owner_id = None
+                        print(f"Tag {tag.tag_id} status updated to available")
+                
+                print(f"✓ Subscription {subscription_id} marked as refunded.")
+                
+            elif action == "reactivate":
+                if subscription.status == 'active':
+                    print("Subscription is already active.")
+                    return True
+                    
+                subscription.status = 'active'
+                subscription.cancellation_requested = False
+                subscription.updated_at = datetime.utcnow()
+                
+                # If it's a tag subscription, update tag status
+                if subscription.tag_id:
+                    tag = Tag.query.get(subscription.tag_id)
+                    if tag and subscription.user_id:
+                        tag.status = 'claimed'
+                        tag.owner_id = subscription.user_id
+                        print(f"Tag {tag.tag_id} status updated to claimed")
+                
+                print(f"✓ Subscription {subscription_id} reactivated successfully.")
+                
+            else:
+                print(f"Error: Unknown action '{action}'. Use: cancel, refund, or reactivate")
+                return False
+            
+            try:
+                db.session.commit()
+                print(f"✓ Database updated successfully.")
+                return True
+            except Exception as e:
+                db.session.rollback()
+                print(f"Error updating subscription: {e}")
+                return False
+    
     def user_info(self, email):
         """Display detailed information about a user."""
         with self.app.app_context():
@@ -450,6 +536,12 @@ Examples:
     cleanup_parser = subparsers.add_parser('cleanup-subscriptions', help='Clean up duplicate subscription records')
     cleanup_parser.add_argument('--dry-run', action='store_true', help='Show what would be cleaned up without making changes')
     
+    # Manage subscription command
+    subscription_parser = subparsers.add_parser('manage-subscription', help='Manage subscription status (cancel, refund, reactivate)')
+    subscription_parser.add_argument('--id', required=True, type=int, help='Subscription ID')
+    subscription_parser.add_argument('--action', required=True, choices=['cancel', 'refund', 'reactivate'], help='Action to perform')
+    subscription_parser.add_argument('--reason', help='Reason for the action')
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -497,6 +589,9 @@ Examples:
         
         elif args.command == 'cleanup-subscriptions':
             manager.cleanup_duplicate_subscriptions(dry_run=args.dry_run)
+        
+        elif args.command == 'manage-subscription':
+            manager.manage_subscription_status(args.id, args.action, args.reason)
         
     except KeyboardInterrupt:
         print("\nOperation cancelled by user.")

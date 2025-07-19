@@ -1,7 +1,23 @@
 #!/bin/bash
 
 # LTFPQRR User Management CLI Wrapper
-# This script runs the user management CLI inside the Docker container
+# This script can run either from the host (using docker exec), from inside the container, or locally
+
+# Check if we're running inside a Docker container
+if [ -f /.dockerenv ] || [ -n "${CONTAINER}" ] || [ -n "${HOSTNAME}" ]; then
+    # We're inside a container, run the command directly
+    python manage_users.py "$@"
+    exit $?
+fi
+
+# Check if we have a local virtual environment
+if [ -f ".venv/bin/python" ]; then
+    echo "Using local virtual environment"
+    .venv/bin/python manage_users.py "$@"
+    exit $?
+fi
+
+# We're on the host, find the container and exec into it
 
 # Try to find the web container automatically
 CONTAINER_NAME=$(docker ps --format "{{.Names}}" | grep -E "(ltfpqrr.*web|web.*ltfpqrr)" | head -1)
