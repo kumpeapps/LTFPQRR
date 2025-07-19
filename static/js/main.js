@@ -332,8 +332,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Tag ID validation
-        if (field.name === 'tag_id' && value) {
+        // Tag ID validation (only for text inputs, not select fields)
+        if (field.name === 'tag_id' && field.type === 'text' && value) {
             if (value.length < 6 || !/^[A-Za-z0-9]+$/.test(value)) {
                 isValid = false;
                 message = 'Tag ID must be at least 6 characters (letters and numbers only)';

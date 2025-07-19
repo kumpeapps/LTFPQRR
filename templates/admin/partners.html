@@ -155,7 +155,7 @@
                                             <small class="d-block text-muted">
                                                 {% if subscription.pricing_plan %}{{ subscription.pricing_plan.plan_type.title() }}{% else %}Partner{% endif %}
                                                 {% if subscription.end_date %}
-                                                - {{ subscription.end_date.strftime('%m/%d/%Y') }}
+                                                - {{ format_datetime(subscription.end_date, '%m/%d/%Y') }}
                                                 {% endif %}
                                             </small>
                                             {% else %}
@@ -170,7 +170,7 @@
                                             </small>
                                             {% endif %}
                                         </td>
-                                        <td>{{ partner.created_at.strftime('%m/%d/%Y') }}</td>
+                                        <td>{{ format_datetime(partner.created_at, '%m/%d/%Y') }}</td>
                                         <td>
                                             <a href="{{ url_for('admin.partner_subscriptions') }}" 
                                                class="btn btn-sm btn-outline-primary" title="View Partner Subscriptions">

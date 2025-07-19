@@ -79,8 +79,8 @@ class TemplateCategoryConfig:
             'name': 'Partner Subscription',
             'description': 'Partner subscription and billing emails',
             'required_inputs': ['subscription_id'],
-            'optional_inputs': ['partner_id', 'user_id'],
-            'available_models': ['subscription', 'partner', 'user', 'system'],
+            'optional_inputs': ['partner_id', 'user_id', 'payment_id'],
+            'available_models': ['subscription', 'partner', 'user', 'payment', 'system'],
             'target_field': 'subscription.partner.owner.email',
             'examples': [
                 'Subscription created',

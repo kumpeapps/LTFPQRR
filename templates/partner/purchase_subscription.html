@@ -32,9 +32,9 @@
                             <p><strong>Status:</strong> <span class="badge bg-success">{{ subscription.status.title() }}</span></p>
                         </div>
                         <div class="col-md-6">
-                            <p><strong>Start Date:</strong> {{ subscription.start_date.strftime('%B %d, %Y') }}</p>
+                            <p><strong>Start Date:</strong> {{ format_datetime(subscription.start_date, '%B %d, %Y') }}</p>
                             {% if subscription.end_date %}
-                            <p><strong>End Date:</strong> {{ subscription.end_date.strftime('%B %d, %Y') }}</p>
+                            <p><strong>End Date:</strong> {{ format_datetime(subscription.end_date, '%B %d, %Y') }}</p>
                             {% endif %}
                             <p><strong>Auto Renew:</strong> {{ 'Yes' if subscription.auto_renew else 'No' }}</p>
                         </div>

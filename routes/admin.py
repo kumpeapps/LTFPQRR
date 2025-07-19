@@ -141,7 +141,8 @@ def delete_user(user_id):
 @admin_required
 def subscriptions():
     """Admin subscription management."""
-    from models.models import Subscription, User
+    from models.payment.payment import Subscription
+    from models.models import User
     from extensions import db
     
     search = request.args.get("search", "")
@@ -280,12 +281,20 @@ def reject_partner_subscription(subscription_id):
                     payment.refunded = True
                     payment.refund_id = refund.id
                     payment.updated_at = datetime.utcnow()
+                    # Add the refund_processed attribute for template rendering
+                    payment.refund_processed = 'Yes'
+                    payment.refund_message = 'Your payment has been fully refunded and should appear in your account within 5-10 business days.'
                     refund_processed = True
                     logger.info(f"Stripe refund processed for subscription {subscription_id}: {refund.id}")
                 
             except Exception as refund_error:
                 logger.error(f"Error processing Stripe refund for subscription {subscription_id}: {refund_error}")
                 # Continue with rejection even if refund fails
+        
+        # Set default values for payment object if it exists but no refund was processed
+        if payment and not refund_processed:
+            payment.refund_processed = 'No'
+            payment.refund_message = 'No refund was processed for this request.'
         
         # Reject the subscription
         subscription.reject(current_user)
@@ -1018,3 +1027,199 @@ def extend_partner_subscription(subscription_id):
         "admin/extend_subscription.html",
         subscription=subscription
     )
+
+
+# Tag Subscription Management Routes
+@admin.route("/subscriptions/cancel/<int:subscription_id>", methods=["POST"])
+@login_required
+@admin_required
+def cancel_tag_subscription(subscription_id):
+    """Cancel a tag subscription."""
+    from models.payment.payment import Subscription
+    from extensions import db, logger
+    
+    try:
+        subscription = Subscription.query.get_or_404(subscription_id)
+        
+        # Verify this is a tag subscription
+        if subscription.subscription_type != 'tag':
+            flash("This action is only available for tag subscriptions.", "error")
+            return redirect(url_for("admin.subscriptions"))
+        
+        user = subscription.user
+        
+        # Update subscription status
+        subscription.status = "cancelled"
+        subscription.updated_at = datetime.utcnow()
+        subscription.cancellation_requested = True
+        
+        db.session.commit()
+        
+        # Send cancellation email
+        from email_utils import send_subscription_cancelled_email
+        try:
+            send_subscription_cancelled_email(user, subscription, refunded=False)
+        except Exception as email_error:
+            logger.warning(f"Failed to send cancellation email: {email_error}")
+        
+        flash(f"Tag subscription for {user.username} has been cancelled successfully.", "success")
+        logger.info(f"Admin {current_user.username} cancelled tag subscription {subscription_id}")
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error cancelling tag subscription {subscription_id}: {str(e)}")
+        flash(f"Error cancelling subscription: {str(e)}", "error")
+    
+    return redirect(url_for("admin.subscriptions"))
+
+
+@admin.route("/subscriptions/refund/<int:subscription_id>", methods=["POST"])
+@login_required
+@admin_required
+def refund_tag_subscription(subscription_id):
+    """Process a refund for a tag subscription."""
+    from models.payment.payment import Subscription
+    from extensions import db, logger
+    
+    try:
+        subscription = Subscription.query.get_or_404(subscription_id)
+        
+        # Verify this is a tag subscription
+        if subscription.subscription_type != 'tag':
+            flash("This action is only available for tag subscriptions.", "error")
+            return redirect(url_for("admin.subscriptions"))
+        
+        user = subscription.user
+        stripe_refund_successful = False
+        
+        # Attempt Stripe refund if payment_id exists
+        if subscription.payment_id and subscription.payment_method == 'stripe':
+            try:
+                import stripe
+                from models.models import SystemSetting
+                
+                stripe_key = SystemSetting.get_value('stripe_secret_key')
+                if stripe_key:
+                    stripe.api_key = stripe_key
+                    
+                    # Create refund
+                    refund = stripe.Refund.create(
+                        payment_intent=subscription.payment_id,
+                        reason='requested_by_customer'
+                    )
+                    
+                    logger.info(f"Stripe refund processed for tag subscription {subscription_id}: {refund.id}")
+                    stripe_refund_successful = True
+                else:
+                    logger.warning(f"No Stripe key configured for refund of subscription {subscription_id}")
+                    
+            except Exception as refund_error:
+                logger.error(f"Error processing Stripe refund for tag subscription {subscription_id}: {refund_error}")
+        
+        # Cancel the subscription regardless of Stripe refund status
+        subscription.status = "cancelled"
+        subscription.updated_at = datetime.utcnow()
+        subscription.cancellation_requested = True
+        
+        db.session.commit()
+        
+        # Send cancellation email with refund status
+        from email_utils import send_subscription_cancelled_email
+        try:
+            send_subscription_cancelled_email(user, subscription, refunded=stripe_refund_successful)
+        except Exception as email_error:
+            logger.warning(f"Failed to send cancellation email: {email_error}")
+        
+        if stripe_refund_successful:
+            flash(f"Tag subscription for {user.username} has been cancelled and refunded successfully.", "success")
+        else:
+            flash(f"Tag subscription for {user.username} has been cancelled. Manual refund may be required.", "warning")
+        
+        logger.info(f"Admin {current_user.username} refunded and cancelled tag subscription {subscription_id}")
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error processing refund for tag subscription {subscription_id}: {str(e)}")
+        flash(f"Error processing refund: {str(e)}", "error")
+    
+    return redirect(url_for("admin.subscriptions"))
+
+
+@admin.route("/subscriptions/extend/<int:subscription_id>", methods=["GET", "POST"])
+@login_required
+@admin_required
+def extend_tag_subscription(subscription_id):
+    """Extend or modify the expiration date of a tag subscription."""
+    from models.payment.payment import Subscription
+    from extensions import db, logger
+    
+    subscription = Subscription.query.get_or_404(subscription_id)
+    
+    # Verify this is a tag subscription
+    if subscription.subscription_type != 'tag':
+        flash("This action is only available for tag subscriptions.", "error")
+        return redirect(url_for("admin.subscriptions"))
+    
+    if request.method == "POST":
+        try:
+            new_end_date_str = request.form.get("end_date")
+            if new_end_date_str:
+                new_end_date = datetime.strptime(new_end_date_str, "%Y-%m-%d")
+                subscription.end_date = new_end_date
+                subscription.updated_at = datetime.utcnow()
+                
+                # Reactivate if currently cancelled or expired
+                if subscription.status in ['cancelled', 'expired']:
+                    subscription.status = 'active'
+                    subscription.cancellation_requested = False
+                
+                db.session.commit()
+                
+                flash(f"Tag subscription extended to {new_end_date.strftime('%B %d, %Y')}", "success")
+                logger.info(f"Admin {current_user.username} extended tag subscription {subscription_id} to {new_end_date}")
+            else:
+                flash("Please provide a valid end date.", "error")
+                
+        except ValueError:
+            flash("Invalid date format. Please use YYYY-MM-DD.", "error")
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error extending tag subscription {subscription_id}: {str(e)}")
+            flash(f"Error updating subscription: {str(e)}", "error")
+            
+        return redirect(url_for("admin.subscriptions"))
+    
+    # GET request - show form
+    return render_template(
+        "admin/extend_subscription.html",
+        subscription=subscription
+    )
+
+
+@admin.route("/subscriptions/toggle-auto-renew/<int:subscription_id>", methods=["POST"])
+@login_required
+@admin_required
+def toggle_auto_renew_subscription(subscription_id):
+    """Toggle auto-renewal for a subscription."""
+    from models.payment.payment import Subscription
+    from extensions import db, logger
+    
+    try:
+        subscription = Subscription.query.get_or_404(subscription_id)
+        
+        # Toggle auto-renewal
+        subscription.auto_renew = not subscription.auto_renew
+        subscription.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        status = "enabled" if subscription.auto_renew else "disabled"
+        flash(f"Auto-renewal {status} for subscription {subscription_id}", "success")
+        logger.info(f"Admin {current_user.username} {status} auto-renewal for subscription {subscription_id}")
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error toggling auto-renewal for subscription {subscription_id}: {str(e)}")
+        flash(f"Error updating auto-renewal: {str(e)}", "error")
+    
+    return redirect(url_for("admin.subscriptions"))

@@ -112,7 +112,7 @@
                                 <div>
                                     <strong>{{ log.to_email }}</strong><br>
                                     <small class="text-muted">{{ log.subject[:50] }}...</small><br>
-                                    <small class="text-muted">{{ log.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                    <small class="text-muted">{{ format_datetime(log.created_at, '%Y-%m-%d %H:%M') }}</small>
                                 </div>
                                 <span class="badge badge-{{ 'success' if log.status.value == 'sent' else 'danger' if log.status.value == 'failed' else 'warning' }}">
                                     {{ log.status.value.title() }}
@@ -141,7 +141,7 @@
                                     <strong>{{ email.to_email }}</strong><br>
                                     <small class="text-muted">{{ email.subject[:50] }}...</small><br>
                                     <small class="text-muted">
-                                        Created: {{ email.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                        Created: {{ format_datetime(email.created_at, '%Y-%m-%d %H:%M') }}
                                         {% if email.retry_count > 0 %}
                                         | Retries: {{ email.retry_count }}/{{ email.max_retries }}
                                         {% endif %}
@@ -198,7 +198,7 @@
                                     <td>{{ campaign.total_recipients or 0 }}</td>
                                     <td>{{ campaign.emails_sent or 0 }}</td>
                                     <td>{{ campaign.emails_failed or 0 }}</td>
-                                    <td>{{ campaign.created_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ format_datetime(campaign.created_at, '%Y-%m-%d') }}</td>
                                     <td>
                                         {% if campaign.status == 'draft' %}
                                         <a href="{{ url_for('email_admin.send_campaign', campaign_id=campaign.id) }}" class="btn btn-sm btn-success">Send</a>

@@ -199,15 +199,78 @@ def super_admin_required(f):
 
 
 def send_notification_email(owner, tag, pet):
-    """Send notification email to pet owner."""
-    # TODO: Implement email notification
-    pass
+    """Queue notification email to pet owner when someone views their pet."""
+    try:
+        from extensions import logger
+        from services.email_service import EmailManager
+        from models.email.email_models import EmailPriority
+        from datetime import datetime
+        
+        subject = f"🐾 Someone Found Your Pet {pet.name}!"
+        
+        # Queue the email for background processing
+        queue_item = EmailManager.queue_email(
+            to_email=owner.email,
+            subject=subject,
+            html_body="",  # Will be populated by template
+            text_body="",  # Will be populated by template
+            priority=EmailPriority.HIGH,
+            user_id=owner.id,
+            email_type="pet_search_notification",
+            metadata={
+                'pet_id': pet.id,
+                'pet_name': pet.name,
+                'tag_id': tag.tag_id,
+                'owner_name': owner.first_name,
+                'search_timestamp': datetime.utcnow().isoformat()
+            },
+            send_immediately=False  # Queue for background processing
+        )
+        
+        logger.info(f"Pet search notification email queued for {owner.email} for pet {pet.name}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error queueing pet search notification email: {e}")
+        return False
 
 
 def send_contact_email(owner, pet, finder_name, finder_email, message):
-    """Send contact email from finder to pet owner."""
-    # TODO: Implement contact email
-    pass
+    """Queue contact email from finder to pet owner."""
+    try:
+        from extensions import logger
+        from services.email_service import EmailManager
+        from models.email.email_models import EmailPriority
+        
+        subject = f"🐾 Message About Your Pet {pet.name} from {finder_name}"
+        
+        # Queue the email for background processing
+        queue_item = EmailManager.queue_email(
+            to_email=owner.email,
+            subject=subject,
+            html_body="",  # Will be populated by template
+            text_body="",  # Will be populated by template
+            reply_to=finder_email,  # Set finder's email as reply-to
+            priority=EmailPriority.HIGH,
+            user_id=owner.id,
+            email_type="pet_found_contact",
+            metadata={
+                'pet_id': pet.id,
+                'pet_name': pet.name,
+                'owner_name': owner.first_name,
+                'finder_name': finder_name,
+                'finder_email': finder_email,
+                'message': message
+            },
+            send_immediately=False  # Queue for background processing
+        )
+        
+        logger.info(f"Pet found contact email queued for {owner.email} from {finder_name} about pet {pet.name}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error queueing pet found contact email: {e}")
+        return False
 
 
 def process_successful_payment(

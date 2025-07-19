@@ -110,6 +110,7 @@ def success():
                         else None
                     )
                 ),
+                auto_renew=True if subscription_type in ['monthly', 'yearly'] else False,  # Enable auto-renewal for recurring subscriptions
             )
             db.session.add(subscription)
             db.session.commit()

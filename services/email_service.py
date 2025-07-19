@@ -16,6 +16,9 @@ from email_utils import send_email as send_email_direct
 class EmailManager:
     """Central email management service"""
     
+    # Custom email processors for specific email types
+    custom_processors = {}
+    
     @staticmethod
     def queue_email(
         to_email: str,
@@ -24,6 +27,7 @@ class EmailManager:
         text_body: str = None,
         from_email: str = None,
         from_name: str = None,
+        reply_to: str = None,
         priority: EmailPriority = EmailPriority.NORMAL,
         template_id: int = None,
         user_id: int = None,
@@ -40,6 +44,7 @@ class EmailManager:
                 to_email=to_email,
                 from_email=from_email,
                 from_name=from_name,
+                reply_to=reply_to,
                 subject=subject,
                 html_body=html_body,
                 text_body=text_body,
@@ -48,7 +53,9 @@ class EmailManager:
                 user_id=user_id,
                 partner_subscription_id=partner_subscription_id,
                 max_retries=max_retries,
-                status=EmailStatus.PENDING
+                status=EmailStatus.PENDING,
+                email_type=email_type,
+                email_metadata=metadata
             )
             
             db.session.add(queue_item)
@@ -97,14 +104,19 @@ class EmailManager:
                 logger.warning(f"Email expired: {queue_item.to_email}")
                 return False
             
-            # Try to send email
+            # Check for custom processor first
+            if email_type and email_type in EmailManager.custom_processors:
+                return EmailManager.custom_processors[email_type](queue_item, email_type, metadata or {})
+            
+            # Default email processing
             success = send_email_direct(
                 to_email=queue_item.to_email,
                 subject=queue_item.subject,
                 html_body=queue_item.html_body,
                 text_body=queue_item.text_body,
                 from_email=queue_item.from_email,
-                from_name=queue_item.from_name
+                from_name=queue_item.from_name,
+                reply_to=queue_item.reply_to
             )
             
             if success:
@@ -179,9 +191,11 @@ class EmailManager:
             for queue_item in ready_emails:
                 stats['processed'] += 1
                 
-                # For bulk processing, we don't have email_type and metadata
-                # These should have been set when the email was originally queued
-                success = EmailManager.process_queue_item(queue_item)
+                # Get email_type and metadata from the queue item
+                email_type = queue_item.email_type
+                metadata = queue_item.email_metadata or {}
+                
+                success = EmailManager.process_queue_item(queue_item, email_type, metadata)
                 if success:
                     stats['sent'] += 1
                 elif queue_item.status == EmailStatus.EXPIRED:

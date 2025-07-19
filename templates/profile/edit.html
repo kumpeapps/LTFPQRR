@@ -82,6 +82,22 @@
                             {% endif %}
                         </div>
                         
+                        <div class="mb-3">
+                            {{ form.timezone.label(class="form-label") }}
+                            {{ form.timezone(class="form-select") }}
+                            {% if form.timezone.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.timezone.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Select your timezone to see dates and times in your local time.
+                                Current time in selected timezone: <span id="current-time" class="fw-bold"></span>
+                            </div>
+                        </div>
+                        
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save"></i> Update Profile
@@ -93,4 +109,43 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const timezoneSelect = document.getElementById('timezone');
+    const currentTimeSpan = document.getElementById('current-time');
+    
+    // Function to update current time display
+    function updateCurrentTime() {
+        const selectedTimezone = timezoneSelect.value;
+        if (selectedTimezone) {
+            try {
+                const now = new Date();
+                const formatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: selectedTimezone,
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    timeZoneName: 'short'
+                });
+                currentTimeSpan.textContent = formatter.format(now);
+            } catch (e) {
+                currentTimeSpan.textContent = 'Invalid timezone';
+            }
+        }
+    }
+    
+    // Update time when timezone changes
+    timezoneSelect.addEventListener('change', updateCurrentTime);
+    
+    // Initial time update
+    updateCurrentTime();
+    
+    // Update time every second
+    setInterval(updateCurrentTime, 1000);
+});
+</script>
 {% endblock %}

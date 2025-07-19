@@ -9,7 +9,7 @@ from models.email.email_models import (
     EmailQueue, EmailLog, EmailTemplate, EmailCampaign,
     EmailStatus, EmailPriority
 )
-from email_utils import send_email as send_email_direct
+from email_utils import send_email_direct
 
 
 class EmailTemplateManager:
@@ -162,6 +162,14 @@ class EmailTemplateManager:
                     # Auto-load related partner if not already loaded
                     if 'partner' not in instances and subscription.partner:
                         instances['partner'] = subscription.partner
+            
+            # Load Payment instance
+            payment_id = inputs.get('payment_id')
+            if payment_id:
+                from models.models import Payment
+                payment = Payment.query.get(payment_id)
+                if payment:
+                    instances['payment'] = payment
             
             # Add direct email addresses
             if 'admin_email' in inputs:
@@ -372,10 +380,9 @@ class EmailManager:
         """Log email activity"""
         try:
             log = EmailLog(
-                queue_item_id=queue_item.id,
+                queue_id=queue_item.id,
                 template_id=queue_item.template_id,
                 user_id=queue_item.user_id,
-                partner_subscription_id=queue_item.partner_subscription_id,
                 to_email=queue_item.to_email,
                 subject=queue_item.subject,
                 status=status,

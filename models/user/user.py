@@ -22,6 +22,7 @@ class User(UserMixin, db.Model):
     last_name = db.Column(db.String(50), nullable=False)
     phone = db.Column(db.String(20))
     address = db.Column(db.Text)
+    timezone = db.Column(db.String(50), default='UTC')  # User's preferred timezone
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow

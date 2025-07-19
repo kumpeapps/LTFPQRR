@@ -82,7 +82,7 @@
                                                 <small class="text-muted d-block">{{ payment.user.email }}</small>
                                             </div>
                                         </td>
-                                        <td>{{ payment.created_at.strftime('%m/%d/%Y %I:%M %p') }}</td>
+                                        <td>{{ format_datetime(payment.created_at, '%m/%d/%Y %I:%M %p') }}</td>
                                         <td>
                                             <span class="badge bg-info">{{ payment.payment_type.title() }}</span>
                                             {% if payment.payment_metadata and payment.payment_metadata.get('claiming_tag_id') %}
@@ -109,7 +109,7 @@
                                                 {{ payment.status.title() }}
                                             </span>
                                             {% if payment.processed_at %}
-                                                <small class="text-muted d-block">{{ payment.processed_at.strftime('%m/%d %I:%M %p') }}</small>
+                                                <small class="text-muted d-block">{{ format_datetime(payment.processed_at, '%m/%d %I:%M %p') }}</small>
                                             {% endif %}
                                         </td>
                                         <td>

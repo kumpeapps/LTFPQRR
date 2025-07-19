@@ -66,7 +66,17 @@ def queue():
         per_page = 50
         
         # Get queue statistics
-        queue_stats = EmailManager.get_queue_stats()
+        queue_stats_raw = EmailManager.get_queue_stats()
+        
+        # Transform queue stats to match template expectations
+        queue_stats = {
+            'pending': queue_stats_raw.get('queue', {}).get('pending', 0),
+            'sending': queue_stats_raw.get('queue', {}).get('sending', 0), 
+            'sent': queue_stats_raw.get('queue', {}).get('sent', 0),
+            'failed': queue_stats_raw.get('queue', {}).get('failed', 0),
+            'retry': queue_stats_raw.get('queue', {}).get('retry', 0),
+            'expired': queue_stats_raw.get('queue', {}).get('expired', 0),
+        }
         
         # Build query
         query = EmailQueue.query
@@ -88,6 +98,7 @@ def queue():
         return render_template(
             'admin/email/queue.html',
             emails=emails,
+            queue_items=emails.items,
             status_filter=status_filter,
             queue_stats=queue_stats,
             EmailStatus=EmailStatus
@@ -99,28 +110,52 @@ def queue():
         return redirect(url_for('email_admin.dashboard'))
 
 
-@email_admin.route('/queue/process')
+@email_admin.route('/queue/process', methods=['GET', 'POST'])
 @admin_required
 def process_queue():
     """Manually process email queue"""
     try:
         stats = EmailManager.process_queue(limit=100)
         
-        if 'error' in stats:
-            flash(f"Error processing queue: {stats['error']}", "error")
+        if request.method == 'POST':
+            # JSON API response for AJAX calls
+            if 'error' in stats:
+                return jsonify({
+                    'success': False,
+                    'message': stats['error']
+                })
+            else:
+                return jsonify({
+                    'success': True,
+                    'processed': stats['processed'],
+                    'sent': stats['sent'],
+                    'failed': stats['failed'],
+                    'expired': stats['expired']
+                })
         else:
-            flash(
-                f"Queue processed: {stats['sent']} sent, {stats['failed']} failed, "
-                f"{stats['expired']} expired from {stats['processed']} total",
-                "success"
-            )
-        
-        return redirect(url_for('email_admin.queue'))
+            # Traditional redirect for GET requests
+            if 'error' in stats:
+                flash(f"Error processing queue: {stats['error']}", "error")
+            else:
+                flash(
+                    f"Queue processed: {stats['sent']} sent, {stats['failed']} failed, "
+                    f"{stats['expired']} expired from {stats['processed']} total",
+                    "success"
+                )
+            
+            return redirect(url_for('email_admin.queue'))
         
     except Exception as e:
         logger.error(f"Error processing email queue: {e}")
-        flash(f"Error processing email queue: {e}", "error")
-        return redirect(url_for('email_admin.queue'))
+        
+        if request.method == 'POST':
+            return jsonify({
+                'success': False,
+                'message': str(e)
+            })
+        else:
+            flash(f"Error processing email queue: {e}", "error")
+            return redirect(url_for('email_admin.queue'))
 
 
 @email_admin.route('/queue/<int:email_id>/retry')

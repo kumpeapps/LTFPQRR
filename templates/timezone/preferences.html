@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Timezone Preferences - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-clock"></i>
+                        Timezone Preferences
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">
+                        Set your preferred timezone to see dates and times in your local time.
+                    </p>
+                    
+                    <form method="POST" action="{{ url_for('timezone.preferences') }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.timezone.label(class="form-label") }}
+                            {{ form.timezone(class="form-select") }}
+                            {% if form.timezone.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.timezone.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Current time in your selected timezone: 
+                                <span id="current-time" class="fw-bold"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-outline-secondary" id="detect-timezone">
+                                <i class="fas fa-location-arrow"></i>
+                                Auto-detect Timezone
+                            </button>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('dashboard.dashboard') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i>
+                                Back to Dashboard
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                Save Preferences
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const timezoneSelect = document.getElementById('timezone');
+    const currentTimeSpan = document.getElementById('current-time');
+    const detectButton = document.getElementById('detect-timezone');
+    
+    // Function to update current time display
+    function updateCurrentTime() {
+        const selectedTimezone = timezoneSelect.value;
+        if (selectedTimezone) {
+            try {
+                const now = new Date();
+                const formatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: selectedTimezone,
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    timeZoneName: 'short'
+                });
+                currentTimeSpan.textContent = formatter.format(now);
+            } catch (e) {
+                currentTimeSpan.textContent = 'Invalid timezone';
+            }
+        }
+    }
+    
+    // Update time when timezone changes
+    timezoneSelect.addEventListener('change', updateCurrentTime);
+    
+    // Auto-detect timezone
+    detectButton.addEventListener('click', function() {
+        try {
+            const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            
+            // Check if detected timezone is in the select options
+            const options = Array.from(timezoneSelect.options);
+            const matchingOption = options.find(option => option.value === detectedTimezone);
+            
+            if (matchingOption) {
+                timezoneSelect.value = detectedTimezone;
+                updateCurrentTime();
+                
+                // Send AJAX request to save detected timezone
+                fetch('{{ url_for("timezone.detect_timezone") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+                    },
+                    body: JSON.stringify({
+                        timezone: detectedTimezone
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success message
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                        alertDiv.innerHTML = `
+                            <i class="fas fa-check-circle"></i>
+                            Timezone auto-detected: ${detectedTimezone}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        document.querySelector('.card-body').insertBefore(alertDiv, document.querySelector('form'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error setting timezone:', error);
+                });
+            } else {
+                alert('Your detected timezone (' + detectedTimezone + ') is not available in the list. Please select manually.');
+            }
+        } catch (e) {
+            alert('Unable to detect timezone automatically. Please select manually.');
+        }
+    });
+    
+    // Initial time update
+    updateCurrentTime();
+    
+    // Update time every second
+    setInterval(updateCurrentTime, 1000);
+});
+</script>
+{% endblock %}

@@ -44,7 +44,7 @@ class EmailTemplate(db.Model):
     created_by_id = Column(Integer, ForeignKey('user.id'))
     
     # Relationships
-    created_by = relationship("User", backref="email_templates_created")
+    created_by = relationship("User", backref="email_templates_created", lazy='select')
     email_logs = relationship("EmailLog", back_populates="template")
     
     def __repr__(self):
@@ -98,13 +98,15 @@ class EmailTemplate(db.Model):
         return self.variables or []
     
     def render_content(self, variables=None, model_instances=None):
-        """Render template content with variables and model instances"""
+        """Render template content with variables and model instances using Jinja2"""
         if not variables:
             variables = {}
         if not model_instances:
             model_instances = {}
         
         try:
+            from jinja2 import Template
+            
             html_content = self.html_content
             text_content = self.text_content or ""
             subject = self.subject
@@ -143,9 +145,64 @@ class EmailTemplate(db.Model):
                 
                 filtered_instances['system'] = SystemObject(system_variables)
             
+            # First replace model variables in a backwards-compatible way
             html_content = self.replace_model_variables(html_content, filtered_instances)
             text_content = self.replace_model_variables(text_content, filtered_instances)
             subject = self.replace_model_variables(subject, filtered_instances)
+            
+            # Now process with Jinja2 for {% if %} and other template syntax
+            # Prepare context for Jinja2 (variables + model instances)
+            jinja_context = {**all_variables, **filtered_instances}
+            
+            # Add safe defaults for missing objects to prevent template errors
+            safe_defaults = {
+                'payment': type('DefaultPayment', (), {
+                    'refund_processed': 'No',
+                    'refund_message': 'Your refund is being processed and will appear in your account within 3-5 business days.'
+                })(),
+                'user': type('DefaultUser', (), {'first_name': 'Valued Customer'})(),
+                'partner': type('DefaultPartner', (), {'company_name': 'Partner'})(),
+                'subscription': type('DefaultSubscription', (), {
+                    'plan_name': 'Subscription Plan', 
+                    'amount': '0.00', 
+                    'start_date': 'N/A'
+                })(),
+                'system': SystemObject(system_variables) if 'system' not in jinja_context else jinja_context['system']
+            }
+            
+            # Only add defaults for missing objects that are in available models
+            for key, default_obj in safe_defaults.items():
+                if key in available_models and key not in jinja_context:
+                    jinja_context[key] = default_obj
+            
+            # Render with Jinja2 - now with safe defaults
+            try:
+                html_template = Template(html_content)
+                html_content = html_template.render(**jinja_context)
+            except Exception as jinja_error:
+                # Log the error but provide a fallback
+                import logging
+                logging.warning(f"Jinja2 HTML rendering failed for template {self.name}: {jinja_error}")
+                # Create a basic fallback template without Jinja2 syntax
+                html_content = html_content.replace('{{', '[').replace('}}', ']').replace('{%', '[%').replace('%}', '%]')
+            
+            try:
+                if text_content:
+                    text_template = Template(text_content)
+                    text_content = text_template.render(**jinja_context)
+            except Exception as jinja_error:
+                import logging
+                logging.warning(f"Jinja2 text rendering failed for template {self.name}: {jinja_error}")
+                if text_content:
+                    text_content = text_content.replace('{{', '[').replace('}}', ']').replace('{%', '[%').replace('%}', '%]')
+            
+            try:
+                subject_template = Template(subject)
+                subject = subject_template.render(**jinja_context)
+            except Exception as jinja_error:
+                import logging
+                logging.warning(f"Jinja2 subject rendering failed for template {self.name}: {jinja_error}")
+                subject = subject.replace('{{', '[').replace('}}', ']').replace('{%', '[%').replace('%}', '%]')
             
             return {
                 'subject': subject,
@@ -370,6 +427,7 @@ class EmailQueue(db.Model):
     to_email = Column(String(255), nullable=False)
     from_email = Column(String(255))
     from_name = Column(String(100))
+    reply_to = Column(String(255))  # Reply-To header for contact forms
     subject = Column(String(255), nullable=False)
     html_body = Column(Text, nullable=False)
     text_body = Column(Text)
@@ -379,6 +437,10 @@ class EmailQueue(db.Model):
     priority = Column(Enum(EmailPriority), default=EmailPriority.NORMAL)
     retry_count = Column(Integer, default=0)
     max_retries = Column(Integer, default=3)
+    
+    # Custom processing
+    email_type = Column(String(50))  # For custom processors like 'pet_search_notification'
+    email_metadata = Column(JSON)  # Store additional data for custom processors
     
     # Timing
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -429,10 +491,11 @@ class EmailQueue(db.Model):
         """Check if email should be expired"""
         return datetime.utcnow() >= self.expires_at
     
-    def mark_sent(self):
+    def mark_sent(self, message_id=None):
         """Mark email as sent"""
         self.status = EmailStatus.SENT
         self.sent_at = datetime.utcnow()
+        # message_id can be stored in metadata if needed
     
     def mark_failed(self, error_message):
         """Mark email as failed with error"""

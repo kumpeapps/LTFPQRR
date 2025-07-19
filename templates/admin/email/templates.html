@@ -59,7 +59,7 @@
                                             <span class="badge bg-secondary">Inactive</span>
                                         {% endif %}
                                     </td>
-                                    <td>{{ template.created_at.strftime('%Y-%m-%d') if template.created_at else 'N/A' }}</td>
+                                    <td>{{ format_datetime(template.created_at, '%Y-%m-%d') if template.created_at else 'N/A' }}</td>
                                     <td>
                                         <a href="{{ url_for('email_admin.edit_template', template_id=template.id) }}" 
                                            class="btn btn-sm btn-outline-primary">Edit</a>

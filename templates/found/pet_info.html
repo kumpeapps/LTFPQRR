@@ -9,7 +9,7 @@
             <div class="card">
                 <div class="card-header bg-success text-white text-center">
                     <h3><i class="fas fa-heart"></i> Pet Found!</h3>
-                    <p class="mb-0">This pet is registered with LTFPQRR</p>
+                    <p class="mb-0">This pet is registered with Lost Then Found Pet QR Registry</p>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -28,14 +28,35 @@
                             <div class="row">
                                 <div class="col-sm-6">
                                     <p><strong>Breed:</strong> {{ pet.breed or 'Not specified' }}</p>
+                                    {% if pet.species %}
+                                        <p><strong>Species:</strong> {{ pet.species }}</p>
+                                    {% endif %}
                                     <p><strong>Color:</strong> {{ pet.color or 'Not specified' }}</p>
+                                    {% if pet.age %}
+                                        <p><strong>Age:</strong> {{ pet.age }} years old</p>
+                                    {% endif %}
                                     <p><strong>Tag ID:</strong> <span class="tag-display">{{ tag.tag_id }}</span></p>
                                 </div>
                                 <div class="col-sm-6">
-                                    {% if pet.vet_name %}
-                                        <p><strong>Veterinarian:</strong> {{ pet.vet_name }}</p>
+                                    {% if (pet.vet_info_public is not none and pet.vet_info_public) and pet.vet_name %}
+                                        <h6><i class="fas fa-user-md"></i> Veterinarian</h6>
+                                        <p><strong>Name:</strong> {{ pet.vet_name }}</p>
                                         {% if pet.vet_phone %}
-                                            <p><strong>Vet Phone:</strong> {{ pet.vet_phone }}</p>
+                                            <p><strong>Phone:</strong> {{ pet.vet_phone }}</p>
+                                        {% endif %}
+                                        {% if pet.vet_address %}
+                                            <p><strong>Address:</strong> {{ pet.vet_address }}</p>
+                                        {% endif %}
+                                    {% endif %}
+                                    
+                                    {% if (pet.groomer_info_public is not none and pet.groomer_info_public) and pet.groomer_name %}
+                                        <h6><i class="fas fa-cut"></i> Groomer</h6>
+                                        <p><strong>Name:</strong> {{ pet.groomer_name }}</p>
+                                        {% if pet.groomer_phone %}
+                                            <p><strong>Phone:</strong> {{ pet.groomer_phone }}</p>
+                                        {% endif %}
+                                        {% if pet.groomer_address %}
+                                            <p><strong>Address:</strong> {{ pet.groomer_address }}</p>
                                         {% endif %}
                                     {% endif %}
                                 </div>
@@ -44,6 +65,23 @@
                     </div>
                     
                     <hr>
+                    
+                    <!-- Owner Contact Information -->
+                    {% if (pet.phone_public is not none and pet.phone_public) and owner.phone %}
+                        <div class="alert alert-success">
+                            <div class="row align-items-center">
+                                <div class="col">
+                                    <h6 class="mb-1"><i class="fas fa-phone"></i> Owner Contact</h6>
+                                    <p class="mb-0"><strong>Phone:</strong> <a href="tel:{{ owner.phone }}" class="text-decoration-none">{{ owner.phone }}</a></p>
+                                </div>
+                                <div class="col-auto">
+                                    <a href="tel:{{ owner.phone }}" class="btn btn-success">
+                                        <i class="fas fa-phone"></i> Call Owner
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
                     
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle"></i>

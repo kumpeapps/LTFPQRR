@@ -1,0 +1,48 @@
+# LTFPQRR Auto-Renewal Scheduling
+
+## Docker Container Approach (Recommended)
+
+The LTFPQRR auto-renewal system now runs automatically inside Docker containers.
+No manual cron setup is required!
+
+### Automatic Scheduling:
+- The 'scheduler' service runs alongside your web application
+- Handles subscription renewals every hour
+- Sends reminder emails daily at 9 AM UTC
+- Cleans up expired subscriptions daily at midnight UTC
+
+### To enable automatic scheduling:
+1. Use the standard docker-compose.yml (scheduler is included by default)
+2. Start your application: `docker-compose up -d`
+3. Check scheduler logs: `docker-compose logs scheduler`
+
+### Manual scheduling commands (if needed):
+```bash
+# Check renewal status
+docker-compose exec web python3 scripts/check_renewals.py
+
+# Run renewals manually
+docker-compose exec web python3 scripts/manual_renewal.py
+
+# Send reminders manually
+docker-compose exec web python3 scripts/send_renewal_reminders.py
+```
+
+## Legacy Cron Approach (Host-based)
+
+If you prefer to run renewals on the Docker host instead of inside containers,
+you can use these cron jobs. Add to your crontab with: crontab -e
+
+```cron
+# Run subscription renewals every hour
+0 * * * * cd /Users/justinkumpe/Documents/LTFPQRR && ./run_renewals.sh
+
+# Send renewal reminders daily at 9 AM
+0 9 * * * cd /Users/justinkumpe/Documents/LTFPQRR && python3 scripts/send_renewal_reminders.py
+
+# Cleanup expired subscriptions daily at midnight
+0 0 * * * cd /Users/justinkumpe/Documents/LTFPQRR && python3 scripts/cleanup_expired.py
+```
+
+Note: The Docker container approach is recommended as it doesn't require
+host-level configuration and works consistently across all deployments.

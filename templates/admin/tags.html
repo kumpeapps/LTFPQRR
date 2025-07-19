@@ -139,7 +139,7 @@
                                                     <em>No pet assigned</em>
                                                 {% endif %}
                                             </td>
-                                            <td>{{ tag.created_at.strftime('%m/%d/%Y') }}</td>
+                                            <td>{{ format_datetime(tag.created_at, '%m/%d/%Y') }}</td>
                                             <td>
                                                 <div class="btn-group" role="group">
                                                     <a href="/found/{{ tag.tag_id }}" class="btn btn-sm btn-outline-primary" target="_blank" title="View Tag Page">

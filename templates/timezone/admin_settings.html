@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Timezone Settings - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-globe"></i>
+                        System Timezone Settings
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">
+                        Configure system-wide timezone settings for LTFPQRR.
+                    </p>
+                    
+                    <form method="POST" action="{{ url_for('timezone.admin_settings') }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.default_timezone.label(class="form-label") }}
+                                    {{ form.default_timezone(class="form-select") }}
+                                    {% if form.default_timezone.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.default_timezone.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Timezone assigned to new users by default.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.business_timezone.label(class="form-label") }}
+                                    {{ form.business_timezone(class="form-select") }}
+                                    {% if form.business_timezone.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.business_timezone.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Timezone for business hours and system operations.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Default Timezone Preview</h6>
+                                        <p class="card-text">
+                                            Current time: <span id="default-time" class="fw-bold"></span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Business Timezone Preview</h6>
+                                        <p class="card-text">
+                                            Current time: <span id="business-time" class="fw-bold"></span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Note:</strong> Changes to timezone settings will affect:
+                            <ul class="mb-0 mt-2">
+                                <li>New user registration defaults</li>
+                                <li>System-generated timestamps</li>
+                                <li>Business hours calculations</li>
+                                <li>Email scheduling and notifications</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{{ url_for('admin.settings') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i>
+                                Back to Admin Settings
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-save"></i>
+                                Save System Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const defaultTimezoneSelect = document.getElementById('default_timezone');
+    const businessTimezoneSelect = document.getElementById('business_timezone');
+    const defaultTimeSpan = document.getElementById('default-time');
+    const businessTimeSpan = document.getElementById('business-time');
+    
+    // Function to update time displays
+    function updateTimeDisplays() {
+        updateTimeDisplay(defaultTimezoneSelect.value, defaultTimeSpan);
+        updateTimeDisplay(businessTimezoneSelect.value, businessTimeSpan);
+    }
+    
+    function updateTimeDisplay(timezone, element) {
+        if (timezone) {
+            try {
+                const now = new Date();
+                const formatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: timezone,
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    timeZoneName: 'short'
+                });
+                element.textContent = formatter.format(now);
+            } catch (e) {
+                element.textContent = 'Invalid timezone';
+            }
+        }
+    }
+    
+    // Update time when timezones change
+    defaultTimezoneSelect.addEventListener('change', updateTimeDisplays);
+    businessTimezoneSelect.addEventListener('change', updateTimeDisplays);
+    
+    // Initial time update
+    updateTimeDisplays();
+    
+    // Update time every second
+    setInterval(updateTimeDisplays, 1000);
+});
+</script>
+{% endblock %}

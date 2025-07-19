@@ -123,7 +123,7 @@
                     </div>
                     {% endif %}
                     <div class="mb-2">
-                        <strong>Created:</strong> {{ template.created_at.strftime('%Y-%m-%d %H:%M') }}
+                        <strong>Created:</strong> {{ format_datetime(template.created_at, '%Y-%m-%d %H:%M') }}
                     </div>
                 </div>
             </div>

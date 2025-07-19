@@ -63,9 +63,9 @@
                                         {% if partner.address %}
                                         <p><strong>Address:</strong><br>{{ partner.address }}</p>
                                         {% endif %}
-                                        <p><strong>Created:</strong><br>{{ partner.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                                        <p><strong>Created:</strong><br>{{ format_datetime(partner.created_at, '%B %d, %Y at %I:%M %p') }}</p>
                                         {% if partner.updated_at and partner.updated_at != partner.created_at %}
-                                        <p><strong>Last Updated:</strong><br>{{ partner.updated_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                                        <p><strong>Last Updated:</strong><br>{{ format_datetime(partner.updated_at, '%B %d, %Y at %I:%M %p') }}</p>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -85,7 +85,7 @@
                                     <h6>{{ partner.owner.get_full_name() }}</h6>
                                     <p class="text-muted">{{ partner.owner.email }}</p>
                                     <p class="text-muted small">
-                                        Joined: {{ partner.owner.created_at.strftime('%m/%d/%Y') }}
+                                        Joined: {{ format_datetime(partner.owner.created_at, '%m/%d/%Y') }}
                                     </p>
                                     <a href="{{ url_for('edit_user', user_id=partner.owner.id) }}" class="btn btn-outline-primary btn-sm">
                                         <i class="fas fa-edit"></i> Edit User
@@ -124,9 +124,9 @@
                                 <p><strong>Amount:</strong> ${{ "%.2f"|format(subscription.amount) }}</p>
                             </div>
                             <div class="col-md-6">
-                                <p><strong>Start Date:</strong> {{ subscription.start_date.strftime('%B %d, %Y') }}</p>
+                                <p><strong>Start Date:</strong> {{ format_datetime(subscription.start_date, '%B %d, %Y') }}</p>
                                 {% if subscription.end_date %}
-                                <p><strong>End Date:</strong> {{ subscription.end_date.strftime('%B %d, %Y') }}</p>
+                                <p><strong>End Date:</strong> {{ format_datetime(subscription.end_date, '%B %d, %Y') }}</p>
                                 {% endif %}
                                 <p><strong>Auto Renew:</strong> {{ 'Yes' if subscription.auto_renew else 'No' }}</p>
                             </div>
@@ -225,7 +225,7 @@
                                             <span class="text-muted">Unassigned</span>
                                             {% endif %}
                                         </td>
-                                        <td>{{ tag.created_at.strftime('%m/%d/%Y') }}</td>
+                                        <td>{{ format_datetime(tag.created_at, '%m/%d/%Y') }}</td>
                                         <td>
                                             <a href="{{ url_for('admin.tags', search=tag.tag_id) }}" class="btn btn-xs btn-outline-primary">
                                                 <i class="fas fa-eye"></i>

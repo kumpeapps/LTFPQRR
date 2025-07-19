@@ -37,16 +37,32 @@ class LoginForm(FlaskForm):
     remember = BooleanField('Remember Me')
 
 class PetForm(FlaskForm):
-    name = StringField('Pet Name', validators=[DataRequired(), Length(max=100)])
-    breed = StringField('Breed', validators=[Optional(), Length(max=100)])
-    color = StringField('Color', validators=[Optional(), Length(max=50)])
+    """Pet registration form."""
+    name = StringField('Pet Name', validators=[DataRequired()])
+    species = SelectField('Species', choices=[
+        ('', 'Select Species'),
+        ('dog', 'Dog'),
+        ('cat', 'Cat'),
+        ('bird', 'Bird'),
+        ('rabbit', 'Rabbit'),
+        ('hamster', 'Hamster'),
+        ('fish', 'Fish'),
+        ('reptile', 'Reptile'),
+        ('other', 'Other')
+    ], validators=[DataRequired()])
+    breed = StringField('Breed')
+    date_of_birth = DateField('Date of Birth', validators=[Optional()], format='%Y-%m-%d')
+    color = StringField('Color')
     photo = FileField('Photo', validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Images only!')])
     vet_name = StringField('Veterinarian Name', validators=[Optional(), Length(max=100)])
     vet_phone = StringField('Veterinarian Phone', validators=[Optional(), Length(max=20)])
     vet_address = TextAreaField('Veterinarian Address', validators=[Optional()])
+    vet_info_public = BooleanField('Make veterinarian information public')
     groomer_name = StringField('Groomer Name', validators=[Optional(), Length(max=100)])
     groomer_phone = StringField('Groomer Phone', validators=[Optional(), Length(max=20)])
     groomer_address = TextAreaField('Groomer Address', validators=[Optional()])
+    groomer_info_public = BooleanField('Make groomer information public')
+    phone_public = BooleanField('Make my phone number public', default=True)
     tag_id = SelectField('Assign to Tag', coerce=int, validators=[Optional()])
 
 class TagForm(FlaskForm):
@@ -158,6 +174,7 @@ class ProfileForm(FlaskForm):
     phone = StringField('Phone Number', validators=[Optional(), Length(max=20)])
     address = TextAreaField('Address', validators=[Optional()])
     email = StringField('Email', validators=[DataRequired(), Email()])
+    timezone = SelectField('Timezone', choices=[], validators=[DataRequired()])
 
 class ChangePasswordForm(FlaskForm):
     current_password = PasswordField('Current Password', validators=[DataRequired()])

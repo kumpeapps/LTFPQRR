@@ -101,9 +101,9 @@
                                 {% if template.description %}
                                 <p><strong>Description:</strong> {{ template.description }}</p>
                                 {% endif %}
-                                <p><strong>Created:</strong> {{ template.created_at.strftime('%Y-%m-%d %H:%M') if template.created_at else 'N/A' }}</p>
+                                <p><strong>Created:</strong> {{ format_datetime(template.created_at, '%Y-%m-%d %H:%M') if template.created_at else 'N/A' }}</p>
                                 {% if template.updated_at %}
-                                <p><strong>Updated:</strong> {{ template.updated_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                                <p><strong>Updated:</strong> {{ format_datetime(template.updated_at, '%Y-%m-%d %H:%M') }}</p>
                                 {% endif %}
                             </div>
                         </div>

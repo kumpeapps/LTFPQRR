@@ -23,8 +23,12 @@ def edit_profile():
     """Edit user profile."""
     from models.models import User
     from extensions import db
+    from services.timezone_service import TimezoneService
     
     form = ProfileForm(obj=current_user)
+    
+    # Populate timezone choices
+    form.timezone.choices = TimezoneService.get_timezone_choices()
 
     if form.validate_on_submit():
         # Check if email is already taken by another user
@@ -38,6 +42,7 @@ def edit_profile():
         current_user.phone = form.phone.data
         current_user.address = form.address.data
         current_user.email = form.email.data
+        current_user.timezone = form.timezone.data
         current_user.updated_at = datetime.utcnow()
 
         db.session.commit()

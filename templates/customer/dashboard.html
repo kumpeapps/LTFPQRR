@@ -40,17 +40,117 @@
                     </div>
                     <div class="col-md-3">
                         <div class="card stats-card">
-                            <h3>{{ tags|selectattr('pet_id', 'none')|list|length }}</h3>
-                            <p>Unassigned Tags</p>
+                            {% set active_subs = subscriptions|selectattr('status', 'equalto', 'active')|list %}
+                            <h3>{{ active_subs|length }}</h3>
+                            <p>Active Subscriptions</p>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card stats-card">
-                            <h3>{{ tags|selectattr('pet_id', 'ne', None)|list|length }}</h3>
-                            <p>Active Tags</p>
+                            {% set expiring_subs = [] %}
+                            {% for sub in active_subs %}
+                                {% if sub.end_date and (sub.end_date - now).days <= 7 %}
+                                    {% set _ = expiring_subs.append(sub) %}
+                                {% endif %}
+                            {% endfor %}
+                            <h3>{{ expiring_subs|length }}</h3>
+                            <p>Expiring Soon</p>
                         </div>
                     </div>
                 </div>
+
+                <!-- My Subscriptions -->
+                {% if subscriptions %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">My Subscriptions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Amount</th>
+                                        <th>Start Date</th>
+                                        <th>End Date</th>
+                                        <th>Auto-Renew</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for subscription in subscriptions %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge 
+                                                {% if subscription.subscription_type == 'lifetime' %}bg-success
+                                                {% elif subscription.subscription_type == 'yearly' %}bg-primary
+                                                {% elif subscription.subscription_type == 'monthly' %}bg-info
+                                                {% else %}bg-secondary
+                                                {% endif %}">
+                                                {{ subscription.subscription_type.title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if subscription.status == 'active' %}bg-success
+                                                {% elif subscription.status == 'cancelled' %}bg-danger
+                                                {% elif subscription.status == 'expired' %}bg-warning
+                                                {% else %}bg-secondary
+                                                {% endif %}">
+                                                {{ subscription.status.title() }}
+                                            </span>
+                                            {% if subscription.status == 'active' and subscription.end_date and (subscription.end_date - now).days <= 7 %}
+                                                <br><small class="text-warning">Expires in {{ (subscription.end_date - now).days }} days</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>${{ "%.2f"|format(subscription.amount) }}</td>
+                                        <td>{{ format_datetime(subscription.start_date, '%m/%d/%Y') if subscription.start_date else '—' }}</td>
+                                        <td>
+                                            {% if subscription.end_date %}
+                                                {{ format_datetime(subscription.end_date, '%m/%d/%Y') }}
+                                            {% elif subscription.subscription_type == 'lifetime' %}
+                                                <span class="badge bg-success">Never</span>
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if subscription.subscription_type != 'lifetime' %}
+                                                {% if subscription.auto_renew %}
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check"></i> Enabled
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">
+                                                        <i class="fas fa-times"></i> Disabled
+                                                    </span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if subscription.status == 'active' %}
+                                                <div class="btn-group">
+                                                    <a href="{{ url_for('customer.manage_subscription', subscription_id=subscription.id) }}" 
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-cog"></i> Manage
+                                                    </a>
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
 
                 <!-- My Pets -->
                 <div class="card mb-4">
@@ -81,15 +181,11 @@
                                             <div class="mb-2">
                                                 <strong>Color:</strong> {{ pet.color or 'Not specified' }}
                                             </div>
-                                            {% if pet.tag %}
+                                            {% set pet_tag = tags|selectattr('pet_id', 'equalto', pet.id)|first %}
+                                            {% if pet_tag %}
                                                 <div class="mb-3">
                                                     <strong>Tag ID:</strong> 
-                                                    <div class="tag-display mb-2">{{ pet.tag.tag_id }}</div>
-                                                    <div class="text-center">
-                                                        <img src="{{ url_for('tag_qr', tag_id=pet.tag.tag_id) }}" 
-                                                             alt="QR Code for {{ pet.tag.tag_id }}" 
-                                                             class="img-fluid" style="max-width: 100px;">
-                                                    </div>
+                                                    <div class="tag-display mb-2">{{ pet_tag.tag_id }}</div>
                                                 </div>
                                             {% endif %}
                                             <div class="btn-group w-100">
@@ -97,14 +193,10 @@
                                                    class="btn btn-sm btn-outline-primary">
                                                     <i class="fas fa-edit"></i> Edit
                                                 </a>
-                                                {% if pet.tag %}
-                                                    <a href="/found/{{ pet.tag.tag_id }}" 
+                                                {% if pet_tag %}
+                                                    <a href="/found/{{ pet_tag.tag_id }}" 
                                                        class="btn btn-sm btn-outline-success" target="_blank">
                                                         <i class="fas fa-eye"></i> View Public
-                                                    </a>
-                                                    <a href="{{ url_for('tag_qr', tag_id=pet.tag.tag_id) }}" 
-                                                       class="btn btn-sm btn-outline-info" target="_blank" title="Download QR Code">
-                                                        <i class="fas fa-qrcode"></i>
                                                     </a>
                                                 {% endif %}
                                             </div>
@@ -141,6 +233,8 @@
                                             <th>Status</th>
                                             <th>Pet</th>
                                             <th>Subscription</th>
+                                            <th>Expires</th>
+                                            <th>Auto-Renew</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
@@ -166,13 +260,48 @@
                                                 {% endif %}
                                             </td>
                                             <td>
+                                                {% set active_subscription = None %}
                                                 {% for subscription in tag.subscriptions %}
                                                     {% if subscription.is_active() %}
+                                                        {% set active_subscription = subscription %}
                                                         <span class="badge bg-primary">
                                                             {{ subscription.subscription_type.title() }}
                                                         </span>
+                                                        <br><small class="text-muted">${{ "%.2f"|format(subscription.amount) }}</small>
                                                     {% endif %}
                                                 {% endfor %}
+                                                {% if not active_subscription %}
+                                                    <span class="badge bg-secondary">No Subscription</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if active_subscription and active_subscription.end_date %}
+                                                    {{ format_datetime(active_subscription.end_date, '%m/%d/%Y') }}
+                                                    {% if active_subscription.is_expired() %}
+                                                        <br><span class="badge bg-danger">Expired</span>
+                                                    {% elif (active_subscription.end_date - now).days <= 7 %}
+                                                        <br><span class="badge bg-warning">Expires Soon</span>
+                                                    {% endif %}
+                                                {% elif active_subscription and active_subscription.subscription_type == 'lifetime' %}
+                                                    <span class="badge bg-success">Lifetime</span>
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if active_subscription %}
+                                                    {% if active_subscription.auto_renew %}
+                                                        <span class="badge bg-success">
+                                                            <i class="fas fa-check"></i> Enabled
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="badge bg-warning">
+                                                            <i class="fas fa-times"></i> Disabled
+                                                        </span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
                                             </td>
                                             <td>
                                                 <div class="btn-group">
@@ -180,7 +309,13 @@
                                                        class="btn btn-sm btn-outline-primary" target="_blank">
                                                         <i class="fas fa-eye"></i> View
                                                     </a>
-                                                    <a href="{{ url_for('transfer_tag', tag_id=tag.id) }}" 
+                                                    {% if active_subscription %}
+                                                        <a href="{{ url_for('customer.manage_subscription', subscription_id=active_subscription.id) }}" 
+                                                           class="btn btn-sm btn-outline-info">
+                                                            <i class="fas fa-cog"></i> Manage
+                                                        </a>
+                                                    {% endif %}
+                                                    <a href="{{ url_for('tag.transfer_tag', tag_id=tag.id) }}" 
                                                        class="btn btn-sm btn-outline-secondary">
                                                         <i class="fas fa-exchange-alt"></i> Transfer
                                                     </a>

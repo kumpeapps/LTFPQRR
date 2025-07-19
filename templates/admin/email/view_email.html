@@ -102,18 +102,18 @@
                                     {% endif %}
                                 </p>
                                 <p><strong>Attempts:</strong> {{ queue_item.retry_count }}/5</p>
-                                <p><strong>Created:</strong> {{ queue_item.created_at.strftime('%Y-%m-%d %H:%M:%S') if queue_item.created_at else 'N/A' }}</p>
+                                <p><strong>Created:</strong> {{ format_datetime(queue_item.created_at, '%Y-%m-%d %H:%M:%S') if queue_item.created_at else 'N/A' }}</p>
                                 {% if queue_item.scheduled_at %}
-                                <p><strong>Scheduled:</strong> {{ queue_item.scheduled_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                                <p><strong>Scheduled:</strong> {{ format_datetime(queue_item.scheduled_at, '%Y-%m-%d %H:%M:%S') }}</p>
                                 {% endif %}
                                 {% if queue_item.sent_at %}
-                                <p><strong>Sent:</strong> {{ queue_item.sent_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                                <p><strong>Sent:</strong> {{ format_datetime(queue_item.sent_at, '%Y-%m-%d %H:%M:%S') }}</p>
                                 {% endif %}
                                 {% if queue_item.expires_at %}
-                                <p><strong>Expires:</strong> {{ queue_item.expires_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                                <p><strong>Expires:</strong> {{ format_datetime(queue_item.expires_at, '%Y-%m-%d %H:%M:%S') }}</p>
                                 {% endif %}
                                 {% if queue_item.next_retry_at %}
-                                <p><strong>Next Retry:</strong> {{ queue_item.next_retry_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                                <p><strong>Next Retry:</strong> {{ format_datetime(queue_item.next_retry_at, '%Y-%m-%d %H:%M:%S') }}</p>
                                 {% endif %}
                             </div>
                         </div>
