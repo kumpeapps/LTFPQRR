@@ -82,7 +82,15 @@ with app.app_context():
 
 # Initialize default settings and payment gateways
 echo "Initializing system settings and payment gateways..."
-python init_default_settings.py
+python init_default_settings.py || echo "Warning: Failed to initialize default settings"
+
+# Initialize system settings for email templates
+echo "Initializing system settings for email templates..."
+python init_system_settings.py || echo "Warning: Failed to initialize system settings"
+
+# Initialize default email templates
+echo "Initializing default email templates..."
+python init_email_templates.py || echo "Warning: Failed to initialize email templates"
 
 # Start the Flask application
 echo "Starting Flask application..."
