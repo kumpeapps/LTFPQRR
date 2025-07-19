@@ -58,6 +58,18 @@ def create_app(config_name=None):
     app.register_blueprint(settings)
     app.register_blueprint(timezone_bp)
     
+    # Health check endpoint for Docker
+    @app.route('/health')
+    def health_check():
+        """Health check endpoint for container monitoring"""
+        try:
+            # Test database connection
+            from sqlalchemy import text
+            db.session.execute(text('SELECT 1'))
+            return {'status': 'healthy', 'database': 'connected'}, 200
+        except Exception as e:
+            return {'status': 'unhealthy', 'error': str(e)}, 503
+    
     # Register email admin blueprint
     from routes.email_admin import email_admin
     app.register_blueprint(email_admin)
