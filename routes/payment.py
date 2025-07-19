@@ -76,8 +76,29 @@ def success():
     # Handle tag claim payments
     if "claiming_tag_id" in session:
         logger.info("Processing tag claim payment")
+        tag_id = session.get("claiming_tag_id")
+        subscription_type = session.get("subscription_type", "monthly")
+        payment_method = session.get("payment_method", "unknown")
+        
+        # For Stripe payments, only process via webhook for security
+        # The direct success page should only handle non-Stripe payments
+        if payment_method == "stripe":
+            logger.info("Stripe payment detected - deferring to webhook processing")
+            # Don't process here, let webhook handle it
+            # Just show success message and clean up session
+            session.pop("claiming_tag_id", None)
+            session.pop("subscription_type", None)
+            session.pop("payment_method", None)
+            flash("Payment successful! Your subscription will be activated shortly.", "success")
+            return redirect(url_for("dashboard.customer_dashboard"))
+        
+        # Process non-Stripe payments immediately (PayPal, manual, etc.)
+        logger.info(f"Processing non-Stripe payment method: {payment_method}")
+        
+        # Pop the session data for non-Stripe payments
         tag_id = session.pop("claiming_tag_id")
         subscription_type = session.pop("subscription_type", "monthly")
+        session.pop("payment_method", None)
 
         # In a real implementation, you would verify the payment here
         # For now, we'll just create the subscription
@@ -85,49 +106,75 @@ def success():
 
         tag_obj = Tag.query.filter(func.upper(Tag.tag_id) == func.upper(tag_id)).first()
         if tag_obj:
-            # Check for existing active subscription to prevent duplicates
-            existing_subscription = Subscription.query.filter_by(
-                user_id=current_user.id,
-                tag_id=tag_obj.id,
-                status='active'
+            # More robust duplicate prevention using payment_id and tag_id
+            existing_subscription = Subscription.query.filter(
+                Subscription.user_id == current_user.id,
+                Subscription.tag_id == tag_obj.id,
+                Subscription.status.in_(['active', 'pending'])
             ).first()
             
             if existing_subscription:
-                logger.warning(f"Active subscription already exists for user {current_user.id} and tag {tag_obj.id}")
+                logger.warning(f"Subscription already exists for user {current_user.id} and tag {tag_obj.id}: {existing_subscription.id}")
                 flash(f"You already have an active subscription for tag {tag_id}.", "info")
                 return redirect(url_for("dashboard.customer_dashboard"))
             
-            tag_obj.owner_id = current_user.id
-            tag_obj.status = "claimed"
+            # Check if this payment_intent was already processed (prevent webhook duplicates)
+            payment_intent_id = session.get('payment_intent_id')
+            if payment_intent_id:
+                existing_with_payment = Subscription.query.filter_by(
+                    payment_id=payment_intent_id
+                ).first()
+                if existing_with_payment:
+                    logger.warning(f"Payment {payment_intent_id} already processed for subscription {existing_with_payment.id}")
+                    flash(f"Payment for tag {tag_id} has already been processed.", "info")
+                    return redirect(url_for("dashboard.customer_dashboard"))
+            
+            # Use database transaction to prevent race conditions
+            try:
+                # Only update tag ownership if it's being claimed for the first time
+                if not tag_obj.owner_id:
+                    tag_obj.owner_id = current_user.id
+                    tag_obj.status = "claimed"
 
-            # Create subscription
-            subscription = Subscription(
-                user_id=current_user.id,
-                tag_id=tag_obj.id,
-                subscription_type=subscription_type,
-                status="active",
-                payment_method="stripe",  # default
-                amount=(
-                    9.99
-                    if subscription_type == "monthly"
-                    else (99.99 if subscription_type == "yearly" else 199.99)
-                ),
-                start_date=datetime.utcnow(),
-                end_date=(
-                    datetime.utcnow() + timedelta(days=365)
-                    if subscription_type == "yearly"
-                    else (
-                        datetime.utcnow() + timedelta(days=30)
+                # Create subscription with unique payment identifier
+                subscription = Subscription(
+                    user_id=current_user.id,
+                    tag_id=tag_obj.id,
+                    subscription_type="tag",
+                    status="active",
+                    payment_method="stripe",  # default
+                    payment_id=payment_intent_id,  # Use payment_intent_id for uniqueness
+                    amount=(
+                        9.99
                         if subscription_type == "monthly"
-                        else None
-                    )
-                ),
-                auto_renew=True if subscription_type in ['monthly', 'yearly'] else False,  # Enable auto-renewal for recurring subscriptions
-            )
-            db.session.add(subscription)
-            db.session.commit()
-
-            flash(f"Payment successful! Tag {tag_id} has been claimed.", "success")
+                        else (99.99 if subscription_type == "yearly" else 199.99)
+                    ),
+                    start_date=datetime.utcnow(),
+                    end_date=(
+                        datetime.utcnow() + timedelta(days=365)
+                        if subscription_type == "yearly"
+                        else (
+                            datetime.utcnow() + timedelta(days=30)
+                            if subscription_type == "monthly"
+                            else None
+                        )
+                    ),
+                    auto_renew=True if subscription_type in ['monthly', 'yearly'] else False,
+                )
+                db.session.add(subscription)
+                db.session.commit()
+                
+                # Clear session data to prevent reprocessing
+                session.pop('payment_intent_id', None)
+                
+                logger.info(f"Successfully created subscription {subscription.id} for user {current_user.id} and tag {tag_obj.id}")
+                flash(f"Payment successful! Tag {tag_id} subscription has been activated.", "success")
+                
+            except Exception as e:
+                db.session.rollback()
+                logger.error(f"Error creating subscription: {str(e)}")
+                flash("There was an error processing your payment. Please contact support.", "error")
+                
             return redirect(url_for("dashboard.customer_dashboard"))
 
     # Handle partner subscription payments
@@ -627,6 +674,10 @@ def create_stripe_payment_intent():
         intent = stripe.PaymentIntent.create(
             amount=amount_cents, currency=currency, metadata=metadata
         )
+        
+        # Store payment method and intent ID in session for duplicate prevention
+        session["payment_method"] = "stripe"
+        session["payment_intent_id"] = intent.id
 
         return jsonify(
             {"client_secret": intent.client_secret, "publishable_key": publishable_key}

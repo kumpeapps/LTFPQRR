@@ -6,7 +6,12 @@ import logging
 from functools import wraps
 from flask import flash, redirect, url_for
 from flask_login import current_user
-from extensions import logger, get_cipher_suite
+from extensions import logger, ge                  subject = f"URGENT: Someone Found Your Pet {pet.name} - Subscription Expired!" if expired_subscription:
+            subject = f"URGENT: Someone Found Your Pet {pet.name} - Subscription Expired!"
+            email_type = "pet_search_subscription_expired"
+        else:
+            subject = f"Someone Found Your Pet {pet.name}!"
+            email_type = "pet_search_notification"er_suite
 import stripe
 import paypalrestsdk
 
@@ -207,10 +212,10 @@ def send_notification_email(owner, tag, pet, expired_subscription=False):
         from datetime import datetime
         
         if expired_subscription:
-            subject = f" URGENT: Someone Found Your Pet {pet.name} - Subscription Expired!"
+            subject = f"� URGENT: Someone Found Your Pet {pet.name} - Subscription Expired!"
             email_type = "pet_search_subscription_expired"
         else:
-            subject = f"🐾 Someone Found Your Pet {pet.name}!"
+            subject = f"�🐾 Someone Found Your Pet {pet.name}!"
             email_type = "pet_search_notification"
         
         # Queue the email for background processing
@@ -328,57 +333,75 @@ def process_successful_payment(
             # Process tag subscription
             tag = Tag.query.filter_by(tag_id=claiming_tag_id).first()
             if tag:
-                # Check for existing active subscription to prevent duplicates
-                existing_subscription = Subscription.query.filter_by(
-                    user_id=user_id,
-                    tag_id=tag.id,
-                    status='active'
+                # Check for existing subscription with this payment_intent_id (most robust check)
+                existing_payment_subscription = Subscription.query.filter_by(
+                    payment_id=payment_intent_id
+                ).first()
+                
+                if existing_payment_subscription:
+                    logger.warning(f"Payment {payment_intent_id} already processed for subscription {existing_payment_subscription.id}")
+                    return True  # Already processed, not an error
+                
+                # Check for existing active subscription for this user/tag combination
+                existing_subscription = Subscription.query.filter(
+                    Subscription.user_id == user_id,
+                    Subscription.tag_id == tag.id,
+                    Subscription.status.in_(['active', 'pending'])
                 ).first()
                 
                 if existing_subscription:
-                    logger.warning(f"Active subscription already exists for user {user_id} and tag {tag.id}")
-                    return  # Exit early to prevent duplicate
+                    logger.warning(f"Active subscription already exists for user {user_id} and tag {tag.id}: {existing_subscription.id}")
+                    return True  # Exit early to prevent duplicate
                 
-                tag.owner_id = user_id
-                tag.status = "claimed"
+                # Use database transaction to prevent race conditions
+                try:
+                    # Only update tag ownership if it's being claimed for the first time
+                    if not tag.owner_id:
+                        tag.owner_id = user_id
+                        tag.status = "claimed"
 
-                # Find appropriate pricing plan
-                pricing_plan = PricingPlan.query.filter_by(
-                    plan_type="tag",
-                    billing_period=subscription_type,
-                    is_active=True,
-                ).first()
+                    # Find appropriate pricing plan
+                    pricing_plan = PricingPlan.query.filter_by(
+                        plan_type="tag",
+                        billing_period=subscription_type,
+                        is_active=True,
+                    ).first()
 
-                # Create subscription
-                subscription = Subscription(
-                    user_id=user_id,
-                    tag_id=tag.id,
-                    pricing_plan_id=pricing_plan.id if pricing_plan else None,
-                    subscription_type="tag",
-                    status="active",
-                    payment_method=payment_method,
-                    payment_id=payment_intent_id,
-                    amount=amount,
-                    start_date=datetime.utcnow(),
-                    auto_renew=(
-                        True if subscription_type in ["monthly", "yearly"] else False
-                    ),
-                )
+                    # Create subscription
+                    subscription = Subscription(
+                        user_id=user_id,
+                        tag_id=tag.id,
+                        pricing_plan_id=pricing_plan.id if pricing_plan else None,
+                        subscription_type="tag",
+                        status="active",
+                        payment_method=payment_method,
+                        payment_id=payment_intent_id,  # Use payment_intent_id for uniqueness
+                        amount=amount,
+                        start_date=datetime.utcnow(),
+                        auto_renew=(
+                            True if subscription_type in ["monthly", "yearly"] else False
+                        ),
+                    )
 
-                # Set end date based on subscription type
-                if subscription_type == "yearly":
-                    subscription.end_date = datetime.utcnow() + timedelta(days=365)
-                elif subscription_type == "monthly":
-                    subscription.end_date = datetime.utcnow() + timedelta(days=30)
-                else:  # lifetime
-                    subscription.end_date = None  # No end date for lifetime
+                    # Set end date based on subscription type
+                    if subscription_type == "yearly":
+                        subscription.end_date = datetime.utcnow() + timedelta(days=365)
+                    elif subscription_type == "monthly":
+                        subscription.end_date = datetime.utcnow() + timedelta(days=30)
+                    else:  # lifetime
+                        subscription.end_date = None  # No end date for lifetime
 
-                db.session.add(subscription)
-                db.session.flush()  # Get subscription ID
+                    db.session.add(subscription)
+                    db.session.flush()  # Get subscription ID
 
-                # Link payment to subscription
-                payment.subscription_id = subscription.id
-                logger.info(f"Created tag subscription with ID: {subscription.id}")
+                    # Link payment to subscription
+                    payment.subscription_id = subscription.id
+                    logger.info(f"Created tag subscription with ID: {subscription.id}")
+                    
+                except Exception as e:
+                    logger.error(f"Error creating subscription in webhook: {str(e)}")
+                    db.session.rollback()
+                    return False
 
         elif payment_type == "partner":
             logger.info(f"Processing partner subscription for user {user_id}")
