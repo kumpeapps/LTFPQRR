@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block title %}Create Email Template - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% set sidebar_context = 'admin' %}
+        {% include 'includes/dashboard_sidebar.html' %}
+        
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Create Email Template</h2>
+                    <a href="{{ url_for('email_admin.templates') }}" class="btn btn-secondary">Back to Templates</a>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <div class="row">
+                    <!-- Template Form -->
+                    <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Template Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="templateForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Template Name *</label>
+                                    <input type="text" class="form-control" id="name" name="name" required
+                                           placeholder="e.g., welcome_email">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="category" class="form-label">Category *</label>
+                                    <select class="form-select" id="category" name="category" required onchange="updateCategoryInfo()">
+                                        <option value="">Select Category</option>
+                                        {% for category in categories %}
+                                        <option value="{{ category.value }}" 
+                                                data-description="{{ category.description }}"
+                                                data-required-inputs="{{ category.required_inputs|join(',') }}"
+                                                data-available-models="{{ category.available_models|join(',') }}">
+                                            {{ category.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="2"
+                                      placeholder="Brief description of this template's purpose"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="subject" class="form-label">Email Subject *</label>
+                            <input type="text" class="form-control" id="subject" name="subject" required
+                                   placeholder="e.g., Welcome to {{ "{{" }}system.app_name{{ "}}" }}!">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="html_content" class="form-label">HTML Content *</label>
+                            <textarea class="form-control" id="html_content" name="html_content" rows="15" required
+                                      placeholder="Enter your HTML email content here..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="text_content" class="form-label">Text Content</label>
+                            <textarea class="form-control" id="text_content" name="text_content" rows="8"
+                                      placeholder="Plain text version (optional)"></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Create Template
+                            </button>
+                            <a href="{{ url_for('email_admin.templates') }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Category Information -->
+            <div class="card mb-4" id="categoryInfo" style="display: none;">
+                <div class="card-header">
+                    <h6 class="mb-0">Category Information</h6>
+                </div>
+                <div class="card-body">
+                    <div id="categoryDescription" class="mb-3"></div>
+                    
+                    <div id="requiredInputs" class="mb-3">
+                        <h6>Required Inputs:</h6>
+                        <ul id="requiredInputsList" class="list-unstyled"></ul>
+                    </div>
+                    
+                    <div id="availableModels" class="mb-3">
+                        <h6>Available Models:</h6>
+                        <div id="availableModelsList"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Variable Helper -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Variable Helper</h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Select a category to see available template variables.</p>
+                    
+                    <div id="variableAccordion" class="accordion">
+                        <!-- Variables will be loaded here based on selected category -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentCategory = '';
+let allModelsData = {{ all_models_data|tojson }};
+
+function updateCategoryInfo() {
+    const categorySelect = document.getElementById('category');
+    const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+    
+    if (selectedOption.value) {
+        currentCategory = selectedOption.value;
+        
+        // Show category info
+        document.getElementById('categoryInfo').style.display = 'block';
+        
+        // Update description
+        document.getElementById('categoryDescription').innerHTML = 
+            '<p class="text-info">' + selectedOption.dataset.description + '</p>';
+        
+        // Update required inputs
+        const requiredInputs = selectedOption.dataset.requiredInputs.split(',').filter(x => x);
+        const requiredInputsList = document.getElementById('requiredInputsList');
+        requiredInputsList.innerHTML = '';
+        
+        if (requiredInputs.length > 0) {
+            requiredInputs.forEach(input => {
+                const li = document.createElement('li');
+                li.innerHTML = '<span class="badge bg-warning">' + input + '</span>';
+                requiredInputsList.appendChild(li);
+            });
+        } else {
+            requiredInputsList.innerHTML = '<li class="text-muted">None</li>';
+        }
+        
+        // Update available models
+        const availableModels = selectedOption.dataset.availableModels.split(',').filter(x => x);
+        const availableModelsList = document.getElementById('availableModelsList');
+        availableModelsList.innerHTML = '';
+        
+        availableModels.forEach(model => {
+            const span = document.createElement('span');
+            span.className = 'badge bg-info me-1 mb-1';
+            span.textContent = model;
+            availableModelsList.appendChild(span);
+        });
+        
+        // Load variables for this category using pre-loaded data
+        loadVariablesForCategory(currentCategory);
+    } else {
+        document.getElementById('categoryInfo').style.display = 'none';
+        document.getElementById('variableAccordion').innerHTML = '';
+    }
+}
+
+function loadVariablesForCategory(category) {
+    const models = allModelsData[category] || {};
+    updateVariableAccordion(models);
+}
+
+function updateVariableAccordion(models) {
+    const accordion = document.getElementById('variableAccordion');
+    accordion.innerHTML = '';
+
+    Object.keys(models).forEach((modelName, index) => {
+        const model = models[modelName];
+        const accordionItem = document.createElement('div');
+        accordionItem.className = 'accordion-item';
+
+        const headerId = `heading-${modelName}`;
+        const collapseId = `collapse-${modelName}`;
+
+        accordionItem.innerHTML = {% raw %}`
+            <h2 class="accordion-header" id="${headerId}">
+                <button class="accordion-button ${index === 0 ? '' : 'collapsed'}" type="button" 
+                        data-bs-toggle="collapse" data-bs-target="#${collapseId}">
+                    ${model.name}
+                </button>
+            </h2>
+            <div id="${collapseId}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" 
+                 data-bs-parent="#variableAccordion">
+                <div class="accordion-body">
+                    <p class="text-muted small">${model.description}</p>
+                    <div class="variable-list">
+                        ${Object.keys(model.fields).map(fieldName => {
+                            const field = model.fields[fieldName];
+                            return `
+                                <div class="variable-item mb-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary w-100 text-start" 
+                                            onclick="insertVariable('${modelName}.${fieldName}')">
+                                        <small><strong>${modelName}.${fieldName}</strong></small><br>
+                                        <small class="text-muted">${field.description}</small>
+                                    </button>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            </div>
+        `{% endraw %};
+
+        accordion.appendChild(accordionItem);
+    });
+}
+
+function insertVariable(variablePath) {
+    const variable = `{{ "{{" }}${variablePath}{{ "}}" }}`;
+    
+    // Get the currently focused textarea
+    const activeElement = document.activeElement;
+    
+    let targetTextarea;
+    if (activeElement && (activeElement.id === 'html_content' || activeElement.id === 'text_content' || activeElement.id === 'subject')) {
+        targetTextarea = activeElement;
+    } else {
+        // Default to HTML content
+        targetTextarea = document.getElementById('html_content');
+    }
+    
+    // Insert at cursor position
+    const start = targetTextarea.selectionStart;
+    const end = targetTextarea.selectionEnd;
+    const text = targetTextarea.value;
+    
+    targetTextarea.value = text.substring(0, start) + variable + text.substring(end);
+    
+    // Move cursor after inserted variable
+    const newCursorPos = start + variable.length;
+    targetTextarea.setSelectionRange(newCursorPos, newCursorPos);
+    targetTextarea.focus();
+}
+
+// Initialize category info on page load if a category is pre-selected
+document.addEventListener('DOMContentLoaded', function() {
+    const categorySelect = document.getElementById('category');
+    if (categorySelect.value) {
+        updateCategoryInfo();
+    }
+});
+</script>
+
+                </div> <!-- End row -->
+            </div> <!-- End py-3 px-4 -->
+        </div> <!-- End main-content -->
+    </div> <!-- End container row -->
+</div> <!-- End container-fluid -->
+{% endblock %}

@@ -75,7 +75,7 @@
                                     </td>
                                     <td>{{ campaign.total_recipients }}</td>
                                     <td>{{ campaign.emails_sent }}/{{ campaign.emails_failed }}</td>
-                                    <td>{{ campaign.created_at.strftime('%Y-%m-%d') if campaign.created_at else 'N/A' }}</td>
+                                    <td>{{ format_datetime(campaign.created_at, '%Y-%m-%d') if campaign.created_at else 'N/A' }}</td>
                                     <td>
                                         {% if campaign.status == 'draft' %}
                                             <button class="btn btn-sm btn-outline-primary" 

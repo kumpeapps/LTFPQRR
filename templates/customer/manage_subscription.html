@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Subscription - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Manage Subscription</h1>
+    <a href="{{ url_for('dashboard.customer_dashboard') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+
+<!-- Subscription Details Card -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-info-circle"></i> Subscription Details
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Type:</strong> 
+                    <span class="badge badge-{% if subscription.subscription_type == 'lifetime' %}success{% else %}primary{% endif %}">
+                        {{ subscription.subscription_type.title() }}
+                    </span>
+                </p>
+                
+                <p><strong>Status:</strong> 
+                    {% if subscription.status == 'active' %}
+                        <span class="badge badge-success">Active</span>
+                    {% elif subscription.status == 'expired' %}
+                        <span class="badge badge-danger">Expired</span>
+                    {% elif subscription.status == 'cancelled' %}
+                        <span class="badge badge-secondary">Cancelled</span>
+                    {% elif subscription.status == 'pending' %}
+                        <span class="badge badge-warning">Pending</span>
+                    {% else %}
+                        <span class="badge badge-light">{{ subscription.status.title() }}</span>
+                    {% endif %}
+                </p>
+                
+                {% if subscription.amount %}
+                <p><strong>Amount:</strong> ${{ "%.2f"|format(subscription.amount) }}</p>
+                {% endif %}
+                
+                {% if subscription.subscription_type != 'lifetime' %}
+                <p><strong>Auto-Renew:</strong> 
+                    {% if subscription.auto_renew %}
+                        <span class="text-success"><i class="fas fa-check"></i> Enabled</span>
+                    {% else %}
+                        <span class="text-danger"><i class="fas fa-times"></i> Disabled</span>
+                    {% endif %}
+                </p>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-6">
+                {% if subscription.start_date %}
+                <p><strong>Started:</strong> {{ format_datetime(subscription.start_date, '%B %d, %Y') }}</p>
+                {% endif %}
+                
+                {% if subscription.end_date %}
+                <p><strong>{% if subscription.subscription_type == 'lifetime' %}Valid Until:{% else %}Expires:{% endif %}</strong> 
+                    {{ format_datetime(subscription.end_date, '%B %d, %Y') }}
+                    {% if subscription.subscription_type != 'lifetime' %}
+                        {% set days_remaining = (subscription.end_date - now).days %}
+                        {% if days_remaining > 0 %}
+                            <small class="text-muted">({{ days_remaining }} days remaining)</small>
+                        {% elif days_remaining == 0 %}
+                            <small class="text-warning">(Expires today)</small>
+                        {% else %}
+                            <small class="text-danger">(Expired {{ -days_remaining }} days ago)</small>
+                        {% endif %}
+                    {% endif %}
+                </p>
+                {% endif %}
+                
+                {% if subscription.created_at %}
+                <p><strong>Created:</strong> {{ format_datetime(subscription.created_at, '%B %d, %Y') }}</p>
+                {% endif %}
+                
+                {% if subscription.cancellation_requested %}
+                <p><strong>Cancellation:</strong> <span class="text-warning">Requested - will not auto-renew</span></p>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if subscription.tag %}
+        <hr>
+        <div class="row">
+            <div class="col-12">
+                <h6><i class="fas fa-tag"></i> Associated Tag</h6>
+                <p>
+                    <strong>{{ subscription.tag.name }}</strong>
+                    {% if subscription.tag.description %}
+                        - {{ subscription.tag.description }}
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Actions Card -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-cogs"></i> Subscription Actions
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if subscription.status == 'active' %}
+            {% if subscription.subscription_type != 'lifetime' %}
+                <!-- Auto-Renewal Toggle -->
+                {% if not subscription.cancellation_requested %}
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <h6>Auto-Renewal</h6>
+                        <p class="text-muted mb-0">
+                            {% if subscription.auto_renew %}
+                                Your subscription will automatically renew when it expires.
+                            {% else %}
+                                Your subscription will not automatically renew when it expires.
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-right">
+                        <form method="POST" action="{{ url_for('customer.toggle_auto_renew', subscription_id=subscription.id) }}" style="display: inline;">
+                            <button type="submit" class="btn {% if subscription.auto_renew %}btn-warning{% else %}btn-success{% endif %}">
+                                {% if subscription.auto_renew %}
+                                    <i class="fas fa-times"></i> Disable Auto-Renew
+                                {% else %}
+                                    <i class="fas fa-check"></i> Enable Auto-Renew
+                                {% endif %}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <hr>
+                {% endif %}
+                
+                <!-- Cancellation -->
+                {% if not subscription.cancellation_requested %}
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <h6>Cancel Subscription</h6>
+                        <p class="text-muted mb-0">Cancel your subscription. It will remain active until the end of your current billing period.</p>
+                    </div>
+                    <div class="col-md-4 text-right">
+                        <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#cancelModal">
+                            <i class="fas fa-times-circle"></i> Cancel Subscription
+                        </button>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Reactivation -->
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <h6>Reactivate Subscription</h6>
+                        <p class="text-muted mb-0">Reactivate auto-renewal for your subscription. Cancellation will be removed.</p>
+                    </div>
+                    <div class="col-md-4 text-right">
+                        <form method="POST" action="{{ url_for('customer.reactivate_auto_renew', subscription_id=subscription.id) }}" style="display: inline;">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-undo"></i> Reactivate Auto-Renewal
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+            {% else %}
+                <!-- Lifetime Subscription Message -->
+                <div class="alert alert-info">
+                    <i class="fas fa-infinity"></i> This is a lifetime subscription and does not require renewal or cancellation.
+                </div>
+            {% endif %}
+            
+        {% elif subscription.status == 'expired' %}
+            <!-- Renewal for Expired Subscription -->
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <h6>Renew Subscription</h6>
+                    <p class="text-muted mb-0">Your subscription has expired. Renew it to continue enjoying our services.</p>
+                </div>
+                <div class="col-md-4 text-right">
+                    <form method="POST" action="{{ url_for('customer.renew_subscription', subscription_id=subscription.id) }}" style="display: inline;">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-refresh"></i> Renew Now
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+        {% elif subscription.status == 'cancelled' %}
+            <!-- Cancelled Subscription Message -->
+            <div class="alert alert-secondary">
+                <i class="fas fa-ban"></i> This subscription has been cancelled and cannot be modified.
+            </div>
+            
+        {% else %}
+            <!-- Other Status Message -->
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i> This subscription is in {{ subscription.status }} status and cannot be modified at this time.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Cancel Confirmation Modal -->
+{% if subscription.status == 'active' and subscription.subscription_type != 'lifetime' and not subscription.cancellation_requested %}
+<div class="modal fade" id="cancelModal" tabindex="-1" role="dialog" aria-labelledby="cancelModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cancelModalLabel">Confirm Cancellation</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel your {{ subscription.subscription_type }} subscription?</p>
+                
+                {% if subscription.end_date %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Your subscription will remain active until <strong>{{ format_datetime(subscription.end_date, '%B %d, %Y') }}</strong>.
+                </div>
+                {% endif %}
+                
+                <p class="text-muted"><strong>Note:</strong> This action will disable auto-renewal, but your subscription will continue until the end of your current billing period.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Keep Subscription</button>
+                <form method="POST" action="{{ url_for('customer.cancel_subscription', subscription_id=subscription.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-times-circle"></i> Yes, Cancel Subscription
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

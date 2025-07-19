@@ -21,7 +21,7 @@
                             is awaiting admin approval. You'll receive an email notification once it's approved.
                         </p>
                         <small class="text-muted">
-                            Submitted: {{ pending_subscription.start_date.strftime('%B %d, %Y at %I:%M %p') if pending_subscription.start_date else 'Unknown' }}
+                            Submitted: {{ format_datetime(pending_subscription.start_date, '%B %d, %Y at %I:%M %p') if pending_subscription.start_date else 'Unknown' }}
                         </small>
                     </div>
                 </div>
@@ -48,15 +48,16 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <p><strong>Plan:</strong> {% if subscription.pricing_plan %}{{ subscription.pricing_plan.plan_type.title() }}{% else %}Partner{% endif %} ({{ subscription.pricing_plan.billing_period if subscription.pricing_plan else 'N/A' }})</p>
+                            <p><strong>Plan:</strong> {% if subscription.pricing_plan %}{{ subscription.pricing_plan.plan_type.title() }}{% else %}Partner{% endif %} 
+                                ({% if subscription.pricing_plan %}{{ subscription.pricing_plan.billing_period.title() }}{% elif subscription.subscription_type in ['monthly', 'yearly', 'lifetime'] %}{{ subscription.subscription_type.title() }}{% else %}One-time{% endif %})</p>
                             <p><strong>Status:</strong> 
                                 <span class="badge bg-{{ 'success' if subscription.status == 'active' else 'warning' }}">
                                     {{ subscription.status.title() }}
                                 </span>
                             </p>
-                            <p><strong>Start Date:</strong> {{ subscription.start_date.strftime('%B %d, %Y') if subscription.start_date else 'N/A' }}</p>
+                            <p><strong>Start Date:</strong> {{ format_datetime(subscription.start_date, '%B %d, %Y') if subscription.start_date else 'N/A' }}</p>
                             {% if subscription.end_date %}
-                            <p><strong>End Date:</strong> {{ subscription.end_date.strftime('%B %d, %Y') }}</p>
+                            <p><strong>End Date:</strong> {{ format_datetime(subscription.end_date, '%B %d, %Y') }}</p>
                             {% else %}
                             <p><strong>End Date:</strong> <span class="text-success">Lifetime</span></p>
                             {% endif %}

@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-md-10">
             <div class="card">
                 <div class="card-header">
                     <h4><i class="fas fa-edit"></i> Edit Pet Information</h4>
@@ -79,23 +79,11 @@
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                {{ form.age.label(class="form-label") }}
-                                {{ form.age(class="form-control") }}
-                                {% if form.age.errors %}
+                                {{ form.date_of_birth.label(class="form-label") }}
+                                {{ form.date_of_birth(class="form-control") }}
+                                {% if form.date_of_birth.errors %}
                                     <div class="text-danger">
-                                        {% for error in form.age.errors %}
-                                            <small>{{ error }}</small>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                {{ form.weight.label(class="form-label") }}
-                                {{ form.weight(class="form-control") }}
-                                {% if form.weight.errors %}
-                                    <div class="text-danger">
-                                        {% for error in form.weight.errors %}
+                                        {% for error in form.date_of_birth.errors %}
                                             <small>{{ error }}</small>
                                         {% endfor %}
                                     </div>
@@ -104,27 +92,16 @@
                         </div>
                         
                         <div class="mb-3">
-                            {{ form.description.label(class="form-label") }}
-                            {{ form.description(class="form-control", rows="4") }}
-                            {% if form.description.errors %}
+                            {{ form.tag_id.label(class="form-label") }}
+                            {{ form.tag_id(class="form-control") }}
+                            {% if form.tag_id.errors %}
                                 <div class="text-danger">
-                                    {% for error in form.description.errors %}
+                                    {% for error in form.tag_id.errors %}
                                         <small>{{ error }}</small>
                                     {% endfor %}
                                 </div>
                             {% endif %}
-                        </div>
-                        
-                        <div class="mb-3">
-                            {{ form.medical_info.label(class="form-label") }}
-                            {{ form.medical_info(class="form-control", rows="3") }}
-                            {% if form.medical_info.errors %}
-                                <div class="text-danger">
-                                    {% for error in form.medical_info.errors %}
-                                        <small>{{ error }}</small>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
+                            <small class="form-text text-muted">Select a tag to assign to this pet (optional)</small>
                         </div>
                         
                         <div class="mb-3">
@@ -147,6 +124,114 @@
                                      alt="{{ pet.name }}" class="img-thumbnail" style="max-width: 200px;">
                             </div>
                         {% endif %}
+
+                        <hr>
+                        <h5>Veterinarian Information</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.vet_name.label(class="form-label") }}
+                                    {{ form.vet_name(class="form-control") }}
+                                    {% if form.vet_name.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.vet_name.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.vet_phone.label(class="form-label") }}
+                                    {{ form.vet_phone(class="form-control") }}
+                                    {% if form.vet_phone.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.vet_phone.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            {{ form.vet_address.label(class="form-label") }}
+                            {{ form.vet_address(class="form-control", rows="3") }}
+                            {% if form.vet_address.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.vet_address.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.vet_info_public(class="form-check-input") }}
+                                {{ form.vet_info_public.label(class="form-check-label") }}
+                            </div>
+                            <small class="form-text text-muted">When checked, veterinarian information will be visible to people who find your pet</small>
+                        </div>
+
+                        <hr>
+                        <h5>Groomer Information</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.groomer_name.label(class="form-label") }}
+                                    {{ form.groomer_name(class="form-control") }}
+                                    {% if form.groomer_name.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.groomer_name.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.groomer_phone.label(class="form-label") }}
+                                    {{ form.groomer_phone(class="form-control") }}
+                                    {% if form.groomer_phone.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.groomer_phone.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            {{ form.groomer_address.label(class="form-label") }}
+                            {{ form.groomer_address(class="form-control", rows="3") }}
+                            {% if form.groomer_address.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.groomer_address.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.groomer_info_public(class="form-check-input") }}
+                                {{ form.groomer_info_public.label(class="form-check-label") }}
+                            </div>
+                            <small class="form-text text-muted">When checked, groomer information will be visible to people who find your pet</small>
+                        </div>
+
+                        <hr>
+                        <h5>Privacy Settings</h5>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.phone_public(class="form-check-input") }}
+                                {{ form.phone_public.label(class="form-check-label") }}
+                            </div>
+                            <small class="form-text text-muted">When checked, your phone number will be visible to people who find your pet</small>
+                        </div>
                         
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                             <a href="{{ url_for('dashboard.dashboard') }}" class="btn btn-secondary">

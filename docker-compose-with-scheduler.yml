@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: ltfpqrr
+      MYSQL_USER: ltfpqrr_user
+      MYSQL_PASSWORD: ltfpqrr_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  web:
+    build: .
+    ports:
+      - "8000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=mysql+pymysql://ltfpqrr_user:ltfpqrr_password@db/ltfpqrr
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=Po-MvDNsMztsuc8ixBcTIarfI1tcQK_22FF9e5KCtwk=
+      - ENCRYPTION_KEY=Po-MvDNsMztsuc8ixBcTIarfI1tcQK_22FF9e5KCtwk=
+      - FLASK_ENV=development
+    volumes:
+      - .:/app
+      - static_uploads:/app/static/uploads
+    restart: unless-stopped
+
+  # Auto-renewal scheduler service
+  scheduler:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=mysql+pymysql://ltfpqrr_user:ltfpqrr_password@db/ltfpqrr
+      - SECRET_KEY=Po-MvDNsMztsuc8ixBcTIarfI1tcQK_22FF9e5KCtwk=
+      - ENCRYPTION_KEY=Po-MvDNsMztsuc8ixBcTIarfI1tcQK_22FF9e5KCtwk=
+    volumes:
+      - .:/app
+      - scheduler_logs:/app/logs
+    command: python3 scheduler_daemon.py
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import os; exit(0 if os.path.exists('/app/logs/scheduler.pid') else 1)"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+
+  adminer:
+    image: adminer:latest
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    depends_on:
+      - db
+
+volumes:
+  mysql_data:
+  static_uploads:
+  scheduler_logs:

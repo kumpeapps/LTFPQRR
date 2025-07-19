@@ -47,10 +47,10 @@
                                         <span class="badge bg-secondary">{{ subscription.status.title() }}</span>
                                     {% endif %}
                                 </p>
-                                <p><strong>Start Date:</strong> {{ subscription.start_date.strftime('%B %d, %Y') if subscription.start_date else 'N/A' }}</p>
+                                <p><strong>Start Date:</strong> {{ format_datetime(subscription.start_date, '%B %d, %Y') if subscription.start_date else 'N/A' }}</p>
                                 <p><strong>Current End Date:</strong> 
                                     {% if subscription.end_date %}
-                                        {{ subscription.end_date.strftime('%B %d, %Y') }}
+                                        {{ format_datetime(subscription.end_date, '%B %d, %Y') }}
                                     {% else %}
                                         <span class="text-success">Never (Unlimited)</span>
                                     {% endif %}

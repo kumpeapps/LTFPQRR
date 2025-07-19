@@ -68,6 +68,7 @@
                                         <th>Start Date</th>
                                         <th>End Date</th>
                                         <th>Payment Method</th>
+                                        <th>Auto-Renew</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -89,22 +90,74 @@
                                             {% endif %}
                                         </td>
                                         <td>${{ "%.2f"|format(subscription.amount or 0) }}</td>
-                                        <td>{{ subscription.start_date.strftime('%Y-%m-%d') if subscription.start_date else '' }}</td>
-                                        <td>{{ subscription.end_date.strftime('%Y-%m-%d') if subscription.end_date else 'Lifetime' }}</td>
+                                        <td>{{ format_datetime(subscription.start_date, '%Y-%m-%d') if subscription.start_date else '' }}</td>
+                                        <td>{{ format_datetime(subscription.end_date, '%Y-%m-%d') if subscription.end_date else 'Lifetime' }}</td>
                                         <td>{{ subscription.payment_method.title() if subscription.payment_method else 'Manual' }}</td>
+                                        <td>
+                                            {% if subscription.auto_renew %}
+                                                <span class="badge bg-success">Enabled</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Disabled</span>
+                                            {% endif %}
+                                        </td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
                                                 {% if subscription.subscription_type == 'partner' %}
                                                     <a href="{{ url_for('admin.partner_subscriptions') }}" class="btn btn-outline-info" title="Manage in Partner Subscriptions">
                                                         <i class="fas fa-external-link-alt"></i>
                                                     </a>
+                                                {% elif subscription.subscription_type == 'tag' %}
+                                                    {% if subscription.status == 'active' %}
+                                                        <!-- Extend Subscription -->
+                                                        <a href="{{ url_for('admin.extend_tag_subscription', subscription_id=subscription.id) }}" 
+                                                           class="btn btn-outline-primary" 
+                                                           title="Extend Subscription">
+                                                            <i class="fas fa-calendar-plus"></i>
+                                                        </a>
+                                                        <!-- Cancel Subscription -->
+                                                        <form method="POST" action="{{ url_for('admin.cancel_tag_subscription', subscription_id=subscription.id) }}" 
+                                                              style="display: inline-block;">
+                                                            <button type="submit" 
+                                                                    class="btn btn-outline-warning" 
+                                                                    title="Cancel Subscription"
+                                                                    onclick="return confirm('Are you sure you want to cancel this subscription?')">
+                                                                <i class="fas fa-times"></i>
+                                                            </button>
+                                                        </form>
+                                                        <!-- Refund & Cancel Subscription -->
+                                                        <form method="POST" action="{{ url_for('admin.refund_tag_subscription', subscription_id=subscription.id) }}" 
+                                                              style="display: inline-block;">
+                                                            <button type="submit" 
+                                                                    class="btn btn-outline-danger" 
+                                                                    title="Refund & Cancel"
+                                                                    onclick="return confirm('Are you sure you want to refund this subscription? This action cannot be undone.')">
+                                                                <i class="fas fa-undo"></i>
+                                                            </button>
+                                                        </form>
+                                                        <!-- Toggle Auto-renewal -->
+                                                        <form method="POST" action="{{ url_for('admin.toggle_auto_renew_subscription', subscription_id=subscription.id) }}" 
+                                                              style="display: inline-block;">
+                                                            <button type="submit" 
+                                                                    class="btn btn-outline-secondary" 
+                                                                    title="{{ 'Disable Auto-renewal' if subscription.auto_renew else 'Enable Auto-renewal' }}">
+                                                                <i class="fas fa-{{ 'toggle-off' if subscription.auto_renew else 'toggle-on' }}"></i>
+                                                            </button>
+                                                        </form>
+                                                    {% else %}
+                                                        <!-- Extend/Reactivate for cancelled/expired subscriptions -->
+                                                        <a href="{{ url_for('admin.extend_tag_subscription', subscription_id=subscription.id) }}" 
+                                                           class="btn btn-outline-success" 
+                                                           title="Reactivate Subscription">
+                                                            <i class="fas fa-play"></i>
+                                                        </a>
+                                                    {% endif %}
                                                 {% endif %}
                                             </div>
                                         </td>
                                     </tr>
                                     {% else %}
                                     <tr>
-                                        <td colspan="9" class="text-center text-muted py-4">
+                                        <td colspan="10" class="text-center text-muted py-4">
                                             {% if search %}
                                                 <i class="fas fa-search fa-2x mb-2"></i><br>
                                                 No subscriptions found matching "{{ search }}"

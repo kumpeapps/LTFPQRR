@@ -57,7 +57,7 @@
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
                                             <label class="form-label">Member Since</label>
-                                            <input type="text" value="{{ user.created_at.strftime('%Y-%m-%d') }}" class="form-control" readonly>
+                                            <input type="text" value="{{ format_datetime(user.created_at, '%Y-%m-%d') }}" class="form-control" readonly>
                                         </div>
                                         <div class="col-md-6 mb-3">
                                             <label class="form-label">Current Roles</label>

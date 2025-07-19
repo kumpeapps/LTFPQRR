@@ -64,7 +64,7 @@
                                 <hr>
                                 <div class="d-flex justify-content-between">
                                     <div>
-                                        <p class="mb-0"><strong>Created:</strong> {{ partner.created_at.strftime('%B %d, %Y') }}</p>
+                                        <p class="mb-0"><strong>Created:</strong> {{ format_datetime(partner.created_at, '%B %d, %Y') }}</p>
                                         <p class="mb-0"><strong>Your Role:</strong> <span class="badge bg-primary">{{ user_role.title() }}</span></p>
                                     </div>
                                     {% if user_role == 'owner' %}
@@ -92,7 +92,7 @@
                                     <h6>{{ subscription.subscription_type.title() }} Plan</h6>
                                     <p class="text-muted small">
                                         {% if subscription.end_date %}
-                                        Expires: {{ subscription.end_date.strftime('%m/%d/%Y') }}
+                                        Expires: {{ format_datetime(subscription.end_date, '%m/%d/%Y') }}
                                         {% else %}
                                         Active
                                         {% endif %}

@@ -142,10 +142,10 @@
                                         {% endif %}
                                     </td>
                                     <td>{{ item.retry_count }}/5</td>
-                                    <td>{{ item.created_at.strftime('%m/%d %H:%M') if item.created_at else 'N/A' }}</td>
+                                    <td>{{ format_datetime(item.created_at, '%m/%d %H:%M') if item.created_at else 'N/A' }}</td>
                                     <td>
                                         {% if item.next_retry_at and item.status.value == 'failed' and item.can_retry() %}
-                                            {{ item.next_retry_at.strftime('%m/%d %H:%M') }}
+                                            {{ format_datetime(item.next_retry_at, '%m/%d %H:%M') }}
                                         {% else %}
                                             -
                                         {% endif %}

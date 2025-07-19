@@ -11,6 +11,7 @@ from utils import init_utils, configure_payment_gateways
 from routes.public import public
 from routes.auth import auth
 from routes.dashboard import dashboard_bp
+from routes.customer import customer_bp
 from routes.partner import partner
 from routes.tag import tag
 from routes.pet import pet
@@ -18,6 +19,7 @@ from routes.payment import payment
 from routes.profile import profile_bp
 from routes.admin import admin
 from routes.settings import settings
+from routes.timezone import timezone_bp
 
 
 def create_app(config_name=None):
@@ -35,6 +37,10 @@ def create_app(config_name=None):
     db.init_app(app)
     init_login_manager(app)
     
+    # Initialize timezone service
+    from services.timezone_service import TimezoneService
+    TimezoneService.init_app(app)
+    
     # Initialize utilities
     init_utils(app)
     
@@ -42,6 +48,7 @@ def create_app(config_name=None):
     app.register_blueprint(public)
     app.register_blueprint(auth)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(customer_bp)
     app.register_blueprint(partner)
     app.register_blueprint(tag)
     app.register_blueprint(pet)
@@ -49,6 +56,7 @@ def create_app(config_name=None):
     app.register_blueprint(profile_bp)
     app.register_blueprint(admin)
     app.register_blueprint(settings)
+    app.register_blueprint(timezone_bp)
     
     # Register email admin blueprint
     from routes.email_admin import email_admin
@@ -66,11 +74,25 @@ def create_app(config_name=None):
     with app.app_context():
         db.create_all()
         
+        # Register pet email processors
+        try:
+            from services.pet_email_service import register_pet_email_processor
+            register_pet_email_processor()
+        except Exception as e:
+            app.logger.warning(f"Could not register pet email processors: {e}")
+        
         # Configure payment gateways after app and database initialization
         try:
             configure_payment_gateways()
         except Exception as e:
             app.logger.warning(f"Could not configure payment gateways: {e}")
+        
+        # Initialize timezone settings
+        try:
+            from init_timezone_settings import init_timezone_settings
+            init_timezone_settings()
+        except Exception as e:
+            app.logger.warning(f"Could not initialize timezone settings: {e}")
     
     return app
 

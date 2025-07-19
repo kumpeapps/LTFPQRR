@@ -81,7 +81,7 @@
                                                 <span class="badge bg-secondary me-1">{{ role.name }}</span>
                                             {% endfor %}
                                         </td>
-                                        <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                                        <td>{{ format_datetime(user.created_at, '%Y-%m-%d') }}</td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
                                                 <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-outline-primary">

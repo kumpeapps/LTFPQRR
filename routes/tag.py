@@ -285,12 +285,17 @@ def contact_owner(tag_id):
 
     form = ContactOwnerForm()
     if form.validate_on_submit():
-        # Send email to owner
-        send_contact_email(
-            owner, pet, form.finder_name.data, form.finder_email.data, form.message.data
-        )
-
-        flash("Your message has been sent to the pet owner.", "success")
+        try:
+            # Queue email for background processing
+            send_contact_email(
+                owner, pet, form.finder_name.data, form.finder_email.data, form.message.data
+            )
+            
+            flash("Your message has been sent to the pet owner.", "success")
+                
+        except Exception as e:
+            flash("There was an error sending your message. Please try again later.", "error")
+            
         return redirect(url_for("tag.found_pet", tag_id=tag_id))
 
     return render_template("found/contact.html", form=form, pet=pet, tag=tag_obj)

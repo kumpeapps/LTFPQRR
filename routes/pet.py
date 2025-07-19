@@ -66,7 +66,7 @@ def create_pet():
 
     # Get user's available tags
     available_tags = Tag.query.filter_by(owner_id=current_user.id, pet_id=None).all()
-    form.tag_id.choices = [(tag.id, tag.tag_id) for tag in available_tags]
+    form.tag_id.choices = [(0, 'No Tag')] + [(tag.id, tag.tag_id) for tag in available_tags]
 
     if form.validate_on_submit():
         # Handle file upload
@@ -74,15 +74,20 @@ def create_pet():
 
         pet_obj = Pet(
             name=form.name.data,
+            species=form.species.data,
             breed=form.breed.data,
+            date_of_birth=form.date_of_birth.data,
             color=form.color.data,
             photo=photo_filename,
             vet_name=form.vet_name.data,
             vet_phone=form.vet_phone.data,
             vet_address=form.vet_address.data,
+            vet_info_public=form.vet_info_public.data,
             groomer_name=form.groomer_name.data,
             groomer_phone=form.groomer_phone.data,
             groomer_address=form.groomer_address.data,
+            groomer_info_public=form.groomer_info_public.data,
+            phone_public=form.phone_public.data,
             owner_id=current_user.id,
         )
 
@@ -90,7 +95,7 @@ def create_pet():
         db.session.commit()
 
         # Assign tag to pet
-        if form.tag_id.data:
+        if form.tag_id.data and form.tag_id.data != 0:
             tag = Tag.query.get(form.tag_id.data)
             if tag and tag.owner_id == current_user.id:
                 tag.pet_id = pet_obj.id
@@ -134,6 +139,20 @@ def edit_pet(pet_id):
 
     form = PetForm(obj=pet_obj)
 
+    # Get user's available tags for the dropdown
+    available_tags = Tag.query.filter_by(owner_id=current_user.id, pet_id=None).all()
+    # Include the currently assigned tag if there is one
+    current_tag = Tag.query.filter_by(pet_id=pet_obj.id).first()
+    if current_tag:
+        available_tags.append(current_tag)
+    form.tag_id.choices = [(0, 'No Tag')] + [(tag.id, tag.tag_id) for tag in available_tags]
+    
+    # Set the current tag as selected
+    if current_tag:
+        form.tag_id.data = current_tag.id
+    else:
+        form.tag_id.data = 0
+
     if form.validate_on_submit():
         # Handle file upload
         photo_filename = handle_file_upload(form.photo.data)
@@ -148,14 +167,31 @@ def edit_pet(pet_id):
             pet_obj.photo = photo_filename
 
         pet_obj.name = form.name.data
+        pet_obj.species = form.species.data
         pet_obj.breed = form.breed.data
+        pet_obj.date_of_birth = form.date_of_birth.data
         pet_obj.color = form.color.data
         pet_obj.vet_name = form.vet_name.data
         pet_obj.vet_phone = form.vet_phone.data
         pet_obj.vet_address = form.vet_address.data
+        pet_obj.vet_info_public = form.vet_info_public.data
         pet_obj.groomer_name = form.groomer_name.data
         pet_obj.groomer_phone = form.groomer_phone.data
         pet_obj.groomer_address = form.groomer_address.data
+        pet_obj.groomer_info_public = form.groomer_info_public.data
+        pet_obj.phone_public = form.phone_public.data
+
+        # Handle tag assignment
+        # First, remove pet from any existing tag
+        existing_tag = Tag.query.filter_by(pet_id=pet_obj.id).first()
+        if existing_tag:
+            existing_tag.pet_id = None
+        
+        # Assign to new tag if selected
+        if form.tag_id.data and form.tag_id.data != 0:
+            new_tag = Tag.query.get(form.tag_id.data)
+            if new_tag and new_tag.owner_id == current_user.id:
+                new_tag.pet_id = pet_obj.id
 
         db.session.commit()
 

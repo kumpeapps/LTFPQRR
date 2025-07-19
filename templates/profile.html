@@ -45,6 +45,18 @@
                     </div>
 
                     <div class="mb-3">
+                        <label class="form-label fw-bold">Timezone</label>
+                        <p class="form-control-plaintext">
+                            {{ user.timezone or 'UTC' }}
+                            <small class="text-muted">(Current time: <span id="user-time"></span>)</small>
+                            <br>
+                            <a href="{{ url_for('timezone.preferences') }}" class="btn btn-sm btn-outline-primary mt-1">
+                                <i class="fas fa-clock"></i> Timezone Settings
+                            </a>
+                        </p>
+                    </div>
+
+                    <div class="mb-3">
                         <label class="form-label fw-bold">Account Type</label>
                         <p class="form-control-plaintext">
                             {% if user.has_role('admin') %}
@@ -59,7 +71,7 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">Member Since</label>
-                        <p class="form-control-plaintext">{{ user.created_at.strftime('%B %d, %Y') if user.created_at else 'Unknown' }}</p>
+                        <p class="form-control-plaintext">{{ format_datetime(user.created_at, '%B %d, %Y') if user.created_at else 'Unknown' }}</p>
                     </div>
                 </div>
             </div>
@@ -78,4 +90,33 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const userTimeSpan = document.getElementById('user-time');
+    const userTimezone = '{{ user.timezone or "UTC" }}';
+    
+    function updateUserTime() {
+        try {
+            const now = new Date();
+            const formatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: userTimezone,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                timeZoneName: 'short'
+            });
+            userTimeSpan.textContent = formatter.format(now);
+        } catch (e) {
+            userTimeSpan.textContent = 'Invalid timezone';
+        }
+    }
+    
+    // Initial time update
+    updateUserTime();
+    
+    // Update time every second
+    setInterval(updateUserTime, 1000);
+});
+</script>
 {% endblock %}

@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Test Email Template - {{ template.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">Test Email Template: {{ template.name }}</h1>
+                <div>
+                    <a href="{{ url_for('email_admin.edit_template', template_id=template.id) }}" class="btn btn-secondary me-2">
+                        <i class="fas fa-edit"></i> Edit Template
+                    </a>
+                    <a href="{{ url_for('email_admin.templates') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Templates
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Test Template</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="testForm">
+                        <div class="mb-3">
+                            <label for="test_email" class="form-label">Test Email Address *</label>
+                            <input type="email" class="form-control" id="test_email" name="test_email" required
+                                   placeholder="Enter email address to send test to">
+                        </div>
+
+                        {% if category_config.required_inputs %}
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0">Required Inputs for Category: {{ category_config.name }}</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    {% for input_name in category_config.required_inputs %}
+                                    <div class="col-md-6 mb-3">
+                                        <label for="input_{{ input_name }}" class="form-label">
+                                            {{ input_name.replace('_', ' ').title() }} *
+                                        </label>
+                                        
+                                        {% if input_name == 'user_id' %}
+                                        <select class="form-select" id="input_{{ input_name }}" name="input_{{ input_name }}" required>
+                                            <option value="">Select User</option>
+                                            {% for user in users %}
+                                            <option value="{{ user.id }}">{{ user.get_full_name() }} ({{ user.email }})</option>
+                                            {% endfor %}
+                                        </select>
+                                        
+                                        {% elif input_name == 'partner_id' %}
+                                        <select class="form-select" id="input_{{ input_name }}" name="input_{{ input_name }}" required>
+                                            <option value="">Select Partner</option>
+                                            {% for partner in partners %}
+                                            <option value="{{ partner.id }}">{{ partner.company_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        
+                                        {% elif input_name == 'subscription_id' %}
+                                        <select class="form-select" id="input_{{ input_name }}" name="input_{{ input_name }}" required>
+                                            <option value="">Select Subscription</option>
+                                            {% for subscription in subscriptions %}
+                                            <option value="{{ subscription.id }}">
+                                                {{ subscription.partner.company_name }} - {{ subscription.plan_name }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        
+                                        {% else %}
+                                        <input type="text" class="form-control" id="input_{{ input_name }}" 
+                                               name="input_{{ input_name }}" required
+                                               placeholder="Enter {{ input_name.replace('_', ' ') }}">
+                                        {% endif %}
+                                        
+                                        <small class="form-text text-muted">
+                                            Required for {{ template.category }} templates
+                                        </small>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Send Test Email
+                            </button>
+                            <a href="{{ url_for('email_admin.templates') }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Template Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Template Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>Name:</strong> {{ template.name }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Category:</strong> 
+                        <span class="badge bg-info">{{ category_config.name if category_config else template.category }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Subject:</strong> {{ template.subject }}
+                    </div>
+                    {% if template.description %}
+                    <div class="mb-2">
+                        <strong>Description:</strong> {{ template.description }}
+                    </div>
+                    {% endif %}
+                    <div class="mb-2">
+                        <strong>Created:</strong> {{ format_datetime(template.created_at, '%Y-%m-%d %H:%M') }}
+                    </div>
+                </div>
+            </div>
+
+            {% if category_config %}
+            <!-- Category Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Category Requirements</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <p class="text-muted">{{ category_config.description }}</p>
+                    </div>
+                    
+                    {% if category_config.required_inputs %}
+                    <div class="mb-3">
+                        <h6>Required Inputs:</h6>
+                        {% for input_name in category_config.required_inputs %}
+                        <span class="badge bg-warning me-1">{{ input_name }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if category_config.available_models %}
+                    <div class="mb-3">
+                        <h6>Available Models:</h6>
+                        {% for model in category_config.available_models %}
+                        <span class="badge bg-info me-1">{{ model }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Help -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Testing Help</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6>How to Test:</h6>
+                        <ol class="small">
+                            <li>Enter a valid test email address</li>
+                            {% if category_config.required_inputs %}
+                            <li>Select required inputs based on the template category</li>
+                            {% endif %}
+                            <li>Click "Send Test Email" to send a test</li>
+                            <li>Check the email logs to see the result</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Template Variables:</h6>
+                        <p class="small text-muted">
+                            The template will be rendered with real data from the selected 
+                            {% if category_config.available_models %}
+                            {{ category_config.available_models|join(', ') }} model(s)
+                            {% else %}
+                            models
+                            {% endif %}.
+                        </p>
+                    </div>
+                    
+                    <div class="alert alert-info small">
+                        <strong>Note:</strong> Test emails use real data from your system 
+                        for accurate testing of template variables.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-populate dropdowns with default selections for easier testing
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-select first user if available
+    const userSelect = document.getElementById('input_user_id');
+    if (userSelect && userSelect.options.length > 1) {
+        userSelect.selectedIndex = 1; // First actual user (skip placeholder)
+    }
+    
+    // Auto-select first partner if available
+    const partnerSelect = document.getElementById('input_partner_id');
+    if (partnerSelect && partnerSelect.options.length > 1) {
+        partnerSelect.selectedIndex = 1;
+    }
+    
+    // Auto-select first subscription if available
+    const subscriptionSelect = document.getElementById('input_subscription_id');
+    if (subscriptionSelect && subscriptionSelect.options.length > 1) {
+        subscriptionSelect.selectedIndex = 1;
+    }
+});
+</script>
+{% endblock %}

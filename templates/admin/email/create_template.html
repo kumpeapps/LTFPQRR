@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Create Email Template - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% set sidebar_context = 'admin' %}
+        {% include 'includes/dashboard_sidebar.html' %}
+        
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Create Email Template</h2>
+                    <a href="{{ url_for('email_admin.templates') }}" class="btn btn-secondary">Back to Templates</a>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <div class="row">
+                    <!-- Template Form -->
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Template Details</h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="name" class="form-label">Template Name</label>
+                                                <input type="text" class="form-control" id="name" name="name" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="template_type" class="form-label">Template Type</label>
+                                                <select class="form-control" id="template_type" name="template_type">
+                                                    <option value="">General</option>
+                                                    <option value="notification">Notification</option>
+                                                    <option value="marketing">Marketing</option>
+                                                    <option value="transactional">Transactional</option>
+                                                    <option value="system">System</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="subject" class="form-label">Email Subject</label>
+                                        <input type="text" class="form-control" id="subject" name="subject" required>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="description" class="form-label">Description</label>
+                                        <textarea class="form-control" id="description" name="description" rows="2"></textarea>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="variables" class="form-label">Legacy Variables (Backward Compatibility)</label>
+                                        <input type="text" class="form-control" id="variables" name="variables" 
+                                               placeholder="user_name, first_name, company_name (comma-separated)">
+                                        <small class="form-text text-muted">Simple variables using {variable} syntax (for backward compatibility)</small>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="html_content" class="form-label">HTML Content</label>
+                                        <textarea class="form-control" id="html_content" name="html_content" rows="12" required></textarea>
+                                        <small class="form-text text-muted">
+                                            Use <code>{% raw %}{{model.field}}{% endraw %}</code> for model variables or <code>{% raw %}{variable}{% endraw %}</code> for simple variables
+                                        </small>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="text_content" class="form-label">Text Content (Optional)</label>
+                                        <textarea class="form-control" id="text_content" name="text_content" rows="8"></textarea>
+                                        <small class="form-text text-muted">Plain text version of the email</small>
+                                    </div>
+
+                                    <div class="mb-3 form-check">
+                                        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
+                                        <label class="form-check-label" for="is_active">Active</label>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary">Create Template</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Variable Helper Panel -->
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Available Variables</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="accordion" id="variableAccordion">
+                                    <!-- Variables will be loaded here -->
+                                </div>
+                                <div class="text-center mt-3">
+                                    <div class="spinner-border" role="status" id="loadingSpinner">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load available variables
+document.addEventListener('DOMContentLoaded', function() {
+    loadTemplateVariables();
+});
+
+function loadTemplateVariables() {
+    fetch('{{ url_for("email_admin.api_template_variables") }}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderVariableAccordion(data.models);
+            } else {
+                document.getElementById('variableAccordion').innerHTML = 
+                    '<div class="alert alert-danger">Error loading variables: ' + data.message + '</div>';
+            }
+            document.getElementById('loadingSpinner').style.display = 'none';
+        })
+        .catch(error => {
+            document.getElementById('variableAccordion').innerHTML = 
+                '<div class="alert alert-danger">Error loading variables: ' + error.message + '</div>';
+            document.getElementById('loadingSpinner').style.display = 'none';
+        });
+}
+
+function renderVariableAccordion(models) {
+    const accordion = document.getElementById('variableAccordion');
+    let html = '';
+    
+    Object.entries(models).forEach(([modelKey, model], index) => {
+        const isExpanded = index === 0; // Expand first item by default
+        
+        html += `
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading${modelKey}">
+                    <button class="accordion-button ${isExpanded ? '' : 'collapsed'}" type="button" 
+                            data-bs-toggle="collapse" data-bs-target="#collapse${modelKey}" 
+                            aria-expanded="${isExpanded}" aria-controls="collapse${modelKey}">
+                        <strong>${model.name}</strong>
+                    </button>
+                </h2>
+                <div id="collapse${modelKey}" class="accordion-collapse collapse ${isExpanded ? 'show' : ''}" 
+                     aria-labelledby="heading${modelKey}" data-bs-parent="#variableAccordion">
+                    <div class="accordion-body">
+                        <p class="text-muted small">${model.description}</p>
+                        <div class="variable-list">
+        `;
+        
+{% raw %}
+        Object.entries(model.fields).forEach(([fieldKey, fieldDescription]) => {
+            const variableName = '{{' + modelKey + '.' + fieldKey + '}}';
+            html += '<div class="variable-item mb-2">' +
+                '<code class="variable-code" onclick="insertVariable(\'' + variableName + '\')" ' + 
+                'style="cursor: pointer; background: #f8f9fa; padding: 2px 6px; border-radius: 3px; display: block;" ' +
+                'title="Click to insert into template">' +
+                variableName +
+                '</code>' +
+                '<small class="text-muted">' + fieldDescription + '</small>' +
+                '</div>';
+        });
+{% endraw %}
+        
+        html += `
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    accordion.innerHTML = html;
+}
+
+function insertVariable(variableName) {
+    // Get the currently focused textarea
+    const activeElement = document.activeElement;
+    const isSubject = activeElement.id === 'subject';
+    const isHtmlContent = activeElement.id === 'html_content';
+    const isTextContent = activeElement.id === 'text_content';
+    
+    let targetElement;
+    if (isSubject || isHtmlContent || isTextContent) {
+        targetElement = activeElement;
+    } else {
+        // Default to HTML content if no field is focused
+        targetElement = document.getElementById('html_content');
+    }
+    
+    // Insert variable at cursor position
+    const start = targetElement.selectionStart;
+    const end = targetElement.selectionEnd;
+    const text = targetElement.value;
+    
+    targetElement.value = text.substring(0, start) + variableName + text.substring(end);
+    targetElement.setSelectionRange(start + variableName.length, start + variableName.length);
+    targetElement.focus();
+    
+    // Show feedback
+    const code = event.target;
+    const originalBg = code.style.backgroundColor;
+    code.style.backgroundColor = '#28a745';
+    code.style.color = 'white';
+    setTimeout(() => {
+        code.style.backgroundColor = originalBg;
+        code.style.color = '';
+    }, 300);
+}
+
+// Add some custom CSS for better variable display
+const style = document.createElement('style');
+style.textContent = `
+    .variable-code:hover {
+        background-color: #007bff !important;
+        color: white !important;
+        transition: all 0.2s ease;
+    }
+    
+    .variable-item {
+        border-left: 3px solid #dee2e6;
+        padding-left: 8px;
+    }
+    
+    .variable-item:hover {
+        border-left-color: #007bff;
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

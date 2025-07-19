@@ -38,7 +38,7 @@
                                     <p class="text-danger"><i class="fas fa-times"></i> Secret Key Not Configured</p>
                                 {% endif %}
                                 
-                                <p class="text-muted">Last Updated: {{ gateway.updated_at.strftime('%Y-%m-%d %H:%M') if gateway.updated_at else 'Never' }}</p>
+                                <p class="text-muted">Last Updated: {{ format_datetime(gateway.updated_at, '%Y-%m-%d %H:%M') if gateway.updated_at else 'Never' }}</p>
                                 
                                 <a href="{{ url_for('admin.edit_payment_gateway', gateway_id=gateway.id) }}" class="btn btn-primary">
                                     <i class="fas fa-edit"></i> Configure

@@ -38,9 +38,9 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <p><strong>Amount:</strong> ${{ "%.2f"|format(subscription.amount) }}</p>
-                                    <p><strong>Start Date:</strong> {{ subscription.start_date.strftime('%B %d, %Y') }}</p>
+                                    <p><strong>Start Date:</strong> {{ format_datetime(subscription.start_date, '%B %d, %Y') }}</p>
                                     {% if subscription.end_date %}
-                                        <p><strong>{% if subscription.cancellation_requested %}Cancels on:{% else %}Renewal Date:{% endif %}</strong> {{ subscription.end_date.strftime('%B %d, %Y') }}</p>
+                                        <p><strong>{% if subscription.cancellation_requested %}Cancels on:{% else %}Renewal Date:{% endif %}</strong> {{ format_datetime(subscription.end_date, '%B %d, %Y') }}</p>
                                     {% else %}
                                         <p><strong>Type:</strong> Lifetime</p>
                                     {% endif %}

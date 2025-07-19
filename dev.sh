@@ -36,8 +36,6 @@ start_dev() {
     docker-compose -f $COMPOSE_FILE up -d
     echo "Development environment started!"
     echo "Web application: http://localhost:8000"
-    echo "Database: localhost:3306"
-    echo "Redis: localhost:6379"
 }
 
 stop_services() {
@@ -52,7 +50,7 @@ rebuild_dev() {
     docker-compose -f $COMPOSE_FILE build --no-cache
     docker-compose -f $COMPOSE_FILE up -d
     echo "Development environment rebuilt and started!"
-    echo "Web application: http://localhost:5000"
+    echo "Web application: http://localhost:8000"
 }
 
 show_logs() {

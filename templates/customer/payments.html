@@ -41,7 +41,7 @@
                                             <td>
                                                 <code>{{ payment.transaction_id or payment.payment_intent_id[:20] + '...' if payment.payment_intent_id else 'N/A' }}</code>
                                             </td>
-                                            <td>{{ payment.created_at.strftime('%m/%d/%Y %I:%M %p') }}</td>
+                                            <td>{{ format_datetime(payment.created_at, '%m/%d/%Y %I:%M %p') }}</td>
                                             <td>
                                                 <span class="badge bg-info">{{ payment.payment_type.title() }}</span>
                                             </td>

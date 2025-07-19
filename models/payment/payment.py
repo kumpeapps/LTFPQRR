@@ -28,9 +28,10 @@ class Subscription(db.Model):
     cancellation_requested = db.Column(db.Boolean, default=False)  # Cancellation requested by user
     
     # Relationships
+    # user and tag relationships already defined in their respective models with backref
     pricing_plan = db.relationship('PricingPlan', backref='subscriptions')
-    approver = db.relationship('User', foreign_keys=[approved_by], backref='approved_subscriptions')
-    partner = db.relationship('Partner', backref='unified_subscriptions')
+    approver = db.relationship('User', foreign_keys=[approved_by])
+    partner = db.relationship('Partner')
     
     def is_active(self):
         if self.status != 'active':
