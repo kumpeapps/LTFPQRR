@@ -137,23 +137,26 @@ def edit_pet(pet_id):
             )
             return redirect(url_for("dashboard.customer_dashboard"))
 
-    form = PetForm(obj=pet_obj)
-
-    # Get user's available tags for the dropdown
+    # Get user's available tags for the dropdown first
     available_tags = Tag.query.filter_by(owner_id=current_user.id, pet_id=None).all()
     # Include the currently assigned tag if there is one
     current_tag = Tag.query.filter_by(pet_id=pet_obj.id).first()
     if current_tag:
         available_tags.append(current_tag)
+    
+    form = PetForm(obj=pet_obj)
+    # Set choices before validation
     form.tag_id.choices = [(0, 'No Tag')] + [(tag.id, tag.tag_id) for tag in available_tags]
     
-    # Set the current tag as selected
-    if current_tag:
-        form.tag_id.data = current_tag.id
-    else:
-        form.tag_id.data = 0
+    # Set the current tag as selected if this is a GET request
+    if request.method == 'GET':
+        if current_tag:
+            form.tag_id.data = current_tag.id
+        else:
+            form.tag_id.data = 0
 
     if form.validate_on_submit():
+        print(f"DEBUG: Form validated - tag_id.data: {form.tag_id.data}")
         # Handle file upload
         photo_filename = handle_file_upload(form.photo.data)
         
@@ -186,16 +189,27 @@ def edit_pet(pet_id):
         existing_tag = Tag.query.filter_by(pet_id=pet_obj.id).first()
         if existing_tag:
             existing_tag.pet_id = None
+            print(f"DEBUG: Removed pet {pet_obj.id} from existing tag {existing_tag.tag_id}")
         
         # Assign to new tag if selected
         if form.tag_id.data and form.tag_id.data != 0:
             new_tag = Tag.query.get(form.tag_id.data)
             if new_tag and new_tag.owner_id == current_user.id:
                 new_tag.pet_id = pet_obj.id
+                print(f"DEBUG: Assigned pet {pet_obj.id} to new tag {new_tag.tag_id}")
+            else:
+                print(f"DEBUG: Failed to assign tag - new_tag: {new_tag}, owner_id: {new_tag.owner_id if new_tag else 'N/A'}, current_user.id: {current_user.id}")
+        else:
+            print(f"DEBUG: No tag selected - form.tag_id.data: {form.tag_id.data}")
 
         db.session.commit()
 
         flash("Pet updated successfully!", "success")
         return redirect(url_for("dashboard.customer_dashboard"))
+    else:
+        if request.method == 'POST':
+            print(f"DEBUG: Form validation failed. Errors: {form.errors}")
+            print(f"DEBUG: tag_id choices: {form.tag_id.choices}")
+            print(f"DEBUG: tag_id data: {form.tag_id.data}")
 
     return render_template("pet/edit.html", form=form, pet=pet_obj)
