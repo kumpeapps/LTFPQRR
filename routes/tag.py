@@ -223,6 +223,45 @@ def transfer_tag(tag_id):
     return render_template("tag/transfer.html", form=form, tag=tag_obj)
 
 
+@tag.route("/purchase-subscription/<int:tag_id>", methods=["GET", "POST"])
+@login_required
+def purchase_subscription(tag_id):
+    """Purchase subscription for an existing tag."""
+    from models.models import Tag
+    from forms import ClaimTagForm
+    
+    tag_obj = Tag.query.get_or_404(tag_id)
+
+    # Ensure user owns this tag
+    if tag_obj.owner_id != current_user.id:
+        flash("You can only purchase subscriptions for tags you own.", "error")
+        return redirect(url_for("dashboard.customer_dashboard"))
+
+    # Check if tag already has an active subscription
+    active_subscriptions = [sub for sub in tag_obj.subscriptions if sub.is_active()]
+    if active_subscriptions:
+        flash("This tag already has an active subscription.", "info")
+        return redirect(url_for("customer.manage_subscription", subscription_id=active_subscriptions[0].id))
+
+    # Use the same form as tag claiming but only show subscription options
+    form = ClaimTagForm()
+    # Pre-populate the tag_id and make it readonly since they're purchasing for a specific tag
+    form.tag_id.data = tag_obj.tag_id
+    
+    if request.method == 'GET':
+        # For GET requests, render the subscription selection form
+        return render_template("tag/purchase_subscription.html", form=form, tag=tag_obj)
+    
+    if form.validate_on_submit():
+        # Store tag_id and subscription_type in session for payment
+        session["claiming_tag_id"] = tag_obj.tag_id
+        session["subscription_type"] = form.subscription_type.data
+
+        return redirect(url_for("payment.tag_payment"))
+
+    return render_template("tag/purchase_subscription.html", form=form, tag=tag_obj)
+
+
 @tag.route("/found/<tag_id>")
 def found_pet(tag_id):
     """Display found pet information."""

@@ -1,0 +1,108 @@
+{% extends "layout.html" %}
+
+{% block title %}Purchase Subscription - {{ tag.tag_id }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-shopping-cart"></i> Purchase Subscription for Tag {{ tag.tag_id }}</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Tag Information:</strong> You are purchasing a subscription for tag <strong>{{ tag.tag_id }}</strong>
+                        {% if tag.pet %}
+                            which is currently assigned to <strong>{{ tag.pet.name }}</strong>.
+                        {% else %}
+                            which is not yet assigned to a pet.
+                        {% endif %}
+                    </div>
+
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Hidden tag ID field -->
+                        <input type="hidden" name="tag_id" value="{{ tag.tag_id }}">
+
+                        <div class="mb-4">
+                            <h5>Choose Your Subscription Plan</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="card">
+                                        <div class="card-body text-center">
+                                            <h6>Monthly</h6>
+                                            <h4 class="text-primary">$9.99</h4>
+                                            <p class="small text-muted">per month</p>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="subscription_type" value="monthly" id="monthly">
+                                                <label class="form-check-label" for="monthly">
+                                                    Choose Monthly
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card border-primary">
+                                        <div class="card-body text-center">
+                                            <div class="badge bg-primary mb-2">Popular</div>
+                                            <h6>Yearly</h6>
+                                            <h4 class="text-primary">$99.99</h4>
+                                            <p class="small text-muted">per year</p>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="subscription_type" value="yearly" id="yearly" checked>
+                                                <label class="form-check-label" for="yearly">
+                                                    Choose Yearly
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card">
+                                        <div class="card-body text-center">
+                                            <h6>Lifetime</h6>
+                                            <h4 class="text-primary">$199.99</h4>
+                                            <p class="small text-muted">one time</p>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="subscription_type" value="lifetime" id="lifetime">
+                                                <label class="form-check-label" for="lifetime">
+                                                    Choose Lifetime
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% if form.subscription_type.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.subscription_type.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Note:</strong> Lifetime subscriptions prevent changing pet name and details to ensure tag consistency. You can cancel the lifetime subscription to remove this restriction.
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-credit-card"></i> Proceed to Payment
+                            </button>
+                            <a href="{{ url_for('dashboard.customer_dashboard') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Dashboard
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

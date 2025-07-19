@@ -59,11 +59,14 @@
                     </div>
                 </div>
 
-                <!-- My Subscriptions -->
+                                <!-- My Subscriptions -->
                 {% if subscriptions %}
-                <div class="card mb-4">
+                <!-- Active Subscriptions -->
+                {% set active_subscriptions = subscriptions|selectattr('is_active')|list %}
+                {% if active_subscriptions %}
+                <div class="card mt-4">
                     <div class="card-header">
-                        <h5 class="mb-0">My Subscriptions</h5>
+                        <h5 class="mb-0"><i class="fas fa-check-circle text-success"></i> Active Subscriptions</h5>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -80,7 +83,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for subscription in subscriptions %}
+                                    {% for subscription in active_subscriptions %}
                                     <tr>
                                         <td>
                                             <span class="badge 
@@ -150,6 +153,108 @@
                         </div>
                     </div>
                 </div>
+                {% endif %}
+                
+                <!-- Inactive/Cancelled Subscriptions -->
+                {% set inactive_subscriptions = subscriptions|rejectattr('is_active')|list %}
+                {% if inactive_subscriptions %}
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-history text-muted"></i> Subscription History</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Amount</th>
+                                        <th>Start Date</th>
+                                        <th>End Date</th>
+                                        <th>Auto-Renew</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for subscription in inactive_subscriptions %}
+                                    <tr class="table-secondary">
+                                        <td>
+                                            <span class="badge 
+                                                {% if subscription.subscription_type == 'lifetime' %}bg-success
+                                                {% elif subscription.subscription_type == 'yearly' %}bg-primary
+                                                {% elif subscription.subscription_type == 'monthly' %}bg-info
+                                                {% else %}bg-secondary
+                                                {% endif %}">
+                                                {{ subscription.subscription_type.title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if subscription.status == 'active' %}bg-success
+                                                {% elif subscription.status == 'cancelled' %}bg-danger
+                                                {% elif subscription.status == 'expired' %}bg-warning
+                                                {% else %}bg-secondary
+                                                {% endif %}">
+                                                {{ subscription.status.title() }}
+                                            </span>
+                                            {% if subscription.status == 'active' and subscription.end_date and (subscription.end_date - now).days <= 7 %}
+                                                <br><small class="text-warning">Expires in {{ (subscription.end_date - now).days }} days</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>${{ "%.2f"|format(subscription.amount) }}</td>
+                                        <td>{{ format_datetime(subscription.start_date, '%m/%d/%Y') if subscription.start_date else '—' }}</td>
+                                        <td>
+                                            {% if subscription.end_date %}
+                                                {{ format_datetime(subscription.end_date, '%m/%d/%Y') }}
+                                            {% elif subscription.subscription_type == 'lifetime' %}
+                                                <span class="badge bg-success">Never</span>
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if subscription.subscription_type != 'lifetime' %}
+                                                {% if subscription.auto_renew %}
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check"></i> Enabled
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">
+                                                        <i class="fas fa-times"></i> Disabled
+                                                    </span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if subscription.tag %}
+                                                {% if subscription.status == 'expired' %}
+                                                    <a href="{{ url_for('tag.purchase_subscription', tag_id=subscription.tag.id) }}" 
+                                                       class="btn btn-sm btn-outline-success">
+                                                        <i class="fas fa-redo"></i> Renew
+                                                    </a>
+                                                {% elif subscription.status == 'cancelled' %}
+                                                    <a href="{{ url_for('tag.purchase_subscription', tag_id=subscription.tag.id) }}" 
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-shopping-cart"></i> Purchase New
+                                                    </a>
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
                 {% endif %}
 
                 <!-- My Pets -->
@@ -320,6 +425,11 @@
                                                         <a href="{{ url_for('customer.manage_subscription', subscription_id=active_subscription.id) }}" 
                                                            class="btn btn-sm btn-outline-info">
                                                             <i class="fas fa-cog"></i> Manage
+                                                        </a>
+                                                    {% else %}
+                                                        <a href="{{ url_for('tag.purchase_subscription', tag_id=tag.id) }}" 
+                                                           class="btn btn-sm btn-outline-success">
+                                                            <i class="fas fa-shopping-cart"></i> Purchase
                                                         </a>
                                                     {% endif %}
                                                     <a href="{{ url_for('tag.transfer_tag', tag_id=tag.id) }}" 
