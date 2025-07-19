@@ -15,6 +15,8 @@ Usage:
     python manage_users.py user-info --email user@example.com
     python manage_users.py list-roles
     python manage_users.py create-role --name moderator --description "Content moderation role"
+    python manage_users.py cleanup-subscriptions --dry-run
+    python manage_users.py cleanup-subscriptions
 """
 
 import argparse
@@ -273,6 +275,78 @@ class UserManager:
                 print(f"Error creating role: {e}")
                 return False
     
+    def cleanup_duplicate_subscriptions(self, dry_run=False):
+        """Clean up duplicate subscription records."""
+        from models.models import Subscription
+        from sqlalchemy import func
+        
+        with self.app.app_context():
+            print("=== Cleaning up duplicate subscriptions ===")
+            
+            # Find groups of subscriptions with same user_id, tag_id, and status='active'
+            duplicate_groups = db.session.query(
+                Subscription.user_id,
+                Subscription.tag_id,
+                func.count(Subscription.id).label('count')
+            ).filter(
+                Subscription.status == 'active',
+                Subscription.tag_id.isnot(None)  # Only tag subscriptions
+            ).group_by(
+                Subscription.user_id,
+                Subscription.tag_id
+            ).having(
+                func.count(Subscription.id) > 1
+            ).all()
+            
+            if not duplicate_groups:
+                print("No duplicate active subscriptions found.")
+                return True
+            
+            print(f"Found {len(duplicate_groups)} groups with duplicate subscriptions:")
+            
+            changes_made = 0
+            for group in duplicate_groups:
+                user_id, tag_id, count = group
+                print(f"  User {user_id}, Tag {tag_id}: {count} active subscriptions")
+                
+                # Get all subscriptions for this user/tag combination
+                subscriptions = Subscription.query.filter_by(
+                    user_id=user_id,
+                    tag_id=tag_id,
+                    status='active'
+                ).order_by(Subscription.created_at.asc()).all()
+                
+                # Keep the first (oldest) subscription, mark others as cancelled
+                if len(subscriptions) > 1:
+                    keep_subscription = subscriptions[0]
+                    duplicate_subscriptions = subscriptions[1:]
+                    
+                    print(f"    Keeping subscription ID {keep_subscription.id} (created: {keep_subscription.created_at})")
+                    
+                    for dup_sub in duplicate_subscriptions:
+                        print(f"    {'[DRY RUN] Would mark' if dry_run else 'Marking'} subscription ID {dup_sub.id} as cancelled (created: {dup_sub.created_at})")
+                        if not dry_run:
+                            dup_sub.status = 'cancelled'
+                            dup_sub.cancellation_requested = True
+                            changes_made += 1
+            
+            # Commit the changes if not dry run
+            if not dry_run and changes_made > 0:
+                try:
+                    db.session.commit()
+                    print(f"\n✅ Successfully cleaned up {changes_made} duplicate subscriptions")
+                    return True
+                except Exception as e:
+                    db.session.rollback()
+                    print(f"\n❌ Error cleaning up duplicates: {str(e)}")
+                    return False
+            elif dry_run:
+                print(f"\n🔍 DRY RUN: Would clean up {len(duplicate_groups)} duplicate groups")
+                return True
+            else:
+                print("\n✅ No changes needed")
+                return True
+    
     def user_info(self, email):
         """Display detailed information about a user."""
         with self.app.app_context():
@@ -372,6 +446,10 @@ Examples:
     create_role_parser.add_argument('--name', required=True, help='Role name')
     create_role_parser.add_argument('--description', help='Role description')
     
+    # Cleanup duplicate subscriptions command
+    cleanup_parser = subparsers.add_parser('cleanup-subscriptions', help='Clean up duplicate subscription records')
+    cleanup_parser.add_argument('--dry-run', action='store_true', help='Show what would be cleaned up without making changes')
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -416,6 +494,9 @@ Examples:
         
         elif args.command == 'create-role':
             manager.create_role(args.name, args.description)
+        
+        elif args.command == 'cleanup-subscriptions':
+            manager.cleanup_duplicate_subscriptions(dry_run=args.dry_run)
         
     except KeyboardInterrupt:
         print("\nOperation cancelled by user.")

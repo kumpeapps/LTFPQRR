@@ -322,6 +322,17 @@ def process_successful_payment(
             # Process tag subscription
             tag = Tag.query.filter_by(tag_id=claiming_tag_id).first()
             if tag:
+                # Check for existing active subscription to prevent duplicates
+                existing_subscription = Subscription.query.filter_by(
+                    user_id=user_id,
+                    tag_id=tag.id,
+                    status='active'
+                ).first()
+                
+                if existing_subscription:
+                    logger.warning(f"Active subscription already exists for user {user_id} and tag {tag.id}")
+                    return  # Exit early to prevent duplicate
+                
                 tag.owner_id = user_id
                 tag.status = "claimed"
 
