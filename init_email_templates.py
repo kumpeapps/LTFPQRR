@@ -507,7 +507,7 @@ Reply directly to this email to contact the finder, or email {{ system.support_e
     </div>
     
     <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-        <h2 style="color: #333; margin: 0 0 20px 0;">Hi {{ user.first_name }},</h2>
+        <h2 style="color: #333; margin: 0 0 20px 0;">Hi {{ user.first_name or user.username }},</h2>
         
         <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; margin: 25px 0; text-align: center;">
             <h3 style="color: #155724; margin: 0 0 10px 0;">🎉 Subscription Confirmed!</h3>
@@ -517,10 +517,10 @@ Reply directly to this email to contact the finder, or email {{ system.support_e
         <div style="background: #f8f9fa; border-radius: 8px; padding: 25px; margin: 25px 0;">
             <h3 style="color: #333; margin: 0 0 20px 0;">Subscription Details</h3>
             <table style="width: 100%; border-collapse: collapse;">
-                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Plan:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>{{ subscription.pricing_plan.name if subscription.pricing_plan else subscription.subscription_type.title() }}</strong></td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Plan:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>{{ subscription.pricing_plan.name if subscription.pricing_plan else (subscription.subscription_type.title() if subscription.subscription_type else 'Subscription Plan') }}</strong></td></tr>
                 <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Amount:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>${{ subscription.amount }}</strong></td></tr>
                 <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Start Date:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{{ subscription.start_date.strftime('%B %d, %Y') }}</td></tr>
-                <tr><td style="padding: 8px; color: #666;">Status:</td><td style="padding: 8px;"><span style="color: #28a745; font-weight: 600;">{{ subscription.status.title() }}</span></td></tr>
+                <tr><td style="padding: 8px; color: #666;">Status:</td><td style="padding: 8px;"><span style="color: #28a745; font-weight: 600;">{{ subscription.status.title() if subscription.status else 'Active' }}</span></td></tr>
             </table>
         </div>
         
@@ -536,17 +536,17 @@ Reply directly to this email to contact the finder, or email {{ system.support_e
 </html>
                 ''',
                 'text_content': '''
-Hi {{ user.first_name }},
+Hi {{ user.first_name or user.username }},
 
 🎉 Subscription Confirmed!
 
 Thank you for subscribing to {{ system.app_name }}!
 
 Subscription Details:
-- Plan: {{ subscription.pricing_plan.name if subscription.pricing_plan else subscription.subscription_type.title() }}
+- Plan: {{ subscription.pricing_plan.name if subscription.pricing_plan else (subscription.subscription_type.title() if subscription.subscription_type else 'Subscription Plan') }}
 - Amount: ${{ subscription.amount }}
 - Start Date: {{ subscription.start_date.strftime('%B %d, %Y') }}
-- Status: {{ subscription.status.title() }}
+- Status: {{ subscription.status.title() if subscription.status else 'Active' }}
 
 Your pet protection service is now active! You can manage your subscription from your dashboard.
 
@@ -576,7 +576,7 @@ Thank you for choosing {{ system.app_name }}!
     </div>
     
     <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-        <h2 style="color: #333; margin: 0 0 20px 0;">Hi {{ user.first_name }},</h2>
+        <h2 style="color: #333; margin: 0 0 20px 0;">Hi {{ user.first_name or user.username }},</h2>
         
         <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; margin: 25px 0; text-align: center;">
             <h3 style="color: #155724; margin: 0 0 10px 0;">✅ Subscription Approved!</h3>
@@ -586,7 +586,7 @@ Thank you for choosing {{ system.app_name }}!
         <div style="background: #f8f9fa; border-radius: 8px; padding: 25px; margin: 25px 0;">
             <h3 style="color: #333; margin: 0 0 20px 0;">Approved Subscription</h3>
             <table style="width: 100%; border-collapse: collapse;">
-                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Plan:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>{{ subscription.pricing_plan.name if subscription.pricing_plan else subscription.subscription_type.title() }}</strong></td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Plan:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>{{ subscription.pricing_plan.name if subscription.pricing_plan else (subscription.subscription_type.title() if subscription.subscription_type else 'Subscription Plan') }}</strong></td></tr>
                 <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Amount:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>${{ subscription.amount }}</strong></td></tr>
                 <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Start Date:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{{ subscription.start_date.strftime('%B %d, %Y') }}</td></tr>
                 <tr><td style="padding: 8px; color: #666;">Status:</td><td style="padding: 8px;"><span style="color: #28a745; font-weight: 600;">Active</span></td></tr>
@@ -604,14 +604,14 @@ Thank you for choosing {{ system.app_name }}!
 </html>
                 ''',
                 'text_content': '''
-Hi {{ user.first_name }},
+Hi {{ user.first_name or user.username }},
 
 ✅ Subscription Approved!
 
 Great news! Your subscription has been approved by our admin team.
 
 Approved Subscription:
-- Plan: {{ subscription.pricing_plan.name if subscription.pricing_plan else subscription.subscription_type.title() }}
+- Plan: {{ subscription.pricing_plan.name if subscription.pricing_plan else (subscription.subscription_type.title() if subscription.subscription_type else 'Subscription Plan') }}
 - Amount: ${{ subscription.amount }}
 - Start Date: {{ subscription.start_date.strftime('%B %d, %Y') }}
 - Status: Active
@@ -642,14 +642,14 @@ If you have any questions, please contact us at {{ system.support_email }}
     </div>
     
     <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-        <h2 style="color: #333; margin: 0 0 20px 0;">Hi {{ user.first_name }},</h2>
+        <h2 style="color: #333; margin: 0 0 20px 0;">Hi {{ user.first_name or user.username }},</h2>
         
         <p>We're sorry to see you go. Your subscription has been cancelled as requested.</p>
         
         <div style="background: #f8f9fa; border-radius: 8px; padding: 25px; margin: 25px 0;">
             <h3 style="color: #333; margin: 0 0 20px 0;">Cancelled Subscription</h3>
             <table style="width: 100%; border-collapse: collapse;">
-                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Plan:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>{{ subscription.pricing_plan.name if subscription.pricing_plan else subscription.subscription_type.title() }}</strong></td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Plan:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>{{ subscription.pricing_plan.name if subscription.pricing_plan else (subscription.subscription_type.title() if subscription.subscription_type else 'Subscription Plan') }}</strong></td></tr>
                 <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Amount:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>${{ subscription.amount }}</strong></td></tr>
                 <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Original Start:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{{ subscription.start_date.strftime('%B %d, %Y') }}</td></tr>
                 <tr><td style="padding: 8px; color: #666;">Cancelled:</td><td style="padding: 8px;">{{ subscription.end_date.strftime('%B %d, %Y') if subscription.end_date else 'Today' }}</td></tr>
@@ -670,12 +670,12 @@ If you have any questions, please contact us at {{ system.support_email }}
 </html>
                 ''',
                 'text_content': '''
-Hi {{ user.first_name }},
+Hi {{ user.first_name or user.username }},
 
 We're sorry to see you go. Your subscription has been cancelled as requested.
 
 Cancelled Subscription:
-- Plan: {{ subscription.pricing_plan.name if subscription.pricing_plan else subscription.subscription_type.title() }}
+- Plan: {{ subscription.pricing_plan.name if subscription.pricing_plan else (subscription.subscription_type.title() if subscription.subscription_type else 'Subscription Plan') }}
 - Amount: ${{ subscription.amount }}
 - Original Start: {{ subscription.start_date.strftime('%B %d, %Y') }}
 - Cancelled: {{ subscription.end_date.strftime('%B %d, %Y') if subscription.end_date else 'Today' }}
@@ -706,7 +706,7 @@ If you have any questions, please contact us at {{ system.support_email }}
     </div>
     
     <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-        <h2 style="color: #333; margin: 0 0 20px 0;">Hi {{ user.first_name }},</h2>
+        <h2 style="color: #333; margin: 0 0 20px 0;">Hi {{ user.first_name or user.username }},</h2>
         
         <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; margin: 25px 0; text-align: center;">
             <h3 style="color: #155724; margin: 0 0 10px 0;">🔄 Subscription Successfully Renewed!</h3>
@@ -716,7 +716,7 @@ If you have any questions, please contact us at {{ system.support_email }}
         <div style="background: #f8f9fa; border-radius: 8px; padding: 25px; margin: 25px 0;">
             <h3 style="color: #333; margin: 0 0 20px 0;">Renewed Subscription</h3>
             <table style="width: 100%; border-collapse: collapse;">
-                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Plan:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>{{ subscription.pricing_plan.name if subscription.pricing_plan else subscription.subscription_type.title() }}</strong></td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Plan:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>{{ subscription.pricing_plan.name if subscription.pricing_plan else (subscription.subscription_type.title() if subscription.subscription_type else 'Subscription Plan') }}</strong></td></tr>
                 <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Amount:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>${{ subscription.amount }}</strong></td></tr>
                 <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Renewed:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{{ subscription.start_date.strftime('%B %d, %Y') }}</td></tr>
                 <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Next Renewal:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{{ subscription.end_date.strftime('%B %d, %Y') if subscription.end_date else 'N/A' }}</td></tr>
@@ -740,14 +740,14 @@ If you have any questions, please contact us at {{ system.support_email }}
 </html>
                 ''',
                 'text_content': '''
-Hi {{ user.first_name }},
+Hi {{ user.first_name or user.username }},
 
 🔄 Subscription Successfully Renewed!
 
 Your subscription has been automatically renewed. Thank you for continuing with {{ system.app_name }}!
 
 Renewed Subscription:
-- Plan: {{ subscription.pricing_plan.name if subscription.pricing_plan else subscription.subscription_type.title() }}
+- Plan: {{ subscription.pricing_plan.name if subscription.pricing_plan else (subscription.subscription_type.title() if subscription.subscription_type else 'Subscription Plan') }}
 - Amount: ${{ subscription.amount }}
 - Renewed: {{ subscription.start_date.strftime('%B %d, %Y') }}
 - Next Renewal: {{ subscription.end_date.strftime('%B %d, %Y') if subscription.end_date else 'N/A' }}
@@ -781,14 +781,14 @@ If you have any questions, please contact us at {{ system.support_email }}
     </div>
     
     <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-        <h2 style="color: #333; margin: 0 0 20px 0;">Hi {{ user.first_name }},</h2>
+        <h2 style="color: #333; margin: 0 0 20px 0;">Hi {{ user.first_name or user.username }},</h2>
         
         <p>We regret to inform you that your subscription request could not be approved at this time.</p>
         
         <div style="background: #f8f9fa; border-radius: 8px; padding: 25px; margin: 25px 0;">
             <h3 style="color: #333; margin: 0 0 20px 0;">Rejected Subscription</h3>
             <table style="width: 100%; border-collapse: collapse;">
-                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Plan:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>{{ subscription.pricing_plan.name if subscription.pricing_plan else subscription.subscription_type.title() }}</strong></td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Plan:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>{{ subscription.pricing_plan.name if subscription.pricing_plan else (subscription.subscription_type.title() if subscription.subscription_type else 'Subscription Plan') }}</strong></td></tr>
                 <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Status:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">Rejected</td></tr>
                 <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Request Date:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{{ subscription.created_at.strftime('%B %d, %Y') }}</td></tr>
                 <tr><td style="padding: 8px; color: #666;">Rejected Date:</td><td style="padding: 8px;">{{ subscription.updated_at.strftime('%B %d, %Y') if subscription.updated_at else 'Today' }}</td></tr>
@@ -811,12 +811,12 @@ If you have any questions, please contact us at {{ system.support_email }}
 </html>
                 ''',
                 'text_content': '''
-Hi {{ user.first_name }},
+Hi {{ user.first_name or user.username }},
 
 We regret to inform you that your subscription request could not be approved at this time.
 
 Rejected Subscription:
-- Plan: {{ subscription.pricing_plan.name if subscription.pricing_plan else subscription.subscription_type.title() }}
+- Plan: {{ subscription.pricing_plan.name if subscription.pricing_plan else (subscription.subscription_type.title() if subscription.subscription_type else 'Subscription Plan') }}
 - Status: Rejected
 - Request Date: {{ subscription.created_at.strftime('%B %d, %Y') }}
 - Rejected Date: {{ subscription.updated_at.strftime('%B %d, %Y') if subscription.updated_at else 'Today' }}
@@ -831,7 +831,7 @@ Thank you for your interest in {{ system.app_name }}.
             },
             {
                 'name': 'subscription_expiry_reminder',
-                'subject': 'Your {{ subscription.pricing_plan.name if subscription.pricing_plan else subscription.subscription_type.title() }} subscription expires soon',
+                'subject': 'Subscription Expiring Soon - {{ system.app_name }}',
                 'description': 'Reminder email sent before subscription expires',
                 'category': 'subscription',
                 'html_content': '''
@@ -848,32 +848,32 @@ Thank you for your interest in {{ system.app_name }}.
     </div>
     
     <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-        <h2 style="color: #333; margin: 0 0 20px 0;">Hi {{ user.first_name }},</h2>
+        <h2 style="color: #333; margin: 0 0 20px 0;">Hi {{ user.first_name or user.username }},</h2>
         
         <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 20px; margin: 25px 0; text-align: center;">
             <h3 style="color: #856404; margin: 0 0 10px 0;">⏰ Subscription Expiry Reminder</h3>
-            <p style="color: #856404; margin: 0;">Your <strong>{{ subscription.pricing_plan.name if subscription.pricing_plan else subscription.subscription_type.title() }}</strong> subscription will expire in <strong>{{ days_until_expiry }} day{{ 's' if days_until_expiry != 1 else '' }}</strong>.</p>
+            <p style="color: #856404; margin: 0;">Your <strong>{{ subscription.pricing_plan.name if subscription.pricing_plan else (subscription.subscription_type.title() if subscription.subscription_type else 'Subscription Plan') }}</strong> subscription will expire in <strong>{{ days_until_expiry if days_until_expiry is defined else 'Soon' }} day{{ 's' if days_until_expiry != 1 else '' }}</strong>.</p>
         </div>
         
         <div style="background: #f8f9fa; border-radius: 8px; padding: 25px; margin: 25px 0;">
             <h3 style="color: #333; margin: 0 0 20px 0;">Subscription Details</h3>
             <table style="width: 100%; border-collapse: collapse;">
-                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Plan:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>{{ subscription.pricing_plan.name if subscription.pricing_plan else subscription.subscription_type.title() }}</strong></td></tr>
-                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Billing:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{{ subscription.pricing_plan.billing_period.title() if subscription.pricing_plan else 'One-time' }}</td></tr>
-                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Amount:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>${{ subscription.amount }}</strong></td></tr>
-                <tr><td style="padding: 8px; color: #666;">Expires:</td><td style="padding: 8px;"><strong>{{ subscription.end_date.strftime('%B %d, %Y') }}</strong></td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Plan:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>{{ subscription.pricing_plan.name if subscription.pricing_plan else (subscription.subscription_type.title() if subscription.subscription_type else 'Subscription Plan') }}</strong></td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Billing:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{{ subscription.pricing_plan.billing_period.title() if subscription.pricing_plan and subscription.pricing_plan.billing_period else 'One-time' }}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Amount:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>${{ subscription.amount if subscription.amount else '0.00' }}</strong></td></tr>
+                <tr><td style="padding: 8px; color: #666;">Expires:</td><td style="padding: 8px;"><strong>{{ subscription.end_date.strftime('%B %d, %Y') if subscription.end_date else 'Soon' }}</strong></td></tr>
             </table>
         </div>
         
         {% if subscription.auto_renew %}
         <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; margin: 25px 0;">
             <h4 style="color: #155724; margin: 0 0 10px 0;">✓ Auto-Renewal Enabled</h4>
-            <p style="color: #155724; margin: 0;">Your subscription will automatically renew on {{ subscription.end_date.strftime('%B %d, %Y') }}. No action is needed on your part.</p>
+            <p style="color: #155724; margin: 0;">Your subscription will automatically renew on {{ subscription.end_date.strftime('%B %d, %Y') if subscription.end_date else 'the expiry date' }}. No action is needed on your part.</p>
         </div>
         {% else %}
         <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; padding: 20px; margin: 25px 0;">
             <h4 style="color: #721c24; margin: 0 0 10px 0;">⚠ Auto-Renewal Disabled</h4>
-            <p style="color: #721c24; margin: 0;">Your subscription will expire on {{ subscription.end_date.strftime('%B %d, %Y') }}. <strong>Renew now</strong> to continue your protection.</p>
+            <p style="color: #721c24; margin: 0;">Your subscription will expire on {{ subscription.end_date.strftime('%B %d, %Y') if subscription.end_date else 'soon' }}. <strong>Renew now</strong> to continue your protection.</p>
         </div>
         {% endif %}
         
@@ -888,21 +888,21 @@ Thank you for your interest in {{ system.app_name }}.
 </html>
                 ''',
                 'text_content': '''
-Hi {{ user.first_name }},
+Hi {{ user.first_name or user.username }},
 
 ⏰ Subscription Expiry Reminder
 
-Your {{ subscription.pricing_plan.name if subscription.pricing_plan else subscription.subscription_type.title() }} subscription will expire in {{ days_until_expiry }} day{{ 's' if days_until_expiry != 1 else '' }}.
+Your {{ subscription.pricing_plan.name if subscription.pricing_plan else (subscription.subscription_type.title() if subscription.subscription_type else 'Subscription Plan') }} subscription will expire in {{ days_until_expiry if days_until_expiry is defined else 'Soon' }} day{{ 's' if days_until_expiry != 1 else '' }}.
 
 Subscription Details:
-- Plan: {{ subscription.pricing_plan.name if subscription.pricing_plan else subscription.subscription_type.title() }}
-- Billing: {{ subscription.pricing_plan.billing_period.title() if subscription.pricing_plan else 'One-time' }}
-- Amount: ${{ subscription.amount }}
-- Expires: {{ subscription.end_date.strftime('%B %d, %Y') }}
+- Plan: {{ subscription.pricing_plan.name if subscription.pricing_plan else (subscription.subscription_type.title() if subscription.subscription_type else 'Subscription Plan') }}
+- Billing: {{ subscription.pricing_plan.billing_period.title() if subscription.pricing_plan and subscription.pricing_plan.billing_period else 'One-time' }}
+- Amount: ${{ subscription.amount if subscription.amount else '0.00' }}
+- Expires: {{ subscription.end_date.strftime('%B %d, %Y') if subscription.end_date else 'Soon' }}
 
-{% if subscription.auto_renew %}✓ Auto-Renewal: Enabled - Your subscription will automatically renew on {{ subscription.end_date.strftime('%B %d, %Y') }}. No action needed.{% else %}⚠ Auto-Renewal: Disabled - Your subscription will expire on {{ subscription.end_date.strftime('%B %d, %Y') }}. Renew now to continue protection.{% endif %}
+{% if subscription.auto_renew %}✓ Auto-Renewal: Enabled - Your subscription will automatically renew on {{ subscription.end_date.strftime('%B %d, %Y') if subscription.end_date else 'the expiry date' }}. No action needed.{% else %}⚠ Auto-Renewal: Disabled - Your subscription will expire on {{ subscription.end_date.strftime('%B %d, %Y') if subscription.end_date else 'soon' }}. Renew now to continue protection.{% endif %}
 
-Manage your subscription: {{ system.site_url }}/dashboard
+Manage your subscription: {{ system.base_url }}/dashboard
 
 Thank you for trusting us with your pet's protection.
 
@@ -937,11 +937,11 @@ If you have any questions, please contact us at {{ system.support_email }}
         <div style="background: #f8f9fa; border-radius: 8px; padding: 25px; margin: 25px 0;">
             <h3 style="color: #495057; margin: 0 0 20px 0;">Refund Details</h3>
             <table style="width: 100%; border-collapse: collapse;">
-                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Refund Amount:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>${{ refund_amount }}</strong></td></tr>
-                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Original Payment:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${{ payment.amount }}</td></tr>
-                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Payment Date:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{{ payment.created_at.strftime('%B %d, %Y') }}</td></tr>
-                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Refund Reason:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{{ refund_reason_text }}</td></tr>
-                <tr><td style="padding: 8px; color: #666;">Transaction ID:</td><td style="padding: 8px;">{{ payment.transaction_id }}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Refund Amount:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>${{ refund_amount if refund_amount is defined else payment.amount if payment else '0.00' }}</strong></td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Original Payment:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${{ payment.amount if payment else 'N/A' }}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Payment Date:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{{ payment.created_at.strftime('%B %d, %Y') if payment and payment.created_at else 'N/A' }}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Refund Reason:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{{ refund_reason_text if refund_reason_text is defined else 'Refund processed' }}</td></tr>
+                <tr><td style="padding: 8px; color: #666;">Transaction ID:</td><td style="padding: 8px;">{{ payment.transaction_id if payment and payment.transaction_id else payment.stripe_payment_intent_id if payment and payment.stripe_payment_intent_id else payment.paypal_payment_id if payment and payment.paypal_payment_id else 'N/A' }}</td></tr>
             </table>
         </div>
         
@@ -966,11 +966,11 @@ Dear {{ user.first_name or user.username }},
 We're writing to inform you that a refund has been processed for your recent payment:
 
 Refund Details:
-- Refund Amount: ${{ refund_amount }}
-- Original Payment: ${{ payment.amount }}
-- Payment Date: {{ payment.created_at.strftime('%B %d, %Y') }}
-- Refund Reason: {{ refund_reason_text }}
-- Transaction ID: {{ payment.transaction_id }}
+- Refund Amount: ${{ refund_amount if refund_amount is defined else payment.amount if payment else '0.00' }}
+- Original Payment: ${{ payment.amount if payment else 'N/A' }}
+- Payment Date: {{ payment.created_at.strftime('%B %d, %Y') if payment and payment.created_at else 'N/A' }}
+- Refund Reason: {{ refund_reason_text if refund_reason_text is defined else 'Refund processed' }}
+- Transaction ID: {{ payment.transaction_id if payment and payment.transaction_id else payment.stripe_payment_intent_id if payment and payment.stripe_payment_intent_id else payment.paypal_payment_id if payment and payment.paypal_payment_id else 'N/A' }}
 
 💳 Processing Time: The refund will appear on your original payment method within 5-10 business days.
 
@@ -1008,10 +1008,10 @@ The {{ system.app_name }} Team
         <div style="background: #f8f9fa; border-radius: 8px; padding: 25px; margin: 25px 0;">
             <h3 style="color: #495057; margin: 0 0 20px 0;">Payment Details</h3>
             <table style="width: 100%; border-collapse: collapse;">
-                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Amount:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>${{ payment.amount }}</strong></td></tr>
-                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Payment Date:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{{ payment.created_at.strftime('%B %d, %Y') }}</td></tr>
-                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Transaction ID:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{{ payment.transaction_id }}</td></tr>
-                <tr><td style="padding: 8px; color: #666;">Failure Reason:</td><td style="padding: 8px;">{{ failure_reason }}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Amount:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;"><strong>${{ payment.amount if payment else '0.00' }}</strong></td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Payment Date:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{{ payment.created_at.strftime('%B %d, %Y') if payment and payment.created_at else 'Recently' }}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #dee2e6; color: #666;">Transaction ID:</td><td style="padding: 8px; border-bottom: 1px solid #dee2e6;">{{ payment.transaction_id if payment and payment.transaction_id else payment.stripe_payment_intent_id if payment and payment.stripe_payment_intent_id else payment.paypal_payment_id if payment and payment.paypal_payment_id else 'N/A' }}</td></tr>
+                <tr><td style="padding: 8px; color: #666;">Failure Reason:</td><td style="padding: 8px;">{{ failure_reason if failure_reason is defined else 'Payment could not be processed' }}</td></tr>
             </table>
         </div>
         
@@ -1047,9 +1047,9 @@ We're writing to inform you that your recent payment attempt was unsuccessful:
 
 Payment Details:
 - Amount: ${{ payment.amount }}
-- Payment Date: {{ payment.created_at.strftime('%B %d, %Y') }}
-- Transaction ID: {{ payment.transaction_id }}
-- Failure Reason: {{ failure_reason }}
+- Payment Date: {{ payment.created_at.strftime('%B %d, %Y') if payment and payment.created_at else 'Recently' }}
+- Transaction ID: {{ payment.transaction_id if payment and payment.transaction_id else payment.stripe_payment_intent_id if payment and payment.stripe_payment_intent_id else payment.paypal_payment_id if payment and payment.paypal_payment_id else 'N/A' }}
+- Failure Reason: {{ failure_reason if failure_reason is defined else 'Payment could not be processed' }}
 
 ⚠ Action Required:
 To maintain your subscription and avoid service interruption:
@@ -1058,7 +1058,7 @@ To maintain your subscription and avoid service interruption:
 - Update your payment information if needed
 
 You can update your payment information by logging into your account dashboard:
-{{ system.site_url }}/dashboard
+{{ system.base_url }}/dashboard
 
 If you continue to experience issues, please contact our support team at {{ system.support_email }}
 
