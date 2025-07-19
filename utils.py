@@ -486,3 +486,144 @@ def process_successful_payment(
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
         raise  # Re-raise the exception so it's not ignored
+
+
+def process_payment_refund(payment_intent_id, refund_reason, refund_amount, webhook_event_type):
+    """
+    Process payment refunds and update subscription status accordingly
+    
+    Args:
+        payment_intent_id (str): Stripe payment intent ID
+        refund_reason (str): Reason for refund (chargeback, merchant_refund, etc.)
+        refund_amount (float): Amount refunded
+        webhook_event_type (str): The webhook event type that triggered this
+    """
+    import logging
+    from extensions import db
+    from models.models import Payment, Subscription, Tag
+    from datetime import datetime
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Find the payment record
+        payment = Payment.query.filter_by(transaction_id=payment_intent_id).first()
+        
+        if not payment:
+            logger.warning(f"No payment found for intent ID: {payment_intent_id}")
+            return False
+        
+        logger.info(f"Processing refund for payment {payment.id}: {refund_reason}, amount: ${refund_amount}")
+        
+        # Update payment status
+        payment.status = 'refunded'
+        payment.updated_at = datetime.utcnow()
+        
+        # Find and update related subscription
+        if payment.subscription_id:
+            subscription = Subscription.query.get(payment.subscription_id)
+            if subscription:
+                logger.info(f"Cancelling subscription {subscription.id} due to refund")
+                
+                # Cancel the subscription
+                subscription.status = 'cancelled'
+                subscription.cancellation_requested = True
+                subscription.updated_at = datetime.utcnow()
+                
+                # If it's a tag subscription, update tag status
+                if subscription.tag_id:
+                    tag = Tag.query.get(subscription.tag_id)
+                    if tag:
+                        logger.info(f"Updating tag {tag.tag_id} status due to refund")
+                        tag.status = 'available'
+                        tag.owner_id = None
+        
+        # Create refund record (you might want a separate Refund model)
+        # For now, we'll update the payment record with refund information
+        
+        db.session.commit()
+        
+        # Send refund notification email
+        try:
+            if payment.user_id:
+                from models.models import User
+                user = User.query.get(payment.user_id)
+                if user:
+                    from email_utils import send_refund_notification_email
+                    send_refund_notification_email(user, payment, refund_amount, refund_reason)
+                    logger.info(f"Sent refund notification email to {user.email}")
+        except Exception as email_error:
+            logger.error(f"Error sending refund notification email: {email_error}")
+        
+        logger.info(f"Refund processed successfully for payment {payment.id}")
+        return True
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error processing refund: {str(e)}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return False
+
+
+def process_payment_failure(payment_intent_id, failure_reason, webhook_event_type):
+    """
+    Process payment failures and update subscription status accordingly
+    
+    Args:
+        payment_intent_id (str): Stripe payment intent ID
+        failure_reason (str): Reason for failure
+        webhook_event_type (str): The webhook event type that triggered this
+    """
+    import logging
+    from extensions import db
+    from models.models import Payment, Subscription
+    from datetime import datetime
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Find the payment record
+        payment = Payment.query.filter_by(transaction_id=payment_intent_id).first()
+        
+        if not payment:
+            logger.warning(f"No payment found for intent ID: {payment_intent_id}")
+            return False
+        
+        logger.info(f"Processing payment failure for payment {payment.id}: {failure_reason}")
+        
+        # Update payment status
+        payment.status = 'failed'
+        payment.updated_at = datetime.utcnow()
+        
+        # For subscription renewals, mark subscription as expired or cancelled
+        if payment.subscription_id:
+            subscription = Subscription.query.get(payment.subscription_id)
+            if subscription and subscription.status == 'active':
+                logger.info(f"Marking subscription {subscription.id} as expired due to payment failure")
+                subscription.status = 'expired'
+                subscription.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        # Send payment failure notification
+        try:
+            if payment.user_id:
+                from models.models import User
+                user = User.query.get(payment.user_id)
+                if user:
+                    from email_utils import send_payment_failure_notification_email
+                    send_payment_failure_notification_email(user, payment, failure_reason)
+                    logger.info(f"Sent payment failure notification email to {user.email}")
+        except Exception as email_error:
+            logger.error(f"Error sending payment failure notification email: {email_error}")
+        
+        logger.info(f"Payment failure processed successfully for payment {payment.id}")
+        return True
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error processing payment failure: {str(e)}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return False

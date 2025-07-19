@@ -429,6 +429,55 @@ def stripe_webhook():
                     subscription_type=subscription_type,
                 )
 
+        elif event["type"] == "charge.dispute.created":
+            # Handle chargebacks/disputes
+            charge = event["data"]["object"]
+            payment_intent_id = charge.get("payment_intent")
+            
+            if payment_intent_id:
+                from utils import process_payment_refund
+                process_payment_refund(
+                    payment_intent_id=payment_intent_id,
+                    refund_reason="chargeback",
+                    refund_amount=charge["amount"] / 100,
+                    webhook_event_type="charge.dispute.created"
+                )
+
+        elif event["type"] in ["invoice.payment_failed", "payment_intent.payment_failed"]:
+            # Handle failed payments for subscriptions
+            payment_object = event["data"]["object"]
+            payment_intent_id = payment_object.get("payment_intent") or payment_object.get("id")
+            
+            if payment_intent_id:
+                from utils import process_payment_failure
+                process_payment_failure(
+                    payment_intent_id=payment_intent_id,
+                    failure_reason=event["type"],
+                    webhook_event_type=event["type"]
+                )
+
+        elif event["type"] == "charge.refunded":
+            # Handle refunds
+            charge = event["data"]["object"]
+            payment_intent_id = charge.get("payment_intent")
+            refund_amount = 0
+            
+            # Calculate total refunded amount
+            for refund in charge.get("refunds", {}).get("data", []):
+                refund_amount += refund["amount"] / 100
+            
+            if payment_intent_id:
+                from utils import process_payment_refund
+                process_payment_refund(
+                    payment_intent_id=payment_intent_id,
+                    refund_reason="merchant_refund",
+                    refund_amount=refund_amount,
+                    webhook_event_type="charge.refunded"
+                )
+
+        else:
+            logger.info(f"Unhandled Stripe webhook event type: {event['type']}")
+
         return jsonify({"status": "success"})
 
     except ValueError as e:
@@ -439,6 +488,73 @@ def stripe_webhook():
         return jsonify({"error": "Invalid signature"}), 400
     except Exception as e:
         logger.error(f"Stripe webhook error: {str(e)}")
+        return jsonify({"error": "Webhook processing failed"}), 500
+
+
+@payment.route("/paypal/webhook", methods=["POST"])
+def paypal_webhook():
+    """Handle PayPal webhook events"""
+    try:
+        payload = request.get_json()
+        
+        # Get PayPal configuration
+        paypal_gateway = PaymentGateway.query.filter_by(
+            name="paypal", enabled=True
+        ).first()
+        
+        if not paypal_gateway:
+            return jsonify({"error": "PayPal webhook not configured"}), 400
+        
+        # TODO: Verify PayPal webhook signature for security
+        # For now, we'll process the event but this should be implemented
+        
+        event_type = payload.get("event_type")
+        resource = payload.get("resource", {})
+        
+        if event_type == "PAYMENT.CAPTURE.COMPLETED":
+            # Handle successful PayPal payment
+            # Extract metadata from PayPal custom fields or description
+            custom_data = resource.get("custom_id", "")
+            payment_id = resource.get("id")
+            amount = float(resource.get("amount", {}).get("value", 0))
+            
+            # Process successful payment if we have the necessary metadata
+            # This would need to be enhanced based on how you store metadata in PayPal
+            logger.info(f"PayPal payment completed: {payment_id}, amount: ${amount}")
+            
+        elif event_type == "PAYMENT.CAPTURE.REFUNDED":
+            # Handle PayPal refunds
+            payment_id = resource.get("id")
+            refund_amount = float(resource.get("amount", {}).get("value", 0))
+            
+            if payment_id:
+                from utils import process_payment_refund
+                process_payment_refund(
+                    payment_intent_id=payment_id,
+                    refund_reason="merchant_refund",
+                    refund_amount=refund_amount,
+                    webhook_event_type="PAYMENT.CAPTURE.REFUNDED"
+                )
+                
+        elif event_type == "PAYMENT.CAPTURE.DENIED":
+            # Handle PayPal payment failures
+            payment_id = resource.get("id")
+            
+            if payment_id:
+                from utils import process_payment_failure
+                process_payment_failure(
+                    payment_intent_id=payment_id,
+                    failure_reason="payment_denied",
+                    webhook_event_type="PAYMENT.CAPTURE.DENIED"
+                )
+        
+        else:
+            logger.info(f"Unhandled PayPal webhook event type: {event_type}")
+        
+        return jsonify({"status": "success"})
+        
+    except Exception as e:
+        logger.error(f"PayPal webhook error: {str(e)}")
         return jsonify({"error": "Webhook processing failed"}), 500
 
 
