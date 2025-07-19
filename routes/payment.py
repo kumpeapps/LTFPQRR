@@ -450,6 +450,10 @@ def stripe_webhook():
             return jsonify({"error": "Webhook not configured"}), 400
 
         endpoint_secret = decrypt_value(stripe_gateway.webhook_secret)
+        
+        # Set Stripe API key for any API calls within webhook processing
+        if stripe_gateway.secret_key:
+            stripe.api_key = decrypt_value(stripe_gateway.secret_key)
 
         event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
 
@@ -530,7 +534,6 @@ def stripe_webhook():
             # Get the charge to find the payment intent
             if charge_id:
                 try:
-                    import stripe
                     charge = stripe.Charge.retrieve(charge_id)
                     payment_intent_id = charge.get("payment_intent")
                     
@@ -554,7 +557,6 @@ def stripe_webhook():
                 
                 if charge_id:
                     try:
-                        import stripe
                         charge = stripe.Charge.retrieve(charge_id)
                         payment_intent_id = charge.get("payment_intent")
                         
