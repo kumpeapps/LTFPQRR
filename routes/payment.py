@@ -85,6 +85,18 @@ def success():
 
         tag_obj = Tag.query.filter(func.upper(Tag.tag_id) == func.upper(tag_id)).first()
         if tag_obj:
+            # Check for existing active subscription to prevent duplicates
+            existing_subscription = Subscription.query.filter_by(
+                user_id=current_user.id,
+                tag_id=tag_obj.id,
+                status='active'
+            ).first()
+            
+            if existing_subscription:
+                logger.warning(f"Active subscription already exists for user {current_user.id} and tag {tag_obj.id}")
+                flash(f"You already have an active subscription for tag {tag_id}.", "info")
+                return redirect(url_for("dashboard.customer_dashboard"))
+            
             tag_obj.owner_id = current_user.id
             tag_obj.status = "claimed"
 

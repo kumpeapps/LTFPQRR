@@ -260,17 +260,13 @@
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                {% set active_subscription = None %}
-                                                {% for subscription in tag.subscriptions %}
-                                                    {% if subscription.is_active() %}
-                                                        {% set active_subscription = subscription %}
-                                                        <span class="badge bg-primary">
-                                                            {{ subscription.subscription_type.title() }}
-                                                        </span>
-                                                        <br><small class="text-muted">${{ "%.2f"|format(subscription.amount) }}</small>
-                                                    {% endif %}
-                                                {% endfor %}
-                                                {% if not active_subscription %}
+                                                {% set active_subscription = tag.subscriptions|selectattr('is_active')|first %}
+                                                {% if active_subscription %}
+                                                    <span class="badge bg-primary">
+                                                        {{ active_subscription.subscription_type.title() }}
+                                                    </span>
+                                                    <br><small class="text-muted">${{ "%.2f"|format(active_subscription.amount) }}</small>
+                                                {% else %}
                                                     <span class="badge bg-secondary">No Subscription</span>
                                                 {% endif %}
                                             </td>
