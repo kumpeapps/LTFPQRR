@@ -31,14 +31,16 @@ class SchedulerDaemon:
         
     def setup_logging(self):
         """Setup logging for the scheduler"""
-        os.makedirs('/app/logs', exist_ok=True)
+        # Use /app/logs in Docker, ./logs locally
+        log_dir = '/app/logs' if os.path.exists('/app') and os.access('/app', os.W_OK) else './logs'
+        os.makedirs(log_dir, exist_ok=True)
         
         # Configure logging
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
             handlers=[
-                logging.FileHandler('/app/logs/scheduler.log'),
+                logging.FileHandler(os.path.join(log_dir, 'scheduler.log')),
                 logging.StreamHandler(sys.stdout)
             ]
         )
@@ -211,7 +213,9 @@ class SchedulerDaemon:
         
     def health_check_worker(self):
         """Worker thread to maintain health check file"""
-        pid_file = '/app/logs/scheduler.pid'
+        # Use /app/logs in Docker, ./logs locally
+        log_dir = '/app/logs' if os.path.exists('/app') and os.access('/app', os.W_OK) else './logs'
+        pid_file = os.path.join(log_dir, 'scheduler.pid')
         
         while self.running:
             try:
