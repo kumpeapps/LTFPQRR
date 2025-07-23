@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Renew Subscription for {{ tag.tag_id }} - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        {% set sidebar_context = 'customer' %}
+        {% include 'includes/dashboard_sidebar.html' %}
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Renew Subscription</h2>
+                    <a href="{{ url_for('customer.my_tags') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to My Tags
+                    </a>
+                </div>
+                
+                <!-- Tag Information Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-tag"></i> Tag Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><strong>Tag ID:</strong> {{ tag.tag_id }}</h6>
+                                {% if tag.pet %}
+                                    <p><strong>Pet:</strong> {{ tag.pet.name }}</p>
+                                    {% if tag.pet.species %}
+                                        <p><strong>Species:</strong> {{ tag.pet.species }}</p>
+                                    {% endif %}
+                                {% else %}
+                                    <p class="text-muted">No pet assigned</p>
+                                {% endif %}
+                                
+                                <p><strong>Status:</strong> 
+                                    {% if tag.status == 'suspended' %}
+                                        <span class="badge bg-danger">Suspended</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">{{ tag.status|title }}</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                {% set latest_subscription = tag.get_latest_subscription() %}
+                                {% if latest_subscription %}
+                                    <h6><strong>Previous Subscription:</strong></h6>
+                                    <p>Status: <span class="badge bg-secondary">{{ latest_subscription.status|title }}</span></p>
+                                    {% if latest_subscription.end_date %}
+                                        <p>Expired: {{ latest_subscription.end_date.strftime('%B %d, %Y') }}</p>
+                                    {% endif %}
+                                    <p>Amount: ${{ "%.2f"|format(latest_subscription.amount) }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        {% if tag.status == 'suspended' %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Tag Suspended:</strong> This tag is currently suspended due to subscription cancellation or expiration.
+                            Purchasing a new subscription will reactivate the tag and restore its functionality.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Pricing Plans -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-credit-card"></i> Choose Your Plan</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if pricing_plans %}
+                            <form method="POST" action="{{ url_for('customer.process_tag_subscription_purchase', tag_id=tag.id) }}">
+                                <div class="row">
+                                    {% for plan in pricing_plans %}
+                                    <div class="col-md-4 mb-3">
+                                        <div class="card pricing-plan-card">
+                                            <div class="card-body text-center">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" 
+                                                           name="pricing_plan_id" 
+                                                           value="{{ plan.id }}" 
+                                                           id="plan_{{ plan.id }}"
+                                                           {% if loop.first %}checked{% endif %}>
+                                                    <label class="form-check-label w-100" for="plan_{{ plan.id }}">
+                                                        <h5 class="card-title">{{ plan.name }}</h5>
+                                                        <div class="price mb-3">
+                                                            <span class="price-amount">${{ "%.2f"|format(plan.price) }}</span>
+                                                            <span class="price-period">/ {{ plan.billing_period }}</span>
+                                                        </div>
+                                                        
+                                                        {% if plan.description %}
+                                                            <p class="text-muted small">{{ plan.description }}</p>
+                                                        {% endif %}
+                                                        
+                                                        {% if plan.features %}
+                                                            <ul class="list-unstyled small text-start">
+                                                                {% for feature in plan.features %}
+                                                                    <li><i class="fas fa-check text-success"></i> {{ feature }}</li>
+                                                                {% endfor %}
+                                                            </ul>
+                                                        {% endif %}
+                                                        
+                                                        {% if plan.billing_period == 'yearly' %}
+                                                            <div class="badge bg-success">Popular</div>
+                                                        {% endif %}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <!-- Payment Method -->
+                                <div class="row mt-4">
+                                    <div class="col-md-6">
+                                        <h6>Payment Method</h6>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="payment_method" value="stripe" id="stripe" checked>
+                                            <label class="form-check-label" for="stripe">
+                                                <i class="fab fa-stripe"></i> Credit/Debit Card (Stripe)
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Submit Button -->
+                                <div class="row mt-4">
+                                    <div class="col-12">
+                                        <button type="submit" class="btn btn-primary btn-lg">
+                                            <i class="fas fa-shopping-cart"></i> Proceed to Payment
+                                        </button>
+                                        <a href="{{ url_for('customer.my_tags') }}" class="btn btn-outline-secondary btn-lg ms-2">
+                                            Cancel
+                                        </a>
+                                    </div>
+                                </div>
+                            </form>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                                <h5>No Pricing Plans Available</h5>
+                                <p class="text-muted">There are currently no pricing plans available for tag subscriptions.</p>
+                                <a href="{{ url_for('customer.my_tags') }}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Back to My Tags
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Information Box -->
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <h6><i class="fas fa-info-circle"></i> Important Information</h6>
+                        <ul class="list-unstyled small">
+                            <li><i class="fas fa-check text-success"></i> Your tag will be reactivated immediately after payment</li>
+                            <li><i class="fas fa-check text-success"></i> Pet information and QR code will be restored</li>
+                            <li><i class="fas fa-check text-success"></i> You can cancel your subscription at any time</li>
+                            <li><i class="fas fa-check text-success"></i> Auto-renewal can be managed in your subscription settings</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.pricing-plan-card {
+    border: 2px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.pricing-plan-card:hover {
+    border-color: #007bff;
+    box-shadow: 0 4px 8px rgba(0,123,255,0.1);
+}
+
+.form-check-input:checked + .form-check-label .pricing-plan-card {
+    border-color: #007bff;
+    background-color: #f8f9ff;
+}
+
+.price-amount {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.price-period {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.form-check-input {
+    position: absolute;
+    opacity: 0;
+}
+
+.form-check-label {
+    cursor: pointer;
+}
+
+.card-title {
+    color: #495057;
+    margin-bottom: 1rem;
+}
+</style>
+
+<script>
+// Enhance radio button interaction
+document.addEventListener('DOMContentLoaded', function() {
+    const radioButtons = document.querySelectorAll('input[name="pricing_plan_id"]');
+    const cards = document.querySelectorAll('.pricing-plan-card');
+    
+    radioButtons.forEach((radio, index) => {
+        radio.addEventListener('change', function() {
+            // Reset all cards
+            cards.forEach(card => {
+                card.style.borderColor = '#dee2e6';
+                card.style.backgroundColor = '#fff';
+            });
+            
+            // Highlight selected card
+            if (this.checked) {
+                cards[index].style.borderColor = '#007bff';
+                cards[index].style.backgroundColor = '#f8f9ff';
+            }
+        });
+        
+        // Set initial state
+        if (radio.checked) {
+            cards[index].style.borderColor = '#007bff';
+            cards[index].style.backgroundColor = '#f8f9ff';
+        }
+    });
+});
+</script>
+{% endblock %}

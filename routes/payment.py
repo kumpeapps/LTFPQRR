@@ -33,10 +33,20 @@ def tag_payment():
     tag_id = session["claiming_tag_id"]
     subscription_type = session["subscription_type"]
 
-    # Define pricing
-    pricing = {"monthly": 9.99, "yearly": 99.99, "lifetime": 199.99}
+    # Get pricing from database instead of hardcoded values
+    from models.payment.payment import PricingPlan
+    pricing_plan = PricingPlan.query.filter_by(
+        plan_type="tag",
+        billing_period=subscription_type,
+        is_active=True,
+    ).first()
 
-    amount = pricing.get(subscription_type, 9.99)
+    if pricing_plan:
+        amount = float(pricing_plan.price)
+    else:
+        # Fallback to default if no pricing plan found
+        logger.warning(f"No pricing plan found for subscription type: {subscription_type}")
+        amount = 9.99
 
     # Get enabled payment gateways
     enabled_gateways, gateway_config = get_enabled_payment_gateways()
@@ -478,6 +488,7 @@ def stripe_webhook():
                     payment_intent_id=payment_intent["id"],
                     claiming_tag_id=claiming_tag_id,
                     subscription_type=subscription_type,
+                    renewal_for_tag_id=payment_intent.get("metadata", {}).get("renewal_for_tag_id"),
                 )
 
         elif event["type"] == "charge.dispute.created":
@@ -764,10 +775,39 @@ def create_stripe_payment_intent():
             metadata["subscription_type"] = session.get("partner_subscription_type", "")
             metadata["partner_id"] = session.get("partner_id", "")
 
+        # Create or get Stripe customer for auto-renewal capability
+        customer = None
+        try:
+            # Check if user already has a Stripe customer ID
+            if hasattr(current_user, 'stripe_customer_id') and current_user.stripe_customer_id:
+                customer = stripe.Customer.retrieve(current_user.stripe_customer_id)
+            else:
+                # Create new Stripe customer
+                customer = stripe.Customer.create(
+                    email=current_user.email,
+                    name=f"{current_user.first_name} {current_user.last_name}" if current_user.first_name else current_user.username,
+                    metadata={'user_id': current_user.id}
+                )
+                # Save customer ID to user (if user model supports it)
+                # current_user.stripe_customer_id = customer.id
+                # db.session.commit()
+                logger.info(f"Created Stripe customer {customer.id} for user {current_user.id}")
+        except Exception as e:
+            logger.warning(f"Could not create/retrieve Stripe customer: {e}")
+
         # Create payment intent
-        intent = stripe.PaymentIntent.create(
-            amount=amount_cents, currency=currency, metadata=metadata
-        )
+        intent_params = {
+            'amount': amount_cents, 
+            'currency': currency, 
+            'metadata': metadata,
+            'setup_future_usage': 'off_session'  # Enable for future payments (auto-renewal)
+        }
+        
+        # Add customer if created successfully
+        if customer:
+            intent_params['customer'] = customer.id
+            
+        intent = stripe.PaymentIntent.create(**intent_params)
         
         # Store payment method and intent ID in session for duplicate prevention
         session["payment_method"] = "stripe"
@@ -830,6 +870,7 @@ def confirm_stripe_payment():
             payment_intent_id=payment_intent_id,
             claiming_tag_id=claiming_tag_id,
             subscription_type=subscription_type,
+            renewal_for_tag_id=payment_intent.metadata.get("renewal_for_tag_id"),
         )
 
         if success:

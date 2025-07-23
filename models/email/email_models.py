@@ -180,11 +180,11 @@ class EmailTemplate(db.Model):
                 html_template = Template(html_content)
                 html_content = html_template.render(**jinja_context)
             except Exception as jinja_error:
-                # Log the error but provide a fallback
+                # Log the error and raise for debugging
                 import logging
-                logging.warning(f"Jinja2 HTML rendering failed for template {self.name}: {jinja_error}")
-                # Create a basic fallback template without Jinja2 syntax
-                html_content = html_content.replace('{{', '[').replace('}}', ']').replace('{%', '[%').replace('%}', '%]')
+                logging.error(f"Jinja2 HTML rendering failed for template {self.name}: {jinja_error}")
+                # Re-raise the error instead of using fallback that breaks templates
+                raise jinja_error
             
             try:
                 if text_content:
@@ -192,17 +192,18 @@ class EmailTemplate(db.Model):
                     text_content = text_template.render(**jinja_context)
             except Exception as jinja_error:
                 import logging
-                logging.warning(f"Jinja2 text rendering failed for template {self.name}: {jinja_error}")
-                if text_content:
-                    text_content = text_content.replace('{{', '[').replace('}}', ']').replace('{%', '[%').replace('%}', '%]')
+                logging.error(f"Jinja2 text rendering failed for template {self.name}: {jinja_error}")
+                # Re-raise the error instead of using fallback that breaks templates
+                raise jinja_error
             
             try:
                 subject_template = Template(subject)
                 subject = subject_template.render(**jinja_context)
             except Exception as jinja_error:
                 import logging
-                logging.warning(f"Jinja2 subject rendering failed for template {self.name}: {jinja_error}")
-                subject = subject.replace('{{', '[').replace('}}', ']').replace('{%', '[%').replace('%}', '%]')
+                logging.error(f"Jinja2 subject rendering failed for template {self.name}: {jinja_error}")
+                # Re-raise the error instead of using fallback that breaks templates
+                raise jinja_error
             
             return {
                 'subject': subject,
@@ -456,6 +457,9 @@ class EmailQueue(db.Model):
     user = relationship("User", backref="queued_emails")
     
     # Optional relationships for tracking
+    subscription_id = Column(Integer, ForeignKey('subscription.id'))
+    subscription = relationship("Subscription")
+    
     partner_subscription_id = Column(Integer, ForeignKey('partner_subscription.id'))
     partner_subscription = relationship("PartnerSubscription")
     

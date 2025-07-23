@@ -27,14 +27,15 @@
                         <div class="mb-4">
                             <h5>Choose Your Subscription Plan</h5>
                             <div class="row">
+                                {% if pricing_plans.monthly %}
                                 <div class="col-md-4">
                                     <div class="card">
                                         <div class="card-body text-center">
                                             <h6>Monthly</h6>
-                                            <h4 class="text-primary">$9.99</h4>
+                                            <h4 class="text-primary">${{ "%.2f"|format(pricing_plans.monthly.price) }}</h4>
                                             <p class="small text-muted">per month</p>
                                             <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="subscription_type" value="monthly" id="monthly">
+                                                <input class="form-check-input" type="radio" name="subscription_type" value="monthly" id="monthly"{% if not pricing_plans.yearly and not pricing_plans.lifetime %} checked{% endif %}>
                                                 <label class="form-check-label" for="monthly">
                                                     Choose Monthly
                                                 </label>
@@ -42,12 +43,14 @@
                                         </div>
                                     </div>
                                 </div>
+                                {% endif %}
+                                {% if pricing_plans.yearly %}
                                 <div class="col-md-4">
                                     <div class="card border-primary">
                                         <div class="card-body text-center">
                                             <div class="badge bg-primary mb-2">Popular</div>
                                             <h6>Yearly</h6>
-                                            <h4 class="text-primary">$99.99</h4>
+                                            <h4 class="text-primary">${{ "%.2f"|format(pricing_plans.yearly.price) }}</h4>
                                             <p class="small text-muted">per year</p>
                                             <div class="form-check">
                                                 <input class="form-check-input" type="radio" name="subscription_type" value="yearly" id="yearly" checked>
@@ -58,11 +61,13 @@
                                         </div>
                                     </div>
                                 </div>
+                                {% endif %}
+                                {% if pricing_plans.lifetime %}
                                 <div class="col-md-4">
                                     <div class="card">
                                         <div class="card-body text-center">
                                             <h6>Lifetime</h6>
-                                            <h4 class="text-primary">$199.99</h4>
+                                            <h4 class="text-primary">${{ "%.2f"|format(pricing_plans.lifetime.price) }}</h4>
                                             <p class="small text-muted">one time</p>
                                             <div class="form-check">
                                                 <input class="form-check-input" type="radio" name="subscription_type" value="lifetime" id="lifetime">
@@ -73,6 +78,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                {% endif %}
                             </div>
                             {% if form.subscription_type.errors %}
                                 <div class="text-danger">

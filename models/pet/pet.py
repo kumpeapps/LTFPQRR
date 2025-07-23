@@ -1,7 +1,8 @@
 """
 Pet-related models for LTFPQRR application.
 """
-from models.base import db, datetime
+
+from models.base import db, datetime # type: ignore
 
 
 class Pet(db.Model):
@@ -20,89 +21,163 @@ class Pet(db.Model):
     groomer_phone = db.Column(db.String(20))
     groomer_address = db.Column(db.Text)
     groomer_info_public = db.Column(db.Boolean, default=False)
-    phone_public = db.Column(db.Boolean, default=True)  # Privacy setting for owner phone
-    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    phone_public = db.Column(
+        db.Boolean, default=True
+    )  # Privacy setting for owner phone
+    owner_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
     @property
     def age(self):
         """Calculate age from date of birth"""
         if not self.date_of_birth:
             return None
-        
+
         from datetime import date
+
         today = date.today()
         age_years = today.year - self.date_of_birth.year
-        
+
         # Adjust if birthday hasn't occurred this year yet
-        if today.month < self.date_of_birth.month or (today.month == self.date_of_birth.month and today.day < self.date_of_birth.day):
+        if today.month < self.date_of_birth.month or (
+            today.month == self.date_of_birth.month
+            and today.day < self.date_of_birth.day
+        ):
             age_years -= 1
-            
+
         return age_years
-    
+
     def __repr__(self):
-        return f'<Pet {self.name}>'
+        return f"<Pet {self.name}>"
 
 
 class Tag(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     tag_id = db.Column(db.String(20), unique=True, nullable=False)
-    status = db.Column(db.String(20), nullable=False, default='pending')  # 'pending', 'available', 'claimed', 'active'
-    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # User who created the tag
-    partner_id = db.Column(db.Integer, db.ForeignKey('partner.id'))  # Partner company that owns this tag
-    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'))  # Customer who claimed the tag
-    pet_id = db.Column(db.Integer, db.ForeignKey('pet.id'))
+    status = db.Column(
+        db.String(20), nullable=False, default="pending"
+    )  # 'pending', 'available', 'claimed', 'active', 'suspended'
+    created_by = db.Column(
+        db.Integer, db.ForeignKey("user.id"), nullable=False
+    )  # User who created the tag
+    partner_id = db.Column(
+        db.Integer, db.ForeignKey("partner.id")
+    )  # Partner company that owns this tag
+    owner_id = db.Column(
+        db.Integer, db.ForeignKey("user.id")
+    )  # Customer who claimed the tag
+    pet_id = db.Column(db.Integer, db.ForeignKey("pet.id"))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
     # Relationships
-    pet = db.relationship('Pet', backref='tag', uselist=False)
-    subscriptions = db.relationship('Subscription', backref='tag', lazy='dynamic')
-    search_logs = db.relationship('SearchLog', backref='tag', lazy='dynamic')
-    
+    pet = db.relationship("Pet", backref="tag", uselist=False)
+    subscriptions = db.relationship("Subscription", backref="tag", lazy="dynamic")
+    search_logs = db.relationship("SearchLog", backref="tag", lazy="dynamic")
+
     def can_be_activated_by_partner(self):
         """Check if the tag can be activated by its partner"""
         if not self.partner:
             return False
-        
+
         # Check if partner has an active approved subscription
         return self.partner.has_active_subscription()
-    
+
     def can_be_managed_by_user(self, user):
         """Check if a user can manage this tag"""
         if not self.partner:
             return False
-        
+
         # User must have access to the partner and partner must have active subscription
-        return self.partner.user_has_access(user) and self.partner.has_active_subscription()
-    
+        return (
+            self.partner.user_has_access(user)
+            and self.partner.has_active_subscription()
+        )
+
     def has_active_subscription(self):
         """Check if the tag has an active subscription"""
         for subscription in self.subscriptions:
-            if subscription.subscription_type == 'tag' and subscription.is_active():
+            if subscription.subscription_type == "tag" and subscription.is_active():
                 return True
         return False
-    
+
+    def has_expired_or_cancelled_subscription(self):
+        """Check if the tag has expired or cancelled subscriptions"""
+        for subscription in self.subscriptions:
+            if (
+                subscription.subscription_type == "tag"
+                and subscription.status in ["expired", "cancelled"]
+                and subscription.user_id == self.owner_id
+            ):
+                return True
+        return False
+
+    def get_latest_subscription(self):
+        """Get the most recent subscription for this tag"""
+        return (
+            self.subscriptions.filter_by(subscription_type="tag")
+            .order_by(db.desc("created_at"))
+            .first()
+        )
+
+    def can_be_released_by_user(self, user):
+        """Check if a user can manually release this tag"""
+        return (
+            self.owner_id == user.id
+            and self.status in ["suspended", "claimed"]
+            and not self.has_active_subscription()
+        )
+
+    def can_purchase_subscription_for_tag(self, user):
+        """Check if a user can purchase a new subscription for this tag"""
+        return (
+            self.owner_id == user.id
+            and self.status in ["suspended", "claimed"]
+            and not self.has_active_subscription()
+        )
+
+    def suspend_tag(self):
+        """Suspend the tag due to cancelled/expired subscription"""
+        if self.status in ["claimed", "active"]:
+            self.status = "suspended"
+            self.updated_at = datetime.utcnow()
+            return True
+        return False
+
+    def release_tag(self):
+        """Manually release the tag back to available status"""
+        if self.status in ["suspended", "claimed"]:
+            self.status = "available"
+            self.owner_id = None
+            self.pet_id = None
+            self.updated_at = datetime.utcnow()
+            return True
+        return False
+
     def activate_by_partner(self):
         """Activate the tag (mark as available for claiming)"""
         if not self.can_be_activated_by_partner():
             return False
-        
-        self.status = 'available'
+
+        self.status = "available"
         self.updated_at = datetime.utcnow()
         return True
-    
+
     def __repr__(self):
-        return f'<Tag {self.tag_id}>'
+        return f"<Tag {self.tag_id}>"
 
 
 class SearchLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tag_id = db.Column(db.Integer, db.ForeignKey('tag.id'), nullable=False)
+    tag_id = db.Column(db.Integer, db.ForeignKey("tag.id"), nullable=False)
     ip_address = db.Column(db.String(45))
     user_agent = db.Column(db.String(500))
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    
+
     def __repr__(self):
-        return f'<SearchLog {self.tag_id} - {self.timestamp}>'
+        return f"<SearchLog {self.tag_id} - {self.timestamp}>"

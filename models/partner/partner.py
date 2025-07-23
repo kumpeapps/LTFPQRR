@@ -228,6 +228,11 @@ class PartnerSubscription(db.Model):
     )
     auto_renew = db.Column(db.Boolean, default=False)
     cancellation_requested = db.Column(db.Boolean, default=False)
+    
+    # Renewal retry tracking
+    renewal_attempts = db.Column(db.Integer, default=0)  # Number of renewal attempts made
+    last_renewal_attempt = db.Column(db.DateTime)  # Last attempt timestamp
+    renewal_failure_reason = db.Column(db.String(500))  # Reason for last renewal failure
 
     # Relationships
     pricing_plan = db.relationship("PricingPlan", backref="partner_subscriptions")

@@ -8,7 +8,19 @@ Usage:
     python manage_users.py --help
     python manage_users.py list-users
     python manage_users.py create-user --email user@example.com --password secret --role user
-    python manage_users.py update-password --email user@example.com --password newsecret
+    python manage_users.py update-password --email user@example.com -            elif action == "cancel":
+                subscription.status = 'cancelled'
+                subscription.cancellation_requested = True
+                subscription.updated_at = datetime.utcnow()
+                
+                # If it's a tag subscription, update tag status
+                if subscription.tag_id:
+                    tag = Tag.query.get(subscription.tag_id)
+                    if tag:
+                        tag.status = 'available'
+                        tag.owner_id = None
+                        tag.pet_id = None  # Remove pet association when releasing tag
+                        print(f"Tag {tag.tag_id} status updated to available")wsecret
     python manage_users.py assign-role --email user@example.com --role admin
     python manage_users.py remove-role --email user@example.com --role admin
     python manage_users.py delete-user --email user@example.com
@@ -397,6 +409,7 @@ class UserManager:
                     if tag:
                         tag.status = 'available'
                         tag.owner_id = None
+                        tag.pet_id = None  # Remove pet association when releasing tag
                         print(f"Tag {tag.tag_id} status updated to available")
                 
                 print(f"✓ Subscription {subscription_id} marked as refunded.")

@@ -12,7 +12,7 @@ auth = Blueprint('auth', __name__, url_prefix='/auth')
 @auth.route("/register", methods=["GET", "POST"])
 def register():
     """User registration."""
-    from models.models import SystemSetting, User, Role
+    from models.models import SystemSetting, User, Role, PreStagePartner
     from extensions import db
     
     # Check if registration is enabled before processing
@@ -41,6 +41,14 @@ def register():
             flash("Username already taken.", "error")
             return redirect(url_for("auth.register"))
 
+        # Check pre-stage partner status
+        pre_stage_status = PreStagePartner.get_status(form.email.data)
+        
+        # Block registration if email is blocked
+        if pre_stage_status == 'blocked':
+            flash("Registration is not allowed for this email address.", "error")
+            return redirect(url_for("auth.register"))
+
         # Create new user (all users are customers by default)
         user = User(
             username=form.username.data,
@@ -52,20 +60,31 @@ def register():
             address=form.address.data,
         )
 
+        # Assign roles based on user count and pre-stage status
+        roles_to_assign = [Role.query.filter_by(name="user").first()]
+        
         # First user gets admin roles
         if User.query.count() == 0:
-            user.roles = [
-                Role.query.filter_by(name="user").first(),
+            roles_to_assign.extend([
                 Role.query.filter_by(name="admin").first(),
                 Role.query.filter_by(name="super-admin").first(),
-            ]
-        else:
-            user.roles = [Role.query.filter_by(name="user").first()]
+            ])
+        
+        # Add partner role if pre-approved
+        if pre_stage_status == 'pre-approved':
+            partner_role = Role.query.filter_by(name="partner").first()
+            if partner_role:
+                roles_to_assign.append(partner_role)
 
+        user.roles = roles_to_assign
         db.session.add(user)
         db.session.commit()
 
-        flash("Registration successful! Please log in.", "success")
+        success_message = "Registration successful! Please log in."
+        if pre_stage_status == 'pre-approved':
+            success_message += " You have been automatically assigned partner privileges."
+        
+        flash(success_message, "success")
         return redirect(url_for("auth.login"))
 
     return render_template("auth/register.html", form=form)

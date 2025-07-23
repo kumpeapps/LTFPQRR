@@ -105,6 +105,17 @@ class EmailTemplateManager:
             # Render template content
             rendered = template.render_content(inputs, model_instances)
             
+            # Determine subscription IDs based on subscription type
+            subscription_id = None
+            partner_subscription_id = None
+            if 'subscription_id' in inputs:
+                # Check if this is a partner subscription or regular subscription
+                subscription_type = inputs.get('subscription_type', 'tag')
+                if subscription_type == 'partner':
+                    partner_subscription_id = inputs.get('subscription_id')
+                else:
+                    subscription_id = inputs.get('subscription_id')
+            
             # Queue email
             queue_item = EmailManager.queue_email(
                 to_email=target_email,
@@ -113,7 +124,8 @@ class EmailTemplateManager:
                 text_body=rendered['text_content'],
                 template_id=template.id,
                 user_id=inputs.get('user_id'),
-                partner_subscription_id=inputs.get('subscription_id'),
+                subscription_id=subscription_id,
+                partner_subscription_id=partner_subscription_id,
                 email_type=email_type or f"template_{template.category}",
                 priority=priority,
                 send_immediately=send_immediately,
@@ -233,6 +245,7 @@ class EmailManager:
         priority: EmailPriority = EmailPriority.NORMAL,
         template_id: int = None,
         user_id: int = None,
+        subscription_id: int = None,
         partner_subscription_id: int = None,
         email_type: str = None,
         metadata: Dict = None,
@@ -252,6 +265,7 @@ class EmailManager:
                 priority=priority,
                 template_id=template_id,
                 user_id=user_id,
+                subscription_id=subscription_id,
                 partner_subscription_id=partner_subscription_id,
                 max_retries=max_retries,
                 status=EmailStatus.PENDING

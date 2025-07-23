@@ -103,7 +103,7 @@ def send_email(
                 "static",
                 "assets",
                 "logo",
-                "logo.png",
+                "logo-email.png",
             )
             if os.path.exists(logo_path):
                 with open(logo_path, "rb") as f:
@@ -114,7 +114,7 @@ def send_email(
                 encoders.encode_base64(logo_attachment)
                 logo_attachment.add_header("Content-ID", "<logo>")
                 logo_attachment.add_header(
-                    "Content-Disposition", "inline", filename="logo.png"
+                    "Content-Disposition", "inline", filename="logo-email.png"
                 )
                 msg.attach(logo_attachment)
         except Exception as e:
@@ -190,7 +190,7 @@ def send_email_direct(
                 "static",
                 "assets",
                 "logo",
-                "logo.png",
+                "logo-email.png",
             )
             if os.path.exists(logo_path):
                 with open(logo_path, "rb") as f:
@@ -201,7 +201,7 @@ def send_email_direct(
                 encoders.encode_base64(logo_attachment)
                 logo_attachment.add_header("Content-ID", "<logo>")
                 logo_attachment.add_header(
-                    "Content-Disposition", "inline", filename="logo.png"
+                    "Content-Disposition", "inline", filename="logo-email.png"
                 )
                 msg.attach(logo_attachment)
         except Exception as e:
@@ -1091,7 +1091,7 @@ def send_subscription_cancelled_email(user, subscription, refunded=False):
         return False
 
 
-def send_subscription_renewal_email(user, subscription):
+def send_subscription_renewal_email(user, subscription, subscription_type='tag'):
     """Send email to customer when subscription is renewed"""
     try:
         from services.enhanced_email_service import EmailTemplateManager
@@ -1101,6 +1101,7 @@ def send_subscription_renewal_email(user, subscription):
         inputs = {
             'user_id': user.id,
             'subscription_id': subscription.id,
+            'subscription_type': subscription_type,
             'target_email': user.email
         }
         

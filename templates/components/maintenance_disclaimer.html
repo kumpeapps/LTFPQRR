@@ -1,0 +1,13 @@
+{% if g.maintenance_mode and not (current_user.is_authenticated and (current_user.has_role('admin') or current_user.has_role('super-admin'))) %}
+<div class="alert alert-warning border-0 rounded-0 text-center mb-0" style="background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%); color: #000;">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-center">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Notice:</strong>
+            <span class="ms-2">
+                This site is currently under maintenance. Pet information and contact features remain available to help reunite lost pets with their families.
+            </span>
+        </div>
+    </div>
+</div>
+{% endif %}

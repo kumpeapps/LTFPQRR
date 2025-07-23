@@ -102,6 +102,7 @@ def test_duplicate_prevention():
                 subscription.status = "cancelled"
                 test_tag.status = "available"
                 test_tag.owner_id = None
+                test_tag.pet_id = None  # Remove pet association when releasing tag
                 db.session.commit()
                 print("✅ Test cleanup completed")
             

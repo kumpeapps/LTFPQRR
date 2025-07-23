@@ -297,6 +297,7 @@ def process_successful_payment(
     payment_intent_id,
     claiming_tag_id=None,
     subscription_type=None,
+    renewal_for_tag_id=None,
 ):
     """Process a successful payment and create/update subscriptions"""
     from models.models import User, Tag, Subscription, Payment, PricingPlan, Role
@@ -308,6 +309,18 @@ def process_successful_payment(
     )
 
     try:
+        # CHECK FOR DUPLICATE PAYMENT INTENT FIRST - CRITICAL FOR PREVENTING DUPLICATES
+        existing_payment = Payment.query.filter_by(
+            payment_intent_id=payment_intent_id
+        ).first()
+        
+        if existing_payment:
+            logger.warning(
+                f"Payment intent {payment_intent_id} already processed (payment ID: {existing_payment.id}). "
+                f"Skipping duplicate processing to prevent subscription duplication."
+            )
+            return True  # Return success since payment was already processed
+        
         user = User.query.get(user_id)
         if not user:
             logger.error(f"User {user_id} not found for payment processing")
@@ -326,34 +339,57 @@ def process_successful_payment(
             payment_metadata={
                 "claiming_tag_id": claiming_tag_id,
                 "subscription_type": subscription_type,
+                "renewal_for_tag_id": renewal_for_tag_id,
             },
         )
         payment.generate_transaction_id()
         payment.mark_completed()
-        db.session.add(payment)
-        db.session.flush()  # Get payment ID
+        
+        try:
+            db.session.add(payment)
+            db.session.flush()  # Get payment ID - will fail if duplicate payment_intent_id
+        except Exception as e:
+            # Handle unique constraint violation for payment_intent_id
+            if "UNIQUE constraint failed" in str(e) or "payment_intent_id" in str(e) or "IntegrityError" in str(type(e)):
+                logger.warning(f"Duplicate payment_intent_id {payment_intent_id} detected at database level. Rolling back.")
+                db.session.rollback()
+                return True  # Return success since payment was already processed
+            else:
+                logger.error(f"Database error creating payment: {e}")
+                db.session.rollback()
+                raise e
 
         logger.info(
             f"Created payment record with ID: {payment.id}, transaction_id: {payment.transaction_id}"
         )
 
-        if payment_type == "tag" and claiming_tag_id:
-            logger.info(f"Processing tag subscription for tag {claiming_tag_id}")
-            
-            # Check if this payment intent has already been processed
-            existing_payment = Payment.query.filter_by(
-                payment_intent_id=payment_intent_id,
-                status="completed"
-            ).first()
-            
-            if existing_payment and existing_payment.id != payment.id:
-                logger.warning(f"Payment intent {payment_intent_id} already processed")
-                db.session.rollback()
-                return True  # Already processed, not an error
-            
-            # Process tag subscription
-            tag = Tag.query.filter_by(tag_id=claiming_tag_id).first()
-            if tag:
+        if payment_type == "tag" and (claiming_tag_id or renewal_for_tag_id):
+            if renewal_for_tag_id:
+                logger.info(f"Processing tag subscription renewal for tag ID {renewal_for_tag_id}")
+                # Handle tag renewal
+                tag = Tag.query.get(renewal_for_tag_id)
+                if not tag:
+                    logger.error(f"Tag with ID {renewal_for_tag_id} not found for renewal")
+                    db.session.rollback()
+                    return False
+                
+                if tag.owner_id != user_id:
+                    logger.error(f"User {user_id} does not own tag {renewal_for_tag_id}")
+                    db.session.rollback()
+                    return False
+                
+                # Reactivate the tag
+                tag.status = "active"
+                
+            elif claiming_tag_id:
+                logger.info(f"Processing tag subscription for new tag claim {claiming_tag_id}")
+                # Process tag subscription for new claim
+                tag = Tag.query.filter_by(tag_id=claiming_tag_id).first()
+                if not tag:
+                    logger.error(f"Tag {claiming_tag_id} not found")
+                    db.session.rollback()
+                    return False
+                
                 # Check for existing active subscription to prevent duplicates
                 existing_subscription = Subscription.query.filter_by(
                     user_id=user_id, tag_id=tag.id, status="active"
@@ -368,59 +404,49 @@ def process_successful_payment(
 
                 tag.owner_id = user_id
                 tag.status = "claimed"
+            
+            # Common subscription creation logic for both scenarios
+            # Find appropriate pricing plan
+            pricing_plan = PricingPlan.query.filter_by(
+                plan_type="tag",
+                billing_period=subscription_type,
+                is_active=True,
+            ).first()
 
-                # Find appropriate pricing plan
-                pricing_plan = PricingPlan.query.filter_by(
-                    plan_type="tag",
-                    billing_period=subscription_type,
-                    is_active=True,
-                ).first()
+            # Create subscription
+            subscription = Subscription(
+                user_id=user_id,
+                tag_id=tag.id,
+                pricing_plan_id=pricing_plan.id if pricing_plan else None,
+                subscription_type="tag",
+                status="active",
+                payment_method=payment_method,
+                payment_id=payment_intent_id,
+                amount=amount,
+                start_date=datetime.utcnow(),
+                auto_renew=(
+                    True if subscription_type in ["monthly", "yearly"] else False
+                ),
+            )
 
-                # Create subscription
-                subscription = Subscription(
-                    user_id=user_id,
-                    tag_id=tag.id,
-                    pricing_plan_id=pricing_plan.id if pricing_plan else None,
-                    subscription_type="tag",
-                    status="active",
-                    payment_method=payment_method,
-                    payment_id=payment_intent_id,
-                    amount=amount,
-                    start_date=datetime.utcnow(),
-                    auto_renew=(
-                        True if subscription_type in ["monthly", "yearly"] else False
-                    ),
-                )
+            # Set end date based on subscription type
+            if subscription_type == "yearly":
+                subscription.end_date = datetime.utcnow() + timedelta(days=365)
+            elif subscription_type == "monthly":
+                subscription.end_date = datetime.utcnow() + timedelta(days=30)
+            else:  # lifetime
+                subscription.end_date = None  # No end date for lifetime
 
-                # Set end date based on subscription type
-                if subscription_type == "yearly":
-                    subscription.end_date = datetime.utcnow() + timedelta(days=365)
-                elif subscription_type == "monthly":
-                    subscription.end_date = datetime.utcnow() + timedelta(days=30)
-                else:  # lifetime
-                    subscription.end_date = None  # No end date for lifetime
+            db.session.add(subscription)
+            db.session.flush()  # Get subscription ID
 
-                db.session.add(subscription)
-                db.session.flush()  # Get subscription ID
-
-                # Link payment to subscription
-                payment.subscription_id = subscription.id
-                logger.info(f"Created tag subscription with ID: {subscription.id}")
+            # Link payment to subscription
+            payment.subscription_id = subscription.id
+            logger.info(f"Created tag subscription with ID: {subscription.id}")
 
         elif payment_type == "partner":
             logger.info(f"Processing partner subscription for user {user_id}")
             
-            # Check if this payment intent has already been processed
-            existing_payment = Payment.query.filter_by(
-                payment_intent_id=payment_intent_id,
-                status="completed"
-            ).first()
-            
-            if existing_payment and existing_payment.id != payment.id:
-                logger.warning(f"Payment intent {payment_intent_id} already processed for partner subscription")
-                db.session.rollback()
-                return True  # Already processed, not an error
-
             # Import Flask session to access session data
             from flask import session
 
@@ -620,13 +646,13 @@ def process_payment_refund(
                 # Also set end_date to now to ensure it's considered expired
                 subscription.end_date = datetime.utcnow()
 
-                # If it's a tag subscription, update tag status to make it available again
+                # If it's a tag subscription, suspend the tag instead of releasing it
                 if subscription.tag_id:
                     tag = Tag.query.get(subscription.tag_id)
                     if tag:
-                        logger.info(f"Releasing tag {tag.tag_id} due to refund - setting to available")
-                        tag.status = "available"
-                        tag.owner_id = None
+                        logger.info(f"Suspending tag {tag.tag_id} due to refund - keeping ownership but marking as suspended")
+                        tag.status = "suspended"
+                        # Keep owner_id and pet_id so user can still see their tag and potentially renew
 
                 # If it's a partner subscription, handle partner subscription refund
                 elif hasattr(payment, 'partner_subscription_id') and payment.partner_subscription_id:
@@ -793,13 +819,13 @@ def process_subscription_cancellation(payment_intent_id, webhook_event_type):
                 subscription.end_date = datetime.utcnow()  # Set end date to now
                 subscription.updated_at = datetime.utcnow()
                 
-                # If it's a tag subscription, update tag status to make it available
+                # If it's a tag subscription, suspend the tag instead of releasing it
                 if subscription.tag_id:
                     tag = Tag.query.get(subscription.tag_id)
                     if tag:
-                        logger.info(f"Releasing tag {tag.tag_id} due to cancellation - setting to available")
-                        tag.status = "available"
-                        tag.owner_id = None
+                        logger.info(f"Suspending tag {tag.tag_id} due to cancellation - keeping ownership but marking as suspended")
+                        tag.status = "suspended"
+                        # Keep owner_id and pet_id so user can still see their tag and potentially renew
 
                 # If it's a partner subscription, handle partner subscription cancellation
                 elif hasattr(payment, 'partner_subscription_id') and payment.partner_subscription_id:

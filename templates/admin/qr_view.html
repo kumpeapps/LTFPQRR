@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}QR Code - {{ tag.tag_id }} - Admin - LTFPQRR{% endblock %}
+
+{% block extra_css %}
+<style>
+    .qr-container {
+        background: #fff;
+        border: 2px solid #dee2e6;
+        border-radius: 10px;
+        padding: 30px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .qr-info {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .tag-details {
+        background: #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 20px;
+    }
+    
+    .print-only {
+        display: none;
+    }
+    
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        
+        .print-only {
+            display: block !important;
+        }
+        
+        .container-fluid {
+            margin: 0;
+            padding: 0;
+        }
+        
+        .qr-container {
+            border: none;
+            box-shadow: none;
+            page-break-inside: avoid;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        {% set sidebar_context = 'admin' %}
+        {% include 'includes/dashboard_sidebar.html' %}
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+                    <div>
+                        <h2>QR Code for Tag: {{ tag.tag_id }}</h2>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Admin Dashboard</a></li>
+                                <li class="breadcrumb-item"><a href="{{ url_for('admin.tags') }}">Tag Management</a></li>
+                                <li class="breadcrumb-item active">QR Code</li>
+                            </ol>
+                        </nav>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('admin.download_qr', tag_id=tag.id) }}" class="btn btn-success me-2">
+                            <i class="fas fa-download"></i> Download QR Code
+                        </a>
+                        <button onclick="window.print()" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-print"></i> Print
+                        </button>
+                        <a href="{{ url_for('admin.tags') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Tags
+                        </a>
+                    </div>
+                </div>
+
+                <!-- QR Code Display -->
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <!-- Tag Information -->
+                        <div class="qr-info">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5><i class="fas fa-tag text-primary"></i> Tag Information</h5>
+                                    <p><strong>Tag ID:</strong> {{ tag.tag_id }}</p>
+                                    <p><strong>Status:</strong> 
+                                        <span class="badge 
+                                            {% if tag.status == 'pending' %}bg-secondary
+                                            {% elif tag.status == 'available' %}bg-success
+                                            {% elif tag.status == 'claimed' %}bg-warning
+                                            {% elif tag.status == 'active' %}bg-primary
+                                            {% endif %}">
+                                            {{ tag.status.title() }}
+                                        </span>
+                                    </p>
+                                    <p><strong>Created:</strong> {{ format_datetime(tag.created_at, '%B %d, %Y at %I:%M %p') }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5><i class="fas fa-info-circle text-info"></i> Usage Information</h5>
+                                    {% if tag.owner %}
+                                        <p><strong>Owner:</strong> {{ tag.owner.get_full_name() }}</p>
+                                    {% else %}
+                                        <p><strong>Owner:</strong> <em>Not claimed</em></p>
+                                    {% endif %}
+                                    {% if tag.pet %}
+                                        <p><strong>Pet:</strong> {{ tag.pet.name }}</p>
+                                    {% else %}
+                                        <p><strong>Pet:</strong> <em>No pet assigned</em></p>
+                                    {% endif %}
+                                    <p><strong>URL:</strong> <code>{{ qr_url }}</code></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- QR Code -->
+                        <div class="qr-container">
+                            <h3 class="mb-4">QR Code</h3>
+                            <div id="qr-code" class="mb-4"></div>
+                            <p class="text-muted mb-0">Scan this QR code to access the pet's information</p>
+                            
+                            <!-- Print-only information -->
+                            <div class="print-only tag-details">
+                                <h4>Tag: {{ tag.tag_id }}</h4>
+                                <p>URL: {{ qr_url }}</p>
+                                <p>Generated: {{ format_datetime(tag.created_at, '%B %d, %Y') }}</p>
+                                <p>LTFPQRR - Lost Then Found Pet QR Registry</p>
+                            </div>
+                        </div>
+
+                        <!-- Instructions -->
+                        <div class="card mt-4 no-print">
+                            <div class="card-header">
+                                <h5><i class="fas fa-lightbulb text-warning"></i> Usage Instructions</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>For Pet Owners:</h6>
+                                        <ul class="small">
+                                            <li>Attach this QR tag to your pet's collar</li>
+                                            <li>Ensure the tag is visible and accessible</li>
+                                            <li>Test the QR code with your phone to ensure it works</li>
+                                            <li>Keep your pet's information updated in the system</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>For People Who Find Lost Pets:</h6>
+                                        <ul class="small">
+                                            <li>Scan the QR code with any smartphone camera</li>
+                                            <li>Follow the link to view the pet's information</li>
+                                            <li>Use the contact form to reach the owner</li>
+                                            <li>Keep the pet safe until reunited with owner</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- QR Code Generation Library -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Generate QR code
+    const qrUrl = '{{ qr_url }}';
+    const qrContainer = document.getElementById('qr-code');
+    
+    QRCode.toCanvas(qrContainer, qrUrl, {
+        width: 256,
+        height: 256,
+        margin: 4,
+        color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+        }
+    }, function(error, canvas) {
+        if (error) {
+            console.error('QR Code generation error:', error);
+            qrContainer.innerHTML = '<div class="alert alert-danger">Failed to generate QR code</div>';
+        } else {
+            // Successfully generated
+            console.log('QR Code generated successfully');
+        }
+    });
+});
+</script>
+{% endblock %}

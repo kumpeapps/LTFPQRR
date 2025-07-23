@@ -2,7 +2,86 @@
 
 {% block title %}Found a Pet? - LTFPQRR{% endblock %}
 
+{% block extra_css %}
+<style>
+    #qr-reader {
+        width: 100%;
+        max-width: 400px;
+        margin: 0 auto;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    #qr-reader video {
+        width: 100%;
+        height: auto;
+        border-radius: 10px;
+    }
+    
+    .scanner-overlay {
+        position: relative;
+        background: #f8f9fa;
+        border: 2px dashed #007bff;
+        border-radius: 10px;
+        min-height: 250px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .scanner-active {
+        border: 2px solid #28a745;
+        background: #000;
+    }
+    
+    .scan-result {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin: 10px 0;
+        text-align: center;
+    }
+    
+    .scan-error {
+        background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin: 10px 0;
+        text-align: center;
+    }
+    
+    .loading-spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #007bff;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 10px;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .scanner-controls {
+        margin-top: 15px;
+        text-align: center;
+    }
+    
+    .scanner-controls button {
+        margin: 5px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
+<!-- Maintenance Mode Disclaimer -->
+{% include 'components/maintenance_disclaimer.html' %}
+
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-md-8">
@@ -19,16 +98,26 @@
                                 <i class="fas fa-qrcode text-primary"></i> Scan QR Code
                             </h3>
                             <div class="text-center">
-                                <div id="qr-scanner" class="mb-3">
-                                    <div class="border border-2 border-dashed border-primary p-4 rounded" style="min-height: 200px; display: flex; align-items: center; justify-content: center;">
+                                <div id="qr-scanner-container" class="mb-3">
+                                    <div id="qr-scanner-placeholder" class="scanner-overlay">
                                         <div>
                                             <i class="fas fa-camera fa-3x text-muted mb-3"></i>
-                                            <p class="text-muted">QR Scanner will appear here</p>
+                                            <p class="text-muted mb-3">Use your camera to scan the QR code</p>
                                             <button type="button" class="btn btn-primary" onclick="startQRScanner()">
                                                 <i class="fas fa-camera"></i> Start Scanner
                                             </button>
                                         </div>
                                     </div>
+                                    <div id="qr-reader" style="display: none;"></div>
+                                    <div id="scan-result" style="display: none;"></div>
+                                </div>
+                                <div class="scanner-controls" style="display: none;" id="scanner-controls">
+                                    <button type="button" class="btn btn-success btn-sm" onclick="stopQRScanner()">
+                                        <i class="fas fa-stop"></i> Stop Scanner
+                                    </button>
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="switchCamera()">
+                                        <i class="fas fa-sync"></i> Switch Camera
+                                    </button>
                                 </div>
                                 <small class="text-muted">Point your camera at the pet's QR tag</small>
                             </div>
@@ -86,19 +175,246 @@
                     </div>
                 </div>
             </div>
-
-            <div class="alert alert-info mt-4">
-                <h5><i class="fas fa-info-circle"></i> Need Help?</h5>
-                <p class="mb-0">
-                    If you're having trouble finding or scanning the QR tag, or if you need immediate assistance, 
-                    please call our emergency hotline: <strong>(555) 123-PETS</strong>
-                </p>
-            </div>
         </div>
     </div>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<!-- Html5-QRCode Library -->
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
 <script>
+let html5QrcodeScanner = null;
+let currentCameraId = null;
+let availableCameras = [];
+
+// Initialize QR Scanner
+function startQRScanner() {
+    // Hide placeholder and show loading
+    document.getElementById('qr-scanner-placeholder').style.display = 'none';
+    document.getElementById('scanner-controls').style.display = 'block';
+    document.getElementById('qr-reader').style.display = 'block';
+    
+    // Show loading state
+    showScanStatus('loading', 'Initializing camera...');
+    
+    // Initialize the scanner
+    html5QrcodeScanner = new Html5Qrcode("qr-reader");
+    
+    // Get cameras and start scanning
+    Html5Qrcode.getCameras().then(cameras => {
+        if (cameras && cameras.length) {
+            availableCameras = cameras;
+            currentCameraId = cameras[0].id;
+            
+            // Prefer back camera if available
+            const backCamera = cameras.find(camera => 
+                camera.label.toLowerCase().includes('back') || 
+                camera.label.toLowerCase().includes('rear') ||
+                camera.label.toLowerCase().includes('environment')
+            );
+            
+            if (backCamera) {
+                currentCameraId = backCamera.id;
+            }
+            
+            startScanning();
+        } else {
+            showScanStatus('error', 'No cameras found on your device');
+        }
+    }).catch(err => {
+        console.error('Error getting cameras:', err);
+        showScanStatus('error', 'Unable to access camera. Please check permissions.');
+    });
+}
+
+function startScanning() {
+    const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
+        disableFlip: false,
+        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_QR_CODE]
+    };
+    
+    html5QrcodeScanner.start(
+        currentCameraId,
+        config,
+        onScanSuccess,
+        onScanFailure
+    ).then(() => {
+        showScanStatus('success', 'Scanner active - point camera at QR code');
+        document.querySelector('.scanner-overlay').classList.add('scanner-active');
+    }).catch(err => {
+        console.error('Scanner start error:', err);
+        showScanStatus('error', 'Failed to start scanner: ' + err);
+    });
+}
+
+function onScanSuccess(decodedText, decodedResult) {
+    console.log('QR Code scanned:', decodedText);
+    
+    // Stop the scanner
+    stopQRScanner();
+    
+    // Process the scanned result
+    processScanResult(decodedText);
+}
+
+function onScanFailure(error) {
+    // This is called frequently during scanning, so we don't show errors here
+    // Only log to console for debugging
+    // console.log('Scan failed:', error);
+}
+
+function processScanResult(qrCodeMessage) {
+    const extractedTagId = extractTagId(qrCodeMessage);
+    
+    if (extractedTagId) {
+        // Show success message using the correct function
+        showScanStatus('success', `QR Code Found! Extracted Tag ID: <strong>${extractedTagId}</strong><br><div class="loading-spinner"></div>Redirecting...`);
+        
+        // Update the manual entry field
+        document.getElementById('tag_id').value = extractedTagId;
+        
+        // Auto-submit after a short delay to show the success message
+        setTimeout(function() {
+            console.log('Redirecting to found page for tag:', extractedTagId);
+            window.location.href = '/found/' + extractedTagId;
+        }, 1500);
+        
+        // Stop the scanner
+        html5QrcodeScanner.clear().then(_ => {
+            console.log("QR Code scanning stopped.");
+        }).catch(error => {
+            console.log("Failed to clear scanner.", error);
+        });
+    } else {
+        // Show error with the raw scanned content for debugging using the correct function
+        showScanStatus('error', `Could not extract tag ID from scanned content.<br><small>Scanned content: <code>${qrCodeMessage.substring(0, 100)}${qrCodeMessage.length > 100 ? '...' : ''}</code></small><br><small>Please try scanning again or enter the tag ID manually below.</small>`);
+    }
+}
+
+function extractTagId(scannedText) {
+    // Add debugging to see what was scanned
+    console.log('Scanned text:', scannedText);
+    
+    // Clean up the text (remove whitespace and normalize)
+    const cleanText = scannedText.trim();
+    
+    // Handle various QR code formats
+    
+    // Format 1: URL with tag ID (e.g., "https://ltfpqrr.com/found/ABC123", "http://localhost:8000/found/XYZ789")
+    const urlMatch = cleanText.match(/\/found\/([A-Za-z0-9\-_]{3,20})/i);
+    if (urlMatch) {
+        const tagId = urlMatch[1].toUpperCase();
+        console.log('URL match found:', tagId);
+        return tagId;
+    }
+    
+    // Format 2: JSON format (e.g., '{"tag_id": "ABC123", "type": "pet"}')
+    try {
+        const jsonData = JSON.parse(cleanText);
+        if (jsonData.tag_id) {
+            const tagId = jsonData.tag_id.toString().trim().toUpperCase();
+            if (tagId.length >= 3) {
+                console.log('JSON match found:', tagId);
+                return tagId;
+            }
+        }
+    } catch (e) {
+        // Not JSON, continue with other formats
+    }
+    
+    // Format 3: Query parameter (e.g., "tag=ABC123", "?id=XYZ789")
+    const paramMatch = cleanText.match(/[?&](?:tag|id)=([A-Za-z0-9\-_]{3,20})/i);
+    if (paramMatch) {
+        const tagId = paramMatch[1].toUpperCase();
+        console.log('Parameter match found:', tagId);
+        return tagId;
+    }
+    
+    // Format 4: Direct tag ID - any alphanumeric string 3-20 characters
+    const directMatch = cleanText.match(/^([A-Za-z0-9\-_]{3,20})$/);
+    if (directMatch) {
+        const tagId = directMatch[1].toUpperCase();
+        console.log('Direct match found:', tagId);
+        return tagId;
+    }
+    
+    // Format 5: Any alphanumeric sequence that could be a tag ID
+    const generalMatch = cleanText.match(/([A-Za-z0-9\-_]{3,20})/);
+    if (generalMatch) {
+        const tagId = generalMatch[1].toUpperCase();
+        console.log('General match found:', tagId);
+        return tagId;
+    }
+    
+    console.log('No tag ID pattern found in:', cleanText);
+    return null;
+}
+
+function stopQRScanner() {
+    if (html5QrcodeScanner) {
+        html5QrcodeScanner.stop().then(() => {
+            console.log('QR scanner stopped');
+        }).catch(err => {
+            console.error('Error stopping scanner:', err);
+        });
+    }
+    
+    // Reset UI
+    document.getElementById('qr-reader').style.display = 'none';
+    document.getElementById('scanner-controls').style.display = 'none';
+    document.getElementById('qr-scanner-placeholder').style.display = 'block';
+    document.querySelector('.scanner-overlay').classList.remove('scanner-active');
+    hideScanResult();
+    html5QrcodeScanner = null;
+}
+
+function switchCamera() {
+    if (availableCameras.length <= 1) {
+        showScanStatus('error', 'Only one camera available');
+        return;
+    }
+    
+    // Find next camera
+    const currentIndex = availableCameras.findIndex(cam => cam.id === currentCameraId);
+    const nextIndex = (currentIndex + 1) % availableCameras.length;
+    currentCameraId = availableCameras[nextIndex].id;
+    
+    // Stop current scanner and restart with new camera
+    if (html5QrcodeScanner) {
+        html5QrcodeScanner.stop().then(() => {
+            startScanning();
+        }).catch(err => {
+            console.error('Error switching camera:', err);
+            showScanStatus('error', 'Failed to switch camera');
+        });
+    }
+}
+
+function showScanStatus(type, message) {
+    const resultDiv = document.getElementById('scan-result');
+    resultDiv.style.display = 'block';
+    resultDiv.className = type === 'error' ? 'scan-error' : 
+                          type === 'loading' ? 'scan-result' : 'scan-result';
+    resultDiv.innerHTML = message;
+}
+
+function hideScanResult() {
+    document.getElementById('scan-result').style.display = 'none';
+}
+
+function resetScanner() {
+    hideScanResult();
+    if (html5QrcodeScanner) {
+        startScanning();
+    }
+}
+
 function handleTagSearch(form) {
     const tagId = form.tag_id.value.trim().toUpperCase();
     if (tagId) {
@@ -108,9 +424,15 @@ function handleTagSearch(form) {
     return true;
 }
 
-function startQRScanner() {
-    alert('QR Scanner functionality would be implemented here using a library like QuaggaJS or ZXing');
-    // This would integrate with a QR code scanning library
-}
+// Check for camera permission on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if running on HTTPS or localhost (required for camera access)
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        const warning = document.createElement('div');
+        warning.className = 'alert alert-warning mt-3';
+        warning.innerHTML = '<i class="fas fa-exclamation-triangle"></i> <strong>Note:</strong> Camera access requires HTTPS. QR scanning may not work on this connection.';
+        document.querySelector('.container').prepend(warning);
+    }
+});
 </script>
 {% endblock %}

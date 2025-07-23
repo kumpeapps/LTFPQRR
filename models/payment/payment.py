@@ -27,6 +27,11 @@ class Subscription(db.Model):
     auto_renew = db.Column(db.Boolean, default=False)  # Auto-renewal flag
     cancellation_requested = db.Column(db.Boolean, default=False)  # Cancellation requested by user
     
+    # Renewal retry tracking
+    renewal_attempts = db.Column(db.Integer, default=0)  # Number of renewal attempts made
+    last_renewal_attempt = db.Column(db.DateTime)  # Last attempt timestamp
+    renewal_failure_reason = db.Column(db.String(500))  # Reason for last renewal failure
+    
     # Relationships
     # user and tag relationships already defined in their respective models with backref
     pricing_plan = db.relationship('PricingPlan', backref='subscriptions')
@@ -183,7 +188,7 @@ class Payment(db.Model):
     subscription_id = db.Column(db.Integer, db.ForeignKey('subscription.id'))
     partner_subscription_id = db.Column(db.Integer, db.ForeignKey('partner_subscription.id'))  # Link to PartnerSubscription
     payment_gateway = db.Column(db.String(50), nullable=False)  # stripe, paypal
-    payment_intent_id = db.Column(db.String(200))  # External payment ID
+    payment_intent_id = db.Column(db.String(200), unique=True)  # External payment ID - UNIQUE to prevent duplicates
     transaction_id = db.Column(db.String(200))  # Our internal transaction ID
     amount = db.Column(db.Numeric(10, 2), nullable=False)
     currency = db.Column(db.String(3), default='USD')

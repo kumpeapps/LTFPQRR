@@ -6,6 +6,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from utils import admin_required, super_admin_required, update_payment_gateway_settings, configure_payment_gateways
 from forms import PaymentGatewayForm, PricingPlanForm
+from extensions import db
 
 admin = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -505,6 +506,124 @@ def deactivate_tag(tag_id):
         flash(f"Error deactivating tag: {str(e)}", "error")
 
     return redirect(url_for("admin.tags"))
+
+
+@admin.route("/tags/<int:tag_id>/qr/view")
+@admin_required
+def view_qr(tag_id):
+    """View QR code for a tag."""
+    from models.models import Tag
+    
+    tag_obj = Tag.query.get_or_404(tag_id)
+    qr_url = f"{request.host_url}found/{tag_obj.tag_id}"
+    
+    return render_template("admin/qr_view.html", tag=tag_obj, qr_url=qr_url)
+
+
+@admin.route("/tags/<int:tag_id>/qr/download")
+@admin_required
+def download_qr(tag_id):
+    """Download QR code for a tag."""
+    from models.models import Tag
+    from io import BytesIO
+    from flask import make_response
+    
+    tag_obj = Tag.query.get_or_404(tag_id)
+    
+    try:
+        import qrcode
+    except ImportError:
+        flash("QR code generation library not available. Please install qrcode package.", "error")
+        return redirect(url_for("admin.tags"))
+    
+    # Generate QR code
+    qr_url = f"{request.host_url}found/{tag_obj.tag_id}"
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(qr_url)
+    qr.make(fit=True)
+    
+    # Create QR code image
+    qr_img = qr.make_image(fill_color="black", back_color="white")
+    
+    # Save to bytes
+    img_bytes = BytesIO()
+    qr_img.save(img_bytes, format='PNG')
+    img_bytes.seek(0)
+    
+    # Return as downloadable file
+    response = make_response(img_bytes.getvalue())
+    response.headers['Content-Type'] = 'image/png'
+    response.headers['Content-Disposition'] = f'attachment; filename=QR_{tag_obj.tag_id}.png'
+    return response
+
+
+@admin.route("/tags/qr/bulk-download", methods=["POST"])
+@admin_required
+def bulk_download_qr():
+    """Download QR codes for multiple tags."""
+    from models.models import Tag
+    import zipfile
+    import tempfile
+    import os
+    from io import BytesIO
+    from flask import make_response
+    
+    tag_ids = request.form.getlist('tag_ids')
+    if not tag_ids:
+        flash("No tags selected for download.", "error")
+        return redirect(url_for("admin.tags"))
+    
+    try:
+        import qrcode
+    except ImportError:
+        flash("QR code generation library not available. Please install qrcode package.", "error")
+        return redirect(url_for("admin.tags"))
+    
+    tags = Tag.query.filter(Tag.id.in_(tag_ids)).all()
+    if not tags:
+        flash("No valid tags found.", "error")
+        return redirect(url_for("admin.tags"))
+    
+    # Create temporary directory
+    with tempfile.TemporaryDirectory() as temp_dir:
+        zip_path = os.path.join(temp_dir, "qr_codes.zip")
+        
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for tag_obj in tags:
+                # Generate QR code
+                qr_url = f"{request.host_url}found/{tag_obj.tag_id}"
+                qr = qrcode.QRCode(
+                    version=1,
+                    error_correction=qrcode.constants.ERROR_CORRECT_L,
+                    box_size=10,
+                    border=4,
+                )
+                qr.add_data(qr_url)
+                qr.make(fit=True)
+                
+                # Create QR code image
+                qr_img = qr.make_image(fill_color="black", back_color="white")
+                
+                # Save to bytes
+                img_bytes = BytesIO()
+                qr_img.save(img_bytes, format='PNG')
+                img_bytes.seek(0)
+                
+                # Add to ZIP
+                filename = f"QR_{tag_obj.tag_id}.png"
+                zip_file.writestr(filename, img_bytes.getvalue())
+        
+        # Read the ZIP file and return as response
+        with open(zip_path, 'rb') as zip_data:
+            response = make_response(zip_data.read())
+            response.headers['Content-Type'] = 'application/zip'
+            response.headers['Content-Disposition'] = f'attachment; filename=admin_qr_codes_{len(tags)}_tags.zip'
+            return response
 
 
 # Pricing Management Routes
@@ -1223,3 +1342,225 @@ def toggle_auto_renew_subscription(subscription_id):
         flash(f"Error updating auto-renewal: {str(e)}", "error")
     
     return redirect(url_for("admin.subscriptions"))
+
+
+# Pre-Stage Partner Management Routes
+
+@admin.route("/pre-stage-partners")
+@super_admin_required
+def pre_stage_partners():
+    """List all pre-stage partners (super admin only)."""
+    from models.models import PreStagePartner
+    
+    search = request.args.get("search", "")
+    status_filter = request.args.get("status", "")
+    
+    query = PreStagePartner.query
+    
+    if search:
+        search_filter = f"%{search}%"
+        query = query.filter(
+            db.or_(
+                PreStagePartner.company_name.ilike(search_filter),
+                PreStagePartner.owner_name.ilike(search_filter),
+                PreStagePartner.email.ilike(search_filter)
+            )
+        )
+    
+    if status_filter:
+        query = query.filter(PreStagePartner.status == status_filter)
+    
+    partners = query.order_by(PreStagePartner.created_at.desc()).all()
+    
+    return render_template(
+        "admin/pre_stage_partners.html", 
+        partners=partners,
+        search=search,
+        status_filter=status_filter
+    )
+
+
+@admin.route("/pre-stage-partners/create", methods=["GET", "POST"])
+@super_admin_required
+def create_pre_stage_partner():
+    """Create new pre-stage partner (super admin only)."""
+    from models.models import PreStagePartner
+    from extensions import db
+    from services.pre_stage_partner_service import PreStagePartnerService
+    
+    if request.method == "POST":
+        try:
+            company_name = request.form.get("company_name", "").strip()
+            owner_name = request.form.get("owner_name", "").strip()
+            email = request.form.get("email", "").strip().lower()
+            status = request.form.get("status", "pre-approved")
+            notes = request.form.get("notes", "").strip()
+            
+            # Validation
+            if not all([company_name, owner_name, email]):
+                flash("Company name, owner name, and email are required.", "error")
+                return render_template("admin/create_pre_stage_partner.html")
+            
+            # Check if email already exists
+            existing = PreStagePartner.get_by_email(email)
+            if existing:
+                flash(f"Email {email} already exists in pre-stage partner list.", "error")
+                return render_template("admin/create_pre_stage_partner.html")
+            
+            # Create new pre-stage partner
+            partner = PreStagePartner(
+                company_name=company_name,
+                owner_name=owner_name,
+                email=email,
+                status=status,
+                notes=notes,
+                created_by=current_user.id
+            )
+            
+            db.session.add(partner)
+            db.session.commit()
+            
+            # If pre-approved, check for existing users with this email
+            if status == "pre-approved":
+                result = PreStagePartnerService.process_user_for_partner_role(email)
+                if result['status'] == 'role_added':
+                    flash(f"Pre-stage partner created and partner role added to existing user.", "success")
+                else:
+                    flash(f"Pre-stage partner created successfully.", "success")
+            elif status == "blocked":
+                result = PreStagePartnerService.process_user_for_partner_role(email)
+                if result['status'] == 'role_removed':
+                    flash(f"Pre-stage partner created and partner role removed from existing user.", "success")
+                else:
+                    flash(f"Pre-stage partner created successfully.", "success")
+            else:
+                flash("Pre-stage partner created successfully.", "success")
+            
+            return redirect(url_for("admin.pre_stage_partners"))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error creating pre-stage partner: {str(e)}", "error")
+    
+    return render_template("admin/create_pre_stage_partner.html")
+
+
+@admin.route("/pre-stage-partners/edit/<int:partner_id>", methods=["GET", "POST"])
+@super_admin_required
+def edit_pre_stage_partner(partner_id):
+    """Edit pre-stage partner (super admin only)."""
+    from models.models import PreStagePartner
+    from extensions import db
+    from services.pre_stage_partner_service import PreStagePartnerService
+    
+    partner = PreStagePartner.query.get_or_404(partner_id)
+    
+    if request.method == "POST":
+        try:
+            old_status = partner.status
+            old_email = partner.email
+            
+            partner.company_name = request.form.get("company_name", "").strip()
+            partner.owner_name = request.form.get("owner_name", "").strip()
+            new_email = request.form.get("email", "").strip().lower()
+            partner.status = request.form.get("status", "pre-approved")
+            partner.notes = request.form.get("notes", "").strip()
+            partner.updated_by = current_user.id
+            partner.updated_at = datetime.utcnow()
+            
+            # Validation
+            if not all([partner.company_name, partner.owner_name, new_email]):
+                flash("Company name, owner name, and email are required.", "error")
+                return render_template("admin/edit_pre_stage_partner.html", partner=partner)
+            
+            # Check if email changed and new email already exists
+            if new_email != old_email:
+                existing = PreStagePartner.get_by_email(new_email)
+                if existing and existing.id != partner.id:
+                    flash(f"Email {new_email} already exists in pre-stage partner list.", "error")
+                    return render_template("admin/edit_pre_stage_partner.html", partner=partner)
+            
+            partner.email = new_email
+            db.session.commit()
+            
+            # Process role changes if status or email changed
+            if old_status != partner.status or old_email != partner.email:
+                # Process old email if it changed
+                if old_email != partner.email:
+                    PreStagePartnerService.process_user_for_partner_role(old_email)
+                
+                # Process new email
+                result = PreStagePartnerService.process_user_for_partner_role(partner.email)
+                
+                if result['status'] in ['role_added', 'role_removed']:
+                    flash(f"Pre-stage partner updated and {result['message']}", "success")
+                else:
+                    flash("Pre-stage partner updated successfully.", "success")
+            else:
+                flash("Pre-stage partner updated successfully.", "success")
+            
+            return redirect(url_for("admin.pre_stage_partners"))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error updating pre-stage partner: {str(e)}", "error")
+    
+    return render_template("admin/edit_pre_stage_partner.html", partner=partner)
+
+
+@admin.route("/pre-stage-partners/delete/<int:partner_id>", methods=["POST"])
+@super_admin_required
+def delete_pre_stage_partner(partner_id):
+    """Delete pre-stage partner (super admin only)."""
+    from models.models import PreStagePartner
+    from extensions import db
+    
+    try:
+        partner = PreStagePartner.query.get_or_404(partner_id)
+        email = partner.email
+        
+        db.session.delete(partner)
+        db.session.commit()
+        
+        flash(f"Pre-stage partner for {email} deleted successfully.", "success")
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error deleting pre-stage partner: {str(e)}", "error")
+    
+    return redirect(url_for("admin.pre_stage_partners"))
+
+
+@admin.route("/pre-stage-partners/sync", methods=["POST"])
+@super_admin_required
+def sync_pre_stage_partners():
+    """Sync all pre-stage partners with current user roles."""
+    from services.pre_stage_partner_service import PreStagePartnerService
+    
+    try:
+        # Sync pre-approved users
+        approved_results = PreStagePartnerService.sync_all_pre_approved()
+        
+        # Enforce blocked status
+        blocked_results = PreStagePartnerService.enforce_blocked_status()
+        
+        total_processed = approved_results['processed'] + blocked_results['processed']
+        total_changes = approved_results['roles_added'] + blocked_results['roles_removed']
+        
+        if total_changes > 0:
+            flash(
+                f"Sync completed: {total_changes} role changes made for {total_processed} pre-stage partners.",
+                "success"
+            )
+        else:
+            flash(f"Sync completed: No role changes needed for {total_processed} pre-stage partners.", "info")
+        
+        # Report any errors
+        all_errors = approved_results['errors'] + blocked_results['errors']
+        if all_errors:
+            flash(f"Sync completed with {len(all_errors)} errors. Check logs for details.", "warning")
+    
+    except Exception as e:
+        flash(f"Error during sync: {str(e)}", "error")
+    
+    return redirect(url_for("admin.pre_stage_partners"))

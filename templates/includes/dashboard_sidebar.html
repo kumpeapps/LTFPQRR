@@ -64,6 +64,11 @@
                         </h6>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint and request.endpoint.startswith('admin.pre_stage_partner') else '' }}" href="{{ url_for('admin.pre_stage_partners') }}">
+                            <i class="fas fa-list-check"></i> Pre-Stage Partners
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {{ 'active' if request.endpoint == 'admin.settings' else '' }}" href="{{ url_for('admin.settings') }}">
                             <i class="fas fa-cog"></i> System Settings
                         </a>
@@ -110,6 +115,11 @@
                 <li class="nav-item">
                     <a class="nav-link {{ 'active' if request.endpoint in ['customer_dashboard', 'dashboard'] else '' }}" href="{{ url_for('dashboard.customer_dashboard') if current_user.is_authenticated else url_for('dashboard.dashboard') }}">
                         <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'customer.my_tags' else '' }}" href="{{ url_for('customer.my_tags') }}">
+                        <i class="fas fa-qrcode"></i> My Tags
                     </a>
                 </li>
                 <li class="nav-item">

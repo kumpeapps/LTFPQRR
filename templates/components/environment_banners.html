@@ -1,0 +1,90 @@
+<!-- Environment Banners for Demo and Pre-Production -->
+
+<!-- Demo Mode Banner -->
+{% if g.demo_mode %}
+<div class="alert alert-info alert-dismissible fade show m-0 border-0 rounded-0" role="alert" 
+     style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); border-bottom: 3px solid #0056b3; color: white;">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-flask fa-lg me-3" style="animation: bounce 2s infinite;"></i>
+                    <div>
+                        <strong class="text-white">
+                            <i class="fas fa-eye me-1"></i>
+                            DEMO ENVIRONMENT
+                        </strong>
+                        <div class="small text-white mt-1 opacity-75">
+                            You are viewing a demonstration environment. Data and payments are simulated.
+                            <i class="fas fa-info-circle ms-2" title="This is a demo environment for testing purposes"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="badge bg-white text-info fs-6 px-3 py-2">
+                    <i class="fas fa-vial me-1"></i>
+                    Demo Mode
+                </div>
+            </div>
+        </div>
+    </div>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
+
+<!-- Pre-Production Mode Banner -->
+{% if g.preprod_mode %}
+<div class="alert alert-warning alert-dismissible fade show m-0 border-0 rounded-0" role="alert" 
+     style="background: linear-gradient(135deg, #fd7e14 0%, #e55a00 100%); border-bottom: 3px solid #dc3545; color: white;">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-bug fa-lg me-3" style="animation: pulse 2s infinite;"></i>
+                    <div>
+                        <strong class="text-white">
+                            <i class="fas fa-code-branch me-1"></i>
+                            PRE-PRODUCTION ENVIRONMENT
+                        </strong>
+                        <div class="small text-white mt-1 opacity-75">
+                            You are viewing a pre-production testing environment. Features may be unstable.
+                            <i class="fas fa-exclamation-triangle ms-2" title="This is a pre-production testing environment"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="badge bg-white text-warning fs-6 px-3 py-2">
+                    <i class="fas fa-flask me-1"></i>
+                    Pre-Prod
+                </div>
+            </div>
+        </div>
+    </div>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
+
+<style>
+@keyframes bounce {
+    0%, 20%, 53%, 80%, 100% { 
+        transform: translate3d(0,0,0); 
+    }
+    40%, 43% { 
+        transform: translate3d(0,-15px,0); 
+    }
+    70% { 
+        transform: translate3d(0,-7px,0); 
+    }
+    90% { 
+        transform: translate3d(0,-3px,0); 
+    }
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+</style>

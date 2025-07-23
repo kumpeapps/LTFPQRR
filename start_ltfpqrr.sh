@@ -92,6 +92,8 @@ python init_system_settings.py || echo "Warning: Failed to initialize system set
 echo "Initializing default email templates..."
 python init_email_templates.py || echo "Warning: Failed to initialize email templates"
 
+echo "Build Timestamp: 20Jul2025 3:34PM"
+
 # Start the Flask application
-echo "Starting Flask application..."
+echo "Starting Flask application...."
 exec python app.py

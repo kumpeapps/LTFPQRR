@@ -10,6 +10,27 @@ from forms import TagForm, ClaimTagForm, TransferTagForm, ContactOwnerForm, Purc
 tag = Blueprint('tag', __name__, url_prefix='/tag')
 
 
+def get_tag_pricing_plans():
+    """Get active tag pricing plans."""
+    from models.payment.payment import PricingPlan
+    
+    plans = PricingPlan.query.filter_by(
+        plan_type="tag",
+        is_active=True
+    ).order_by(PricingPlan.sort_order, PricingPlan.price).all()
+    
+    # Convert to dict for easy template access
+    pricing_dict = {}
+    for plan in plans:
+        pricing_dict[plan.billing_period] = {
+            'price': float(plan.price),
+            'name': plan.name,
+            'description': plan.description
+        }
+    
+    return pricing_dict
+
+
 @tag.route("/create", methods=["GET", "POST"])
 @tag.route("/create/<int:partner_id>", methods=["GET", "POST"])
 @login_required
@@ -181,7 +202,7 @@ def claim_tag():
 
         return redirect(url_for("payment.tag_payment"))
 
-    return render_template("tag/claim.html", form=form)
+    return render_template("tag/claim.html", form=form, pricing_plans=get_tag_pricing_plans())
 
 
 @tag.route("/transfer/<int:tag_id>", methods=["GET", "POST"])
@@ -253,7 +274,7 @@ def purchase_subscription(tag_id):
 
         return redirect(url_for("payment.tag_payment"))
 
-    return render_template("tag/purchase_subscription.html", form=form, tag=tag_obj)
+    return render_template("tag/purchase_subscription.html", form=form, tag=tag_obj, pricing_plans=get_tag_pricing_plans())
 
 
 @tag.route("/found/<tag_id>")

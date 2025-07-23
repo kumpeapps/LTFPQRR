@@ -150,6 +150,7 @@ def test_refund_subscription_cancellation():
             # Reset tag to available state
             test_tag.status = "available"
             test_tag.owner_id = None
+            test_tag.pet_id = None  # Remove pet association when releasing tag
             
             db.session.commit()
             print("✅ Test cleanup completed")

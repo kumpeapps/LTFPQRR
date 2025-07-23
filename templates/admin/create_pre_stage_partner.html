@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Create Pre-Stage Partner - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        {% set sidebar_context = 'admin' %}
+        {% include 'includes/dashboard_sidebar.html' %}
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Create Pre-Stage Partner</h2>
+                    <a href="{{ url_for('admin.pre_stage_partners') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Partner Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="company_name" class="form-label">Company Name <span class="text-danger">*</span></label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="company_name" 
+                                                   name="company_name" 
+                                                   required
+                                                   placeholder="Enter company name">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="owner_name" class="form-label">Owner Name <span class="text-danger">*</span></label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="owner_name" 
+                                                   name="owner_name" 
+                                                   required
+                                                   placeholder="Enter owner's full name">
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                                            <input type="email" 
+                                                   class="form-control" 
+                                                   id="email" 
+                                                   name="email" 
+                                                   required
+                                                   placeholder="Enter email address">
+                                            <div class="form-text">Users with this email will be affected by the status setting.</div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
+                                            <select class="form-control" id="status" name="status" required>
+                                                <option value="pre-approved" selected>Pre-Approved</option>
+                                                <option value="restricted">Restricted</option>
+                                                <option value="blocked">Blocked</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="notes" class="form-label">Notes (Optional)</label>
+                                        <textarea class="form-control" 
+                                                  id="notes" 
+                                                  name="notes" 
+                                                  rows="3"
+                                                  placeholder="Additional notes about this pre-stage partner..."></textarea>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between">
+                                        <a href="{{ url_for('admin.pre_stage_partners') }}" class="btn btn-secondary">
+                                            <i class="fas fa-times"></i> Cancel
+                                        </a>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save"></i> Create Pre-Stage Partner
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Status Explanations</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <h6><span class="badge bg-success">Pre-Approved</span></h6>
+                                    <small class="text-muted">
+                                        Users registering with this email will automatically receive the partner role at registration.
+                                        Existing users with this email will also get the partner role immediately.
+                                    </small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <h6><span class="badge bg-warning text-dark">Restricted</span></h6>
+                                    <small class="text-muted">
+                                        Prevents new partner accounts from being created for this email, 
+                                        but allows existing partners to continue operating normally.
+                                    </small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <h6><span class="badge bg-danger">Blocked</span></h6>
+                                    <small class="text-muted">
+                                        Completely blocks partner role access. Users with this email cannot have 
+                                        the partner role, and it will be removed if they currently have it.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">Important Notes</h6>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled small">
+                                    <li><i class="fas fa-info-circle text-info"></i> Changes take effect immediately</li>
+                                    <li><i class="fas fa-sync text-primary"></i> Existing users are processed automatically</li>
+                                    <li><i class="fas fa-envelope text-warning"></i> Email matching is case-insensitive</li>
+                                    <li><i class="fas fa-shield-alt text-success"></i> Only super admins can manage this list</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Add form validation feedback
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const statusSelect = document.getElementById('status');
+    const emailInput = document.getElementById('email');
+    
+    // Update help text based on status selection
+    statusSelect.addEventListener('change', function() {
+        const emailHelp = emailInput.nextElementSibling;
+        const status = this.value;
+        
+        switch(status) {
+            case 'pre-approved':
+                emailHelp.textContent = 'Users with this email will automatically get partner role at registration.';
+                emailHelp.className = 'form-text text-success';
+                break;
+            case 'restricted':
+                emailHelp.textContent = 'Users with this email cannot create new partners but existing ones continue.';
+                emailHelp.className = 'form-text text-warning';
+                break;
+            case 'blocked':
+                emailHelp.textContent = 'Users with this email cannot have partner role and it will be removed.';
+                emailHelp.className = 'form-text text-danger';
+                break;
+        }
+    });
+});
+</script>
+{% endblock %}

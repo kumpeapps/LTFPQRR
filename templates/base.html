@@ -112,6 +112,12 @@
     <!-- Navigation -->
     {% include 'includes/navigation.html' %}
 
+    <!-- Environment Banners (Demo/Pre-Production) -->
+    {% include 'components/environment_banners.html' %}
+
+    <!-- Maintenance Mode Banner -->
+    {% include 'components/maintenance_banner.html' %}
+
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -161,7 +167,7 @@
             </div>
             <hr class="my-4">
             <div class="text-center">
-                <p>&copy; 2024 LTFPQRR. All rights reserved.</p>
+                <p>&copy; 2025 KumpeApps LLC. All rights reserved.</p>
             </div>
         </div>
     </footer>

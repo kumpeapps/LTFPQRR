@@ -34,8 +34,10 @@ def create_default_templates():
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 12px 12px 0 0;">
-        <h1 style="color: #13c1be; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">{{ system.app_name }}</h1>
-        <p style="margin: 10px 0 0 0; font-size: 1.1rem;">Lost Then Found Pet QR Registry</p>
+        <div style="margin-bottom: 20px;">
+            <img src="cid:logo" alt="{{ system.app_name }} Logo" style="max-width: 20px; height: auto; border-radius: 4px;">
+        </div>
+        
     </div>
     
     <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
@@ -103,6 +105,9 @@ Thank you for choosing {{ system.app_name }}!
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 12px 12px 0 0;">
+        <div style="margin-bottom: 20px;">
+            <img src="cid:logo" alt="{{ system.app_name }} Logo" style="max-width: 20px; height: auto; border-radius: 4px;">
+        </div>
         <h1 style="color: #13c1be; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">LTFPQRR</h1>
         <p style="margin: 10px 0 0 0; font-size: 1.1rem;">{{ system.app_name }}</p>
     </div>
@@ -174,8 +179,11 @@ Thank you for choosing {{ system.app_name }}!
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 12px 12px 0 0;">
+        <div style="margin-bottom: 20px;">
+            <img src="cid:logo" alt="{{ system.app_name }} Logo" style="max-width: 20px; height: auto; border-radius: 4px;">
+        </div>
         <h1 style="color: #13c1be; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">LTFPQRR</h1>
-        <p style="margin: 10px 0 0 0; font-size: 1.1rem;">Lost Then Found Pet QR Registry</p>
+        <p style="margin: 10px 0 0 0; font-size: 1.1rem;">{{ system.tagline | default("Pet Recovery System") }}</p>
     </div>
     
     <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
@@ -245,8 +253,11 @@ Thank you for your interest in {{ system.app_name }}.
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 12px 12px 0 0;">
+        <div style="margin-bottom: 20px;">
+            <img src="cid:logo" alt="{{ system.app_name }} Logo" style="max-width: 20px; height: auto; border-radius: 4px;">
+        </div>
         <h1 style="color: #13c1be; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">LTFPQRR</h1>
-        <p style="margin: 10px 0 0 0; font-size: 1.1rem;">Admin Notification</p>
+        <p style="margin: 10px 0 0 0; font-size: 1.1rem;">{{ system.tagline | default("Pet Recovery System") }}</p>
     </div>
     
     <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
@@ -312,8 +323,10 @@ This is an automated notification from the {{ system.app_name }} system.
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 12px 12px 0 0;">
-        <h1 style="color: #13c1be; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">{{ system.app_name }}</h1>
-        <p style="margin: 10px 0 0 0; font-size: 1.1rem;">Lost Then Found Pet QR Registry</p>
+        <div style="margin-bottom: 20px;">
+            <img src="cid:logo" alt="{{ system.app_name }} Logo" style="max-width: 20px; height: auto; border-radius: 4px;">
+        </div>
+        
     </div>
     
     <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
@@ -408,8 +421,10 @@ If you have questions, please contact us at {{ system.support_email }}
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 12px 12px 0 0;">
-        <h1 style="color: #13c1be; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">{{ system.app_name }}</h1>
-        <p style="margin: 10px 0 0 0; font-size: 1.1rem;">Lost Then Found Pet QR Registry</p>
+        <div style="margin-bottom: 20px;">
+            <img src="cid:logo" alt="{{ system.app_name }} Logo" style="max-width: 20px; height: auto; border-radius: 4px;">
+        </div>
+        
     </div>
     
     <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
@@ -502,8 +517,10 @@ Reply directly to this email to contact the finder, or email {{ system.support_e
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 12px 12px 0 0;">
-        <h1 style="color: #13c1be; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">{{ system.app_name }}</h1>
-        <p style="margin: 10px 0 0 0; font-size: 1.1rem;">Lost Then Found Pet QR Registry</p>
+        <div style="margin-bottom: 20px;">
+            <img src="cid:logo" alt="{{ system.app_name }} Logo" style="max-width: 20px; height: auto; border-radius: 4px;">
+        </div>
+        
     </div>
     
     <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
@@ -571,8 +588,10 @@ Thank you for choosing {{ system.app_name }}!
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 12px 12px 0 0;">
-        <h1 style="color: #13c1be; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">{{ system.app_name }}</h1>
-        <p style="margin: 10px 0 0 0; font-size: 1.1rem;">Lost Then Found Pet QR Registry</p>
+        <div style="margin-bottom: 20px;">
+            <img src="cid:logo" alt="{{ system.app_name }} Logo" style="max-width: 20px; height: auto; border-radius: 4px;">
+        </div>
+        
     </div>
     
     <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
@@ -637,8 +656,10 @@ If you have any questions, please contact us at {{ system.support_email }}
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 12px 12px 0 0;">
-        <h1 style="color: #13c1be; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">{{ system.app_name }}</h1>
-        <p style="margin: 10px 0 0 0; font-size: 1.1rem;">Lost Then Found Pet QR Registry</p>
+        <div style="margin-bottom: 20px;">
+            <img src="cid:logo" alt="{{ system.app_name }} Logo" style="max-width: 20px; height: auto; border-radius: 4px;">
+        </div>
+        
     </div>
     
     <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
@@ -701,8 +722,10 @@ If you have any questions, please contact us at {{ system.support_email }}
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 12px 12px 0 0;">
-        <h1 style="color: #13c1be; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">{{ system.app_name }}</h1>
-        <p style="margin: 10px 0 0 0; font-size: 1.1rem;">Lost Then Found Pet QR Registry</p>
+        <div style="margin-bottom: 20px;">
+            <img src="cid:logo" alt="{{ system.app_name }} Logo" style="max-width: 20px; height: auto; border-radius: 4px;">
+        </div>
+        
     </div>
     
     <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
@@ -776,8 +799,10 @@ If you have any questions, please contact us at {{ system.support_email }}
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 12px 12px 0 0;">
-        <h1 style="color: #13c1be; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">{{ system.app_name }}</h1>
-        <p style="margin: 10px 0 0 0; font-size: 1.1rem;">Lost Then Found Pet QR Registry</p>
+        <div style="margin-bottom: 20px;">
+            <img src="cid:logo" alt="{{ system.app_name }} Logo" style="max-width: 20px; height: auto; border-radius: 4px;">
+        </div>
+        
     </div>
     
     <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
@@ -843,8 +868,10 @@ Thank you for your interest in {{ system.app_name }}.
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 12px 12px 0 0;">
-        <h1 style="color: #13c1be; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">{{ system.app_name }}</h1>
-        <p style="margin: 10px 0 0 0; font-size: 1.1rem;">Lost Then Found Pet QR Registry</p>
+        <div style="margin-bottom: 20px;">
+            <img src="cid:logo" alt="{{ system.app_name }} Logo" style="max-width: 20px; height: auto; border-radius: 4px;">
+        </div>
+        
     </div>
     
     <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
@@ -923,8 +950,10 @@ If you have any questions, please contact us at {{ system.support_email }}
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 12px 12px 0 0;">
-        <h1 style="color: #13c1be; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">{{ system.app_name }}</h1>
-        <p style="margin: 10px 0 0 0; font-size: 1.1rem;">Lost Then Found Pet QR Registry</p>
+        <div style="margin-bottom: 20px;">
+            <img src="cid:logo" alt="{{ system.app_name }} Logo" style="max-width: 20px; height: auto; border-radius: 4px;">
+        </div>
+        
     </div>
     
     <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
@@ -994,8 +1023,10 @@ The {{ system.app_name }} Team
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 12px 12px 0 0;">
-        <h1 style="color: #13c1be; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">{{ system.app_name }}</h1>
-        <p style="margin: 10px 0 0 0; font-size: 1.1rem;">Lost Then Found Pet QR Registry</p>
+        <div style="margin-bottom: 20px;">
+            <img src="cid:logo" alt="{{ system.app_name }} Logo" style="max-width: 20px; height: auto; border-radius: 4px;">
+        </div>
+        
     </div>
     
     <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
@@ -1080,8 +1111,10 @@ The {{ system.app_name }} Team
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 12px 12px 0 0;">
-        <h1 style="color: #13c1be; margin: 0; font-size: 2.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">{{ system.app_name }}</h1>
-        <p style="margin: 10px 0 0 0; font-size: 1.1rem;">Lost Then Found Pet QR Registry</p>
+        <div style="margin-bottom: 20px;">
+            <img src="cid:logo" alt="{{ system.app_name }} Logo" style="max-width: 20px; height: auto; border-radius: 4px;">
+        </div>
+        
     </div>
     
     <div style="background: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">

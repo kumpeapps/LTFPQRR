@@ -272,6 +272,14 @@ def create_partner():
         flash("You need partner access to create a partner company.", "error")
         return redirect(url_for("dashboard.dashboard"))
     
+    # Check pre-stage partner restrictions
+    from services.pre_stage_partner_service import PreStagePartnerService
+    can_create, reason = PreStagePartnerService.can_user_create_partner(current_user.email)
+    
+    if not can_create:
+        flash(f"Partner creation not allowed: {reason}", "error")
+        return redirect(url_for("dashboard.dashboard"))
+    
     if request.method == "POST":
         from models.models import Partner
         from extensions import db
@@ -283,6 +291,12 @@ def create_partner():
         
         if not company_name or not email:
             flash("Company name and email are required.", "error")
+            return render_template("partner/create.html")
+        
+        # Double-check pre-stage restrictions before creating
+        can_create, reason = PreStagePartnerService.can_user_create_partner(current_user.email)
+        if not can_create:
+            flash(f"Partner creation not allowed: {reason}", "error")
             return render_template("partner/create.html")
         
         # Create the partner

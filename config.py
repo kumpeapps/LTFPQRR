@@ -36,6 +36,10 @@ class Config:
     PAYPAL_CLIENT_ID = os.environ.get("PAYPAL_CLIENT_ID")
     PAYPAL_CLIENT_SECRET = os.environ.get("PAYPAL_CLIENT_SECRET")
 
+    # Environment banners
+    DEMO_MODE = os.environ.get("DEMO_MODE", "false").lower() == "true"
+    PREPROD_MODE = os.environ.get("PREPROD_MODE", "false").lower() == "true"
+
     # Encryption key for sensitive data
     @property
     def ENCRYPTION_KEY(self):

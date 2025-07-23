@@ -159,3 +159,123 @@ def reactivate_auto_renew(subscription_id):
         flash("An error occurred while reactivating your subscription. Please try again.", "error")
     
     return redirect(url_for('customer.manage_subscription', subscription_id=subscription_id))
+
+
+# Tag Management Routes
+
+@customer_bp.route('/tags')
+@login_required
+def my_tags():
+    """Show user's claimed tags and their status"""
+    from models.pet.pet import Tag
+    
+    # Get all tags owned by the current user
+    tags = Tag.query.filter_by(owner_id=current_user.id).all()
+    
+    return render_template('customer/my_tags.html', tags=tags)
+
+
+@customer_bp.route('/tag/<int:tag_id>/release', methods=['POST'])
+@login_required
+def release_tag(tag_id):
+    """Manually release a tag back to available status"""
+    from models.pet.pet import Tag
+    
+    tag = Tag.query.get_or_404(tag_id)
+    
+    # Check if user can release this tag
+    if not tag.can_be_released_by_user(current_user):
+        flash("You don't have permission to release this tag or it cannot be released at this time.", "error")
+        return redirect(url_for('customer.my_tags'))
+    
+    try:
+        # Release the tag
+        if tag.release_tag():
+            db.session.commit()
+            flash(f"Tag {tag.tag_id} has been released and is now available for others to claim.", "success")
+        else:
+            flash("Unable to release this tag. Please try again.", "error")
+            
+    except Exception as e:
+        db.session.rollback()
+        flash("An error occurred while releasing the tag. Please try again.", "error")
+    
+    return redirect(url_for('customer.my_tags'))
+
+
+@customer_bp.route('/tag/<int:tag_id>/purchase-subscription')
+@login_required
+def purchase_subscription_for_tag(tag_id):
+    """Show subscription purchase options for a specific tag"""
+    from models.pet.pet import Tag
+    from models.payment.payment import PricingPlan
+    
+    tag = Tag.query.get_or_404(tag_id)
+    
+    # Check if user can purchase subscription for this tag
+    if not tag.can_purchase_subscription_for_tag(current_user):
+        flash("You don't have permission to purchase a subscription for this tag.", "error")
+        return redirect(url_for('customer.my_tags'))
+    
+    # Get available tag pricing plans
+    pricing_plans = PricingPlan.query.filter_by(
+        plan_type='tag',
+        is_active=True
+    ).order_by(PricingPlan.sort_order, PricingPlan.price).all()
+    
+    return render_template('customer/purchase_tag_subscription.html', 
+                         tag=tag, 
+                         pricing_plans=pricing_plans)
+
+
+@customer_bp.route('/tag/<int:tag_id>/purchase-subscription', methods=['POST'])
+@login_required
+def process_tag_subscription_purchase(tag_id):
+    """Process subscription purchase for a specific tag"""
+    from models.pet.pet import Tag
+    from models.payment.payment import PricingPlan
+    from flask import session
+    
+    tag = Tag.query.get_or_404(tag_id)
+    
+    # Check if user can purchase subscription for this tag
+    if not tag.can_purchase_subscription_for_tag(current_user):
+        flash("You don't have permission to purchase a subscription for this tag.", "error")
+        return redirect(url_for('customer.my_tags'))
+    
+    pricing_plan_id = request.form.get('pricing_plan_id')
+    payment_method = request.form.get('payment_method', 'stripe')
+    
+    if not pricing_plan_id:
+        flash("Please select a pricing plan.", "error")
+        return redirect(url_for('customer.purchase_subscription_for_tag', tag_id=tag_id))
+    
+    pricing_plan = PricingPlan.query.get_or_404(pricing_plan_id)
+    
+    # Verify it's a tag plan
+    if pricing_plan.plan_type != 'tag':
+        flash("Invalid pricing plan selected.", "error")
+        return redirect(url_for('customer.purchase_subscription_for_tag', tag_id=tag_id))
+    
+    try:
+        # Store payment session data to be used by the payment processor
+        session['payment_data'] = {
+            'user_id': current_user.id,
+            'amount': float(pricing_plan.price),
+            'payment_type': 'tag',
+            'payment_method': payment_method,
+            'claiming_tag_id': tag.tag_id,
+            'subscription_type': pricing_plan.billing_period,
+            'pricing_plan_id': pricing_plan.id,
+            'renewal_for_tag_id': tag.id  # Special flag for renewals
+        }
+        
+        # Redirect to payment processing
+        if payment_method == 'stripe':
+            return redirect(url_for('payment.stripe_checkout'))
+        else:
+            return redirect(url_for('payment.checkout'))
+            
+    except Exception as e:
+        flash("An error occurred while processing your subscription. Please try again.", "error")
+        return redirect(url_for('customer.purchase_subscription_for_tag', tag_id=tag_id))

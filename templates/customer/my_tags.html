@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}My Tags - LTFPQRR{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        {% set sidebar_context = 'customer' %}
+        {% include 'includes/dashboard_sidebar.html' %}
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>My Tags</h2>
+                    <a href="{{ url_for('tag.claim_tag') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Claim New Tag
+                    </a>
+                </div>
+                
+                {% if tags %}
+                    <div class="row">
+                        {% for tag in tags %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">
+                                        <strong>{{ tag.tag_id }}</strong>
+                                    </h6>
+                                    {% if tag.status == 'active' %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% elif tag.status == 'claimed' %}
+                                        <span class="badge bg-warning text-dark">Claimed</span>
+                                    {% elif tag.status == 'suspended' %}
+                                        <span class="badge bg-danger">Suspended</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ tag.status|title }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="card-body">
+                                    {% if tag.pet %}
+                                        <h6><i class="fas fa-paw"></i> {{ tag.pet.name }}</h6>
+                                        {% if tag.pet.species %}
+                                            <p class="text-muted small">{{ tag.pet.species }}</p>
+                                        {% endif %}
+                                    {% else %}
+                                        <p class="text-muted">No pet assigned</p>
+                                    {% endif %}
+                                    
+                                    <!-- Subscription Status -->
+                                    {% set latest_subscription = tag.get_latest_subscription() %}
+                                    {% if tag.has_active_subscription() %}
+                                        <div class="alert alert-success small mb-2">
+                                            <i class="fas fa-check-circle"></i> Active subscription
+                                            {% if latest_subscription and latest_subscription.end_date %}
+                                                <br><small>Expires: {{ latest_subscription.end_date.strftime('%B %d, %Y') }}</small>
+                                            {% endif %}
+                                        </div>
+                                    {% elif tag.has_expired_or_cancelled_subscription() %}
+                                        <div class="alert alert-warning small mb-2">
+                                            <i class="fas fa-exclamation-triangle"></i> Subscription expired/cancelled
+                                            {% if latest_subscription %}
+                                                <br><small>Status: {{ latest_subscription.status|title }}</small>
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        <div class="alert alert-info small mb-2">
+                                            <i class="fas fa-info-circle"></i> No subscription
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Tag Actions -->
+                                    <div class="d-grid gap-2">
+                                        {% if tag.has_active_subscription() %}
+                                            <!-- Active subscription actions -->
+                                            {% if tag.pet %}
+                                                <a href="{{ url_for('pet.edit_pet', pet_id=tag.pet.id) }}" class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-edit"></i> Edit Pet
+                                                </a>
+                                            {% else %}
+                                                <a href="{{ url_for('pet.assign_pet', tag_id=tag.id) }}" class="btn btn-outline-success btn-sm">
+                                                    <i class="fas fa-plus"></i> Assign Pet
+                                                </a>
+                                            {% endif %}
+                                            
+                                            {% if latest_subscription %}
+                                                <a href="{{ url_for('customer.manage_subscription', subscription_id=latest_subscription.id) }}" class="btn btn-outline-info btn-sm">
+                                                    <i class="fas fa-cog"></i> Manage Subscription
+                                                </a>
+                                            {% endif %}
+                                            
+                                        {% elif tag.status == 'suspended' or (tag.has_expired_or_cancelled_subscription() and not tag.has_active_subscription()) %}
+                                            <!-- Suspended/expired subscription actions -->
+                                            <a href="{{ url_for('customer.purchase_subscription_for_tag', tag_id=tag.id) }}" class="btn btn-success btn-sm">
+                                                <i class="fas fa-shopping-cart"></i> Renew Subscription
+                                            </a>
+                                            
+                                            {% if tag.can_be_released_by_user(current_user) %}
+                                                <form method="POST" action="{{ url_for('customer.release_tag', tag_id=tag.id) }}" 
+                                                      onsubmit="return confirm('Are you sure you want to release this tag? It will become available for others to claim.')">
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                        <i class="fas fa-trash"></i> Release Tag
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                            
+                                        {% else %}
+                                            <!-- Other status actions -->
+                                            <small class="text-muted">No actions available</small>
+                                        {% endif %}
+                                        
+                                        <!-- QR Code View (always available) -->
+                                        <a href="{{ url_for('tag.qr_view', tag_id=tag.id) }}" class="btn btn-outline-secondary btn-sm">
+                                            <i class="fas fa-qrcode"></i> View QR Code
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                                {% if tag.status == 'suspended' %}
+                                <div class="card-footer bg-warning bg-opacity-10">
+                                    <small class="text-warning">
+                                        <i class="fas fa-exclamation-triangle"></i> 
+                                        This tag is suspended due to subscription cancellation or expiration.
+                                        Renew your subscription to reactivate it.
+                                    </small>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No Tags Found</h4>
+                        <p class="text-muted">You haven't claimed any tags yet.</p>
+                        <a href="{{ url_for('tag.claim_tag') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Claim Your First Tag
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.alert.small {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+.card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+}
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+.badge {
+    font-size: 0.75rem;
+}
+</style>
+{% endblock %}
