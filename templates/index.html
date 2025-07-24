@@ -4,7 +4,9 @@
 <!-- Hero Banner Section with Real Photo -->
 <section class="hero-banner">
     <div class="hero-content">
-        <h1 class="hero-title">Lost Then Found Pet QR Registry</h1>
+        <div class="hero-logo mb-4">
+            <img src="{{ url_for('static', filename='assets/logo/logo.png') }}" alt="LTFPQRR - Lost Then Found Pet QR Registry" class="img-fluid">
+        </div>
         <p class="hero-subtitle">Never lose your beloved pet again with our innovative QR code technology</p>
         <a href="{{ url_for('auth.register') }}" class="hero-cta">
             <i class="fas fa-paw"></i> Get Started Today
